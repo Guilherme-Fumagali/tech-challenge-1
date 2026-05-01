@@ -19,8 +19,8 @@ public class OrdemServico {
     private UUID clienteId;
     private UUID veiculoId;
     private StatusOS status;
-    @Getter(AccessLevel.NONE) private final List<ItemServico> itensServico;
-    @Getter(AccessLevel.NONE) private final List<ItemPeca> itensPeca;
+    @Getter(AccessLevel.NONE) private List<ItemServico> itensServico;
+    @Getter(AccessLevel.NONE) private List<ItemPeca> itensPeca;
     private LocalDateTime dataAbertura;
     private LocalDateTime dataInicio;
     private LocalDateTime dataConclusao;
@@ -33,20 +33,6 @@ public class OrdemServico {
         this.itensServico = new ArrayList<>();
         this.itensPeca = new ArrayList<>();
         this.dataAbertura = LocalDateTime.now();
-    }
-
-    private OrdemServico(UUID id, UUID clienteId, UUID veiculoId, StatusOS status,
-                         List<ItemServico> itensServico, List<ItemPeca> itensPeca,
-                         LocalDateTime dataAbertura, LocalDateTime dataInicio, LocalDateTime dataConclusao) {
-        this.id = id;
-        this.clienteId = clienteId;
-        this.veiculoId = veiculoId;
-        this.status = status;
-        this.itensServico = new ArrayList<>(itensServico);
-        this.itensPeca = new ArrayList<>(itensPeca);
-        this.dataAbertura = dataAbertura;
-        this.dataInicio = dataInicio;
-        this.dataConclusao = dataConclusao;
     }
 
     public static Reconstitucao reconstituir() {
@@ -62,19 +48,25 @@ public class OrdemServico {
 
         private Reconstitucao() {}
 
-        public Reconstitucao id(UUID v)                      { id = v;             return this; }
-        public Reconstitucao clienteId(UUID v)               { clienteId = v;      return this; }
-        public Reconstitucao veiculoId(UUID v)               { veiculoId = v;      return this; }
-        public Reconstitucao status(StatusOS v)              { status = v;         return this; }
+        public Reconstitucao id(UUID v)                       { id = v;            return this; }
+        public Reconstitucao clienteId(UUID v)                { clienteId = v;     return this; }
+        public Reconstitucao veiculoId(UUID v)                { veiculoId = v;     return this; }
+        public Reconstitucao status(StatusOS v)               { status = v;        return this; }
         public Reconstitucao itensServico(List<ItemServico> v){ itensServico = v;  return this; }
-        public Reconstitucao itensPeca(List<ItemPeca> v)     { itensPeca = v;     return this; }
-        public Reconstitucao dataAbertura(LocalDateTime v)   { dataAbertura = v;  return this; }
-        public Reconstitucao dataInicio(LocalDateTime v)     { dataInicio = v;    return this; }
-        public Reconstitucao dataConclusao(LocalDateTime v)  { dataConclusao = v; return this; }
+        public Reconstitucao itensPeca(List<ItemPeca> v)      { itensPeca = v;     return this; }
+        public Reconstitucao dataAbertura(LocalDateTime v)    { dataAbertura = v;  return this; }
+        public Reconstitucao dataInicio(LocalDateTime v)      { dataInicio = v;    return this; }
+        public Reconstitucao dataConclusao(LocalDateTime v)   { dataConclusao = v; return this; }
 
         public OrdemServico build() {
-            return new OrdemServico(id, clienteId, veiculoId, status,
-                itensServico, itensPeca, dataAbertura, dataInicio, dataConclusao);
+            var os = new OrdemServico(id, clienteId, veiculoId);
+            os.status = status;
+            os.itensServico = new ArrayList<>(itensServico);
+            os.itensPeca = new ArrayList<>(itensPeca);
+            os.dataAbertura = dataAbertura;
+            os.dataInicio = dataInicio;
+            os.dataConclusao = dataConclusao;
+            return os;
         }
     }
 
