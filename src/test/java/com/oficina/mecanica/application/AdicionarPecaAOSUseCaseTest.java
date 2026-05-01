@@ -81,8 +81,9 @@ class AdicionarPecaAOSUseCaseTest {
     }
 
     private OrdemServico osEmDiagnostico() {
-        var os = new OrdemServico(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-            StatusOS.EM_DIAGNOSTICO, new ArrayList<>(), new ArrayList<>(), null, null, null);
-        return os;
+        return OrdemServico.reconstituir()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.EM_DIAGNOSTICO).itensServico(new ArrayList<>()).itensPeca(new ArrayList<>())
+            .build();
     }
 }

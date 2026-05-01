@@ -35,10 +35,9 @@ public class OrdemServico {
         this.dataAbertura = LocalDateTime.now();
     }
 
-    // Constructor for reconstitution from persistence
-    public OrdemServico(UUID id, UUID clienteId, UUID veiculoId, StatusOS status,
-                        List<ItemServico> itensServico, List<ItemPeca> itensPeca,
-                        LocalDateTime dataAbertura, LocalDateTime dataInicio, LocalDateTime dataConclusao) {
+    private OrdemServico(UUID id, UUID clienteId, UUID veiculoId, StatusOS status,
+                         List<ItemServico> itensServico, List<ItemPeca> itensPeca,
+                         LocalDateTime dataAbertura, LocalDateTime dataInicio, LocalDateTime dataConclusao) {
         this.id = id;
         this.clienteId = clienteId;
         this.veiculoId = veiculoId;
@@ -48,6 +47,35 @@ public class OrdemServico {
         this.dataAbertura = dataAbertura;
         this.dataInicio = dataInicio;
         this.dataConclusao = dataConclusao;
+    }
+
+    public static Reconstitucao reconstituir() {
+        return new Reconstitucao();
+    }
+
+    public static final class Reconstitucao {
+        private UUID id, clienteId, veiculoId;
+        private StatusOS status;
+        private List<ItemServico> itensServico = List.of();
+        private List<ItemPeca> itensPeca = List.of();
+        private LocalDateTime dataAbertura, dataInicio, dataConclusao;
+
+        private Reconstitucao() {}
+
+        public Reconstitucao id(UUID v)                      { id = v;             return this; }
+        public Reconstitucao clienteId(UUID v)               { clienteId = v;      return this; }
+        public Reconstitucao veiculoId(UUID v)               { veiculoId = v;      return this; }
+        public Reconstitucao status(StatusOS v)              { status = v;         return this; }
+        public Reconstitucao itensServico(List<ItemServico> v){ itensServico = v;  return this; }
+        public Reconstitucao itensPeca(List<ItemPeca> v)     { itensPeca = v;     return this; }
+        public Reconstitucao dataAbertura(LocalDateTime v)   { dataAbertura = v;  return this; }
+        public Reconstitucao dataInicio(LocalDateTime v)     { dataInicio = v;    return this; }
+        public Reconstitucao dataConclusao(LocalDateTime v)  { dataConclusao = v; return this; }
+
+        public OrdemServico build() {
+            return new OrdemServico(id, clienteId, veiculoId, status,
+                itensServico, itensPeca, dataAbertura, dataInicio, dataConclusao);
+        }
     }
 
     public void iniciarDiagnostico() {

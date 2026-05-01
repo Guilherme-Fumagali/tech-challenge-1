@@ -2,13 +2,9 @@ package com.oficina.mecanica.domain.valueobject;
 
 import com.oficina.mecanica.domain.exception.DomainException;
 
-import java.util.Objects;
+public record CpfCnpj(String valor) {
 
-public final class CpfCnpj {
-
-    private final String valor;
-
-    public CpfCnpj(String valor) {
+    public CpfCnpj {
         String limpo = limpar(valor);
         if (limpo.length() == 11) {
             validarCpf(limpo);
@@ -17,7 +13,7 @@ public final class CpfCnpj {
         } else {
             throw new DomainException("CPF ou CNPJ inválido: " + valor);
         }
-        this.valor = limpo;
+        valor = limpo;
     }
 
     public String getValor() { return valor; }
@@ -26,7 +22,7 @@ public final class CpfCnpj {
     public boolean isCnpj() { return valor.length() == 14; }
 
     private static String limpar(String s) {
-        return s == null ? "" : s.replaceAll("[^0-9]", "");
+        return s == null ? "" : s.replaceAll("\\D", "");
     }
 
     private static void validarCpf(String cpf) {
@@ -60,10 +56,4 @@ public final class CpfCnpj {
         int resto = soma % 11;
         return resto < 2 ? 0 : 11 - resto;
     }
-
-    @Override public boolean equals(Object o) {
-        return o instanceof CpfCnpj c && valor.equals(c.valor);
-    }
-    @Override public int hashCode() { return Objects.hash(valor); }
-    @Override public String toString() { return valor; }
 }

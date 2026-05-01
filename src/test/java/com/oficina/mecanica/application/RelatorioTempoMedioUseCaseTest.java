@@ -34,9 +34,10 @@ class RelatorioTempoMedioUseCaseTest {
     }
 
     private OrdemServico osComDatas(LocalDateTime dataInicio, LocalDateTime dataConclusao) {
-        return new OrdemServico(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-            StatusOS.FINALIZADA, new ArrayList<>(), new ArrayList<>(),
-            LocalDateTime.now(), dataInicio, dataConclusao);
+        return OrdemServico.reconstituir()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.FINALIZADA).dataAbertura(LocalDateTime.now())
+            .dataInicio(dataInicio).dataConclusao(dataConclusao).build();
     }
 
     @Test

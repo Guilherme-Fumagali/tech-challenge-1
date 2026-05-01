@@ -35,20 +35,23 @@ class OrdemServicoUseCasesTest {
     @Mock NotificacaoService notificacaoService;
 
     private OrdemServico osComStatus(StatusOS status) {
-        return new OrdemServico(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-            status, new ArrayList<>(), new ArrayList<>(), LocalDateTime.now(), null, null);
+        return OrdemServico.reconstituir()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(status).dataAbertura(LocalDateTime.now()).build();
     }
 
     private OrdemServico osEmExecucao() {
-        return new OrdemServico(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-            StatusOS.EM_EXECUCAO, new ArrayList<>(), new ArrayList<>(),
-            LocalDateTime.now(), LocalDateTime.now(), null);
+        return OrdemServico.reconstituir()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.EM_EXECUCAO).dataAbertura(LocalDateTime.now()).dataInicio(LocalDateTime.now())
+            .build();
     }
 
     private OrdemServico osFinalizada() {
-        return new OrdemServico(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-            StatusOS.FINALIZADA, new ArrayList<>(), new ArrayList<>(),
-            LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now());
+        return OrdemServico.reconstituir()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.FINALIZADA).dataAbertura(LocalDateTime.now())
+            .dataInicio(LocalDateTime.now()).dataConclusao(LocalDateTime.now()).build();
     }
 
     // ── IniciarDiagnosticoUseCase ─────────────────────────────────────────
@@ -70,7 +73,8 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new IniciarDiagnosticoUseCase(osRepository).executar(id))
+        var uc = new IniciarDiagnosticoUseCase(osRepository);
+        assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -92,7 +96,8 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new AprovarOrcamentoUseCase(osRepository).executar(id))
+        var uc = new AprovarOrcamentoUseCase(osRepository);
+        assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -140,7 +145,8 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new ConsultarStatusOSUseCase(osRepository).executar(id))
+        var uc = new ConsultarStatusOSUseCase(osRepository);
+        assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -177,8 +183,8 @@ class OrdemServicoUseCasesTest {
         var clienteId = UUID.randomUUID();
         when(clienteRepository.buscarPorId(clienteId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository)
-            .executar(clienteId, UUID.randomUUID()))
+        var uc = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository);
+        assertThatThrownBy(() -> uc.executar(clienteId, UUID.randomUUID()))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -193,8 +199,8 @@ class OrdemServicoUseCasesTest {
         when(clienteRepository.buscarPorId(clienteId)).thenReturn(Optional.of(cliente));
         when(veiculoRepository.buscarPorId(veiculoId)).thenReturn(Optional.of(veiculoDeOutro));
 
-        assertThatThrownBy(() -> new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository)
-            .executar(clienteId, veiculoId))
+        var uc = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository);
+        assertThatThrownBy(() -> uc.executar(clienteId, veiculoId))
             .isInstanceOf(DomainException.class)
             .hasMessageContaining("não pertence");
     }
@@ -205,9 +211,10 @@ class OrdemServicoUseCasesTest {
     void gerarOrcamento_deveGerarENotificar() {
         var itemServico = new ItemServico(UUID.randomUUID(), UUID.randomUUID(), "Troca óleo",
             new BigDecimal("120.00"), 1);
-        var os = new OrdemServico(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-            StatusOS.EM_DIAGNOSTICO, List.of(itemServico), new ArrayList<>(),
-            LocalDateTime.now(), null, null);
+        var os = OrdemServico.reconstituir()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.EM_DIAGNOSTICO).itensServico(List.of(itemServico))
+            .dataAbertura(LocalDateTime.now()).build();
 
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(osRepository.salvar(os)).thenReturn(os);
@@ -223,7 +230,8 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new GerarOrcamentoUseCase(osRepository, notificacaoService).executar(id))
+        var uc = new GerarOrcamentoUseCase(osRepository, notificacaoService);
+        assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -252,8 +260,8 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new AdicionarServicoAOSUseCase(osRepository, servicoRepository)
-            .executar(id, UUID.randomUUID(), 1))
+        var uc = new AdicionarServicoAOSUseCase(osRepository, servicoRepository);
+        assertThatThrownBy(() -> uc.executar(id, UUID.randomUUID(), 1))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -264,8 +272,8 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(servicoRepository.buscarPorId(servicoId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new AdicionarServicoAOSUseCase(osRepository, servicoRepository)
-            .executar(os.getId(), servicoId, 1))
+        var uc = new AdicionarServicoAOSUseCase(osRepository, servicoRepository);
+        assertThatThrownBy(() -> uc.executar(os.getId(), servicoId, 1))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 }

@@ -41,8 +41,10 @@ class ReprovarOrcamentoUseCaseTest {
         var pecaId = UUID.randomUUID();
         var item = new ItemPeca(UUID.randomUUID(), pecaId, "Filtro", new BigDecimal("50.00"), 3);
 
-        var os = new OrdemServico(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-            StatusOS.AGUARDANDO_APROVACAO, new ArrayList<>(), List.of(item), null, null, null);
+        var os = OrdemServico.reconstituir()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.AGUARDANDO_APROVACAO).itensServico(new ArrayList<>()).itensPeca(List.of(item))
+            .build();
 
         var peca = new Peca(pecaId, "Filtro", "", new BigDecimal("50.00"), 5, 2);
 

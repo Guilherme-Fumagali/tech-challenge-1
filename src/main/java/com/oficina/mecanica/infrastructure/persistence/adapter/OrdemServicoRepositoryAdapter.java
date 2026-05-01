@@ -101,8 +101,16 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
             .map(i -> new ItemPeca(i.getId(), i.getPecaId(), i.getNomePeca(),
                 i.getPrecoSnapshot(), i.getQuantidade()))
             .toList();
-        return new OrdemServico(e.getId(), e.getClienteId(), e.getVeiculoId(),
-            e.getStatus(), itensServico, itensPeca,
-            e.getDataAbertura(), e.getDataInicio(), e.getDataConclusao());
+        return OrdemServico.reconstituir()
+            .id(e.getId())
+            .clienteId(e.getClienteId())
+            .veiculoId(e.getVeiculoId())
+            .status(e.getStatus())
+            .itensServico(itensServico)
+            .itensPeca(itensPeca)
+            .dataAbertura(e.getDataAbertura())
+            .dataInicio(e.getDataInicio())
+            .dataConclusao(e.getDataConclusao())
+            .build();
     }
 }
