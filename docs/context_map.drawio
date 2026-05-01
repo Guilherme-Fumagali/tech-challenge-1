@@ -1,150 +1,178 @@
-<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
-  <root>
-    <mxCell id="0" />
-    <mxCell id="1" parent="0" />
-
-    <!-- ═══ TITULO ═══ -->
-    <mxCell id="T1" value="Context Map — Sistema de Oficina Mecânica" style="text;html=0;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="300" y="10" width="700" height="35" as="geometry" />
-    </mxCell>
-    <mxCell id="T2" value="U = Upstream (fornecedor)   D = Downstream (consumidor)   ACL = Anti-Corruption Layer   OHS = Open Host Service" style="text;html=0;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#555555;" vertex="1" parent="1">
-      <mxGeometry x="200" y="45" width="900" height="20" as="geometry" />
-    </mxCell>
-
-    <!-- ═══ BOUNDED CONTEXTS ═══ -->
-
-    <!-- Segurança (centro-topo — OHS que serve todos) -->
-    <mxCell id="BC_SEG" value="Segurança&#xa;(Autenticação JWT)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ECEFF1;strokeColor=#37474F;fontSize=13;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="530" y="80" width="220" height="70" as="geometry" />
-    </mxCell>
-    <mxCell id="OHS_SEG" value="OHS" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#37474F;fontColor=#ffffff;strokeColor=none;fontSize=10;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="618" y="68" width="44" height="22" as="geometry" />
-    </mxCell>
-
-    <!-- Atendimento -->
-    <mxCell id="BC_AT" value="Atendimento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=13;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="80" y="230" width="200" height="70" as="geometry" />
-    </mxCell>
-
-    <!-- Diagnóstico -->
-    <mxCell id="BC_DG" value="Diagnóstico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=13;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="380" y="230" width="200" height="70" as="geometry" />
-    </mxCell>
-
-    <!-- Gestão de Estoque -->
-    <mxCell id="BC_EST" value="Gestão de Estoque" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E8F5E9;strokeColor=#1B5E20;fontSize=13;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="380" y="420" width="200" height="70" as="geometry" />
-    </mxCell>
-
-    <!-- Orçamento -->
-    <mxCell id="BC_ORC" value="Orçamento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=13;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="680" y="230" width="200" height="70" as="geometry" />
-    </mxCell>
-
-    <!-- Aprovação / Cancelamento -->
-    <mxCell id="BC_APR" value="Aprovação /&#xa;Cancelamento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFEBEE;strokeColor=#C62828;fontSize=13;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="980" y="230" width="200" height="70" as="geometry" />
-    </mxCell>
-
-    <!-- Execução -->
-    <mxCell id="BC_EX" value="Execução" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=13;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="980" y="420" width="200" height="70" as="geometry" />
-    </mxCell>
-
-    <!-- Entrega -->
-    <mxCell id="BC_ENT" value="Entrega" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FBE9E7;strokeColor=#BF360C;fontSize=13;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="980" y="610" width="200" height="70" as="geometry" />
-    </mxCell>
-
-    <!-- Notificação (sistema externo) -->
-    <mxCell id="BC_NOT" value="Serviço de&#xa;Notificação&#xa;(externo)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#F8BBD9;strokeColor=#880E4F;fontSize=12;fontStyle=2;verticalAlign=middle;" vertex="1" parent="1">
-      <mxGeometry x="680" y="420" width="200" height="70" as="geometry" />
-    </mxCell>
-
-    <!-- ═══ RELACIONAMENTOS ═══ -->
-
-    <!-- Segurança → todos (OHS: serve todas as rotas admin) -->
-    <mxCell id="R_SEG_AT"  style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" edge="1" source="BC_SEG" target="BC_AT"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
-    <mxCell id="R_SEG_DG"  style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" edge="1" source="BC_SEG" target="BC_DG"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
-    <mxCell id="R_SEG_ORC" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" edge="1" source="BC_SEG" target="BC_ORC" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
-    <mxCell id="R_SEG_APR" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" edge="1" source="BC_SEG" target="BC_APR" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
-    <mxCell id="R_SEG_EST" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" edge="1" source="BC_SEG" target="BC_EST" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
-
-    <!-- Atendimento → Diagnóstico (Customer-Supplier: AT upstream, DG downstream) -->
-    <mxCell id="R_AT_DG" style="endArrow=block;endFill=1;strokeColor=#E65100;strokeWidth=2;" edge="1" source="BC_AT" target="BC_DG" parent="1">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="L_AT_DG_U" value="U" style="text;html=0;strokeColor=none;fillColor=#E65100;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="283" y="248" width="22" height="22" as="geometry" /></mxCell>
-    <mxCell id="L_AT_DG_D" value="D" style="text;html=0;strokeColor=none;fillColor=#2E7D32;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="355" y="248" width="22" height="22" as="geometry" /></mxCell>
-
-    <!-- Diagnóstico → Orçamento (Customer-Supplier) -->
-    <mxCell id="R_DG_ORC" style="endArrow=block;endFill=1;strokeColor=#2E7D32;strokeWidth=2;" edge="1" source="BC_DG" target="BC_ORC" parent="1">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="L_DG_ORC_U" value="U" style="text;html=0;strokeColor=none;fillColor=#2E7D32;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="583" y="248" width="22" height="22" as="geometry" /></mxCell>
-    <mxCell id="L_DG_ORC_D" value="D" style="text;html=0;strokeColor=none;fillColor=#1565C0;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="655" y="248" width="22" height="22" as="geometry" /></mxCell>
-
-    <!-- Orçamento → Aprovação (Customer-Supplier) -->
-    <mxCell id="R_ORC_APR" style="endArrow=block;endFill=1;strokeColor=#1565C0;strokeWidth=2;" edge="1" source="BC_ORC" target="BC_APR" parent="1">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="L_ORC_APR_U" value="U" style="text;html=0;strokeColor=none;fillColor=#1565C0;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="883" y="248" width="22" height="22" as="geometry" /></mxCell>
-    <mxCell id="L_ORC_APR_D" value="D" style="text;html=0;strokeColor=none;fillColor=#C62828;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="955" y="248" width="22" height="22" as="geometry" /></mxCell>
-
-    <!-- Aprovação → Execução (Customer-Supplier) -->
-    <mxCell id="R_APR_EX" style="endArrow=block;endFill=1;strokeColor=#C62828;strokeWidth=2;" edge="1" source="BC_APR" target="BC_EX" parent="1">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="L_APR_EX_U" value="U" style="text;html=0;strokeColor=none;fillColor=#C62828;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="1068" y="303" width="22" height="22" as="geometry" /></mxCell>
-    <mxCell id="L_APR_EX_D" value="D" style="text;html=0;strokeColor=none;fillColor=#6A1B9A;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="1068" y="395" width="22" height="22" as="geometry" /></mxCell>
-
-    <!-- Execução → Entrega (Customer-Supplier) -->
-    <mxCell id="R_EX_ENT" style="endArrow=block;endFill=1;strokeColor=#6A1B9A;strokeWidth=2;" edge="1" source="BC_EX" target="BC_ENT" parent="1">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="L_EX_ENT_U" value="U" style="text;html=0;strokeColor=none;fillColor=#6A1B9A;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="1068" y="493" width="22" height="22" as="geometry" /></mxCell>
-    <mxCell id="L_EX_ENT_D" value="D" style="text;html=0;strokeColor=none;fillColor=#BF360C;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" vertex="1" parent="1"><mxGeometry x="1068" y="585" width="22" height="22" as="geometry" /></mxCell>
-
-    <!-- Diagnóstico ↔ Estoque (Shared Kernel: ambos acessam estoque) -->
-    <mxCell id="R_DG_EST" style="endArrow=block;endFill=1;startArrow=block;startFill=1;strokeColor=#1B5E20;strokeWidth=2;" edge="1" source="BC_DG" target="BC_EST" parent="1">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="L_DG_EST" value="Shared Kernel&#xa;(Estoque)" style="text;html=0;strokeColor=none;fillColor=none;fontSize=10;fontStyle=2;fontColor=#1B5E20;" vertex="1" parent="1"><mxGeometry x="240" y="340" width="130" height="35" as="geometry" /></mxCell>
-
-    <!-- Aprovação → Estoque (ACL: cancelamento estorna estoque) -->
-    <mxCell id="R_APR_EST" style="endArrow=block;endFill=1;strokeColor=#C62828;strokeWidth=2;dashed=1;" edge="1" source="BC_APR" target="BC_EST" parent="1">
-      <mxGeometry relative="1" as="geometry">
-        <Array as="points">
-          <mxPoint x="1080" y="455" />
-          <mxPoint x="480" y="455" />
-        </Array>
-      </mxGeometry>
-    </mxCell>
-    <mxCell id="L_APR_EST" value="ACL&#xa;(estorno)" style="text;html=0;strokeColor=none;fillColor=none;fontSize=10;fontStyle=2;fontColor=#C62828;" vertex="1" parent="1"><mxGeometry x="720" y="458" width="80" height="30" as="geometry" /></mxCell>
-
-    <!-- Orçamento → Notificação (Open Host Service externo) -->
-    <mxCell id="R_ORC_NOT" style="endArrow=block;endFill=1;strokeColor=#880E4F;strokeWidth=2;" edge="1" source="BC_ORC" target="BC_NOT" parent="1">
-      <mxGeometry relative="1" as="geometry" />
-    </mxCell>
-    <mxCell id="L_ORC_NOT" value="OHS" style="text;html=0;strokeColor=none;fillColor=#880E4F;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="748" y="308" width="34" height="22" as="geometry" /></mxCell>
-
-    <!-- ═══ LEGENDA RELACIONAMENTOS ═══ -->
-    <mxCell id="LEG_BOX" value="" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FAFAFA;strokeColor=#AAAAAA;fontSize=10;" vertex="1" parent="1">
-      <mxGeometry x="50" y="610" width="480" height="145" as="geometry" />
-    </mxCell>
-    <mxCell id="LEG_T" value="Tipos de Relacionamento" style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="60" y="618" width="230" height="20" as="geometry" /></mxCell>
-
-    <mxCell id="LEG_CS" value="" style="endArrow=block;endFill=1;strokeColor=#333333;strokeWidth=2;" edge="1" parent="1"><mxGeometry x="60" y="650" width="60" height="10" as="geometry"><Array as="points"><mxPoint x="60" y="650"/><mxPoint x="120" y="650"/></Array></mxGeometry></mxCell>
-    <mxCell id="LEG_CS_L" value="Customer-Supplier: contexto upstream (U) fornece dados ao downstream (D). Downstream consome a API do upstream." style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="640" width="390" height="30" as="geometry" /></mxCell>
-
-    <mxCell id="LEG_SK" value="" style="endArrow=block;endFill=1;startArrow=block;startFill=1;strokeColor=#1B5E20;strokeWidth=2;" edge="1" parent="1"><mxGeometry x="60" y="685" width="60" height="10" as="geometry"><Array as="points"><mxPoint x="60" y="685"/><mxPoint x="120" y="685"/></Array></mxGeometry></mxCell>
-    <mxCell id="LEG_SK_L" value="Shared Kernel: dois contextos compartilham um modelo comum (Estoque). Mudanças exigem coordenação." style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="675" width="390" height="30" as="geometry" /></mxCell>
-
-    <mxCell id="LEG_ACL" value="" style="endArrow=block;endFill=1;strokeColor=#C62828;strokeWidth=2;dashed=1;" edge="1" parent="1"><mxGeometry x="60" y="720" width="60" height="10" as="geometry"><Array as="points"><mxPoint x="60" y="720"/><mxPoint x="120" y="720"/></Array></mxGeometry></mxCell>
-    <mxCell id="LEG_ACL_L" value="ACL (Anti-Corruption Layer): contexto downstream traduz/adapta o modelo do upstream para proteger seu próprio modelo." style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="710" width="390" height="30" as="geometry" /></mxCell>
-
-    <mxCell id="LEG_OHS" value="" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" edge="1" parent="1"><mxGeometry x="60" y="755" width="60" height="10" as="geometry"><Array as="points"><mxPoint x="60" y="755"/><mxPoint x="120" y="755"/></Array></mxGeometry></mxCell>
-    <mxCell id="LEG_OHS_L" value="OHS (Open Host Service): contexto expõe uma API estável e documentada que qualquer consumidor pode usar." style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=10;" vertex="1" parent="1"><mxGeometry x="130" y="745" width="390" height="30" as="geometry" /></mxCell>
-
-  </root>
-</mxGraphModel>
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="e1_JwT2PwA60rlvI6Bu3">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="BTKmICmen9ppY2Z-e57W-1" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=18;fontStyle=1;" value="Context Map — Sistema de Oficina Mecânica" vertex="1">
+          <mxGeometry height="35" width="700" x="300" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-2" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#555555;" value="U = Upstream (fornecedor)   D = Downstream (consumidor)   ACL = Anti-Corruption Layer   OHS = Open Host Service" vertex="1">
+          <mxGeometry height="20" width="900" x="200" y="45" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-3" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#ECEFF1;strokeColor=#37474F;fontSize=13;fontStyle=1;verticalAlign=middle;" value="Segurança&#xa;(Autenticação JWT)" vertex="1">
+          <mxGeometry height="70" width="220" x="530" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-4" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#37474F;fontColor=#ffffff;strokeColor=none;fontSize=10;fontStyle=1;" value="OHS" vertex="1">
+          <mxGeometry height="22" width="44" x="618" y="68" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-5" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=13;fontStyle=1;verticalAlign=middle;" value="Atendimento" vertex="1">
+          <mxGeometry height="70" width="200" x="80" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-6" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=13;fontStyle=1;verticalAlign=middle;" value="Diagnóstico" vertex="1">
+          <mxGeometry height="70" width="200" x="380" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-7" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E8F5E9;strokeColor=#1B5E20;fontSize=13;fontStyle=1;verticalAlign=middle;" value="Gestão de Estoque" vertex="1">
+          <mxGeometry height="90" width="200" x="380" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-8" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#E3F2FD;strokeColor=#1565C0;fontSize=13;fontStyle=1;verticalAlign=middle;" value="Orçamento" vertex="1">
+          <mxGeometry height="70" width="200" x="680" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-9" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFEBEE;strokeColor=#C62828;fontSize=13;fontStyle=1;verticalAlign=middle;" value="Aprovação /&#xa;Cancelamento" vertex="1">
+          <mxGeometry height="70" width="200" x="980" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-10" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=13;fontStyle=1;verticalAlign=middle;" value="Execução" vertex="1">
+          <mxGeometry height="90" width="200" x="980" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-11" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FBE9E7;strokeColor=#BF360C;fontSize=13;fontStyle=1;verticalAlign=middle;" value="Entrega" vertex="1">
+          <mxGeometry height="70" width="200" x="980" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-12" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#F8BBD9;strokeColor=#880E4F;fontSize=12;fontStyle=2;verticalAlign=middle;" value="Serviço de&#xa;Notificação&#xa;(externo)" vertex="1">
+          <mxGeometry height="90" width="200" x="680" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-13" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-3" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" target="BTKmICmen9ppY2Z-e57W-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-14" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-3" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" target="BTKmICmen9ppY2Z-e57W-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-15" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-3" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" target="BTKmICmen9ppY2Z-e57W-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-16" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-3" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" target="BTKmICmen9ppY2Z-e57W-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-17" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-3" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" target="BTKmICmen9ppY2Z-e57W-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-18" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-5" style="endArrow=block;endFill=1;strokeColor=#E65100;strokeWidth=2;" target="BTKmICmen9ppY2Z-e57W-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-19" parent="1" style="text;html=0;strokeColor=none;fillColor=#E65100;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="U" vertex="1">
+          <mxGeometry height="22" width="22" x="283" y="248" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-20" parent="1" style="text;html=0;strokeColor=none;fillColor=#2E7D32;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="D" vertex="1">
+          <mxGeometry height="22" width="22" x="355" y="248" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-21" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-6" style="endArrow=block;endFill=1;strokeColor=#2E7D32;strokeWidth=2;" target="BTKmICmen9ppY2Z-e57W-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-22" parent="1" style="text;html=0;strokeColor=none;fillColor=#2E7D32;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="U" vertex="1">
+          <mxGeometry height="22" width="22" x="583" y="248" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-23" parent="1" style="text;html=0;strokeColor=none;fillColor=#1565C0;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="D" vertex="1">
+          <mxGeometry height="22" width="22" x="655" y="248" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-24" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-8" style="endArrow=block;endFill=1;strokeColor=#1565C0;strokeWidth=2;" target="BTKmICmen9ppY2Z-e57W-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-25" parent="1" style="text;html=0;strokeColor=none;fillColor=#1565C0;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="U" vertex="1">
+          <mxGeometry height="22" width="22" x="883" y="248" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-26" parent="1" style="text;html=0;strokeColor=none;fillColor=#C62828;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="D" vertex="1">
+          <mxGeometry height="22" width="22" x="955" y="248" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-27" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-9" style="endArrow=block;endFill=1;strokeColor=#C62828;strokeWidth=2;" target="BTKmICmen9ppY2Z-e57W-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-28" parent="1" style="text;html=0;strokeColor=none;fillColor=#C62828;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="U" vertex="1">
+          <mxGeometry height="22" width="22" x="1068" y="303" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-29" parent="1" style="text;html=0;strokeColor=none;fillColor=#6A1B9A;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="D" vertex="1">
+          <mxGeometry height="22" width="22" x="1068" y="395" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-30" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-10" style="endArrow=block;endFill=1;strokeColor=#6A1B9A;strokeWidth=2;" target="BTKmICmen9ppY2Z-e57W-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-31" parent="1" style="text;html=0;strokeColor=none;fillColor=#6A1B9A;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="U" vertex="1">
+          <mxGeometry height="22" width="22" x="1068" y="493" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-32" parent="1" style="text;html=0;strokeColor=none;fillColor=#BF360C;fontColor=#ffffff;fontSize=10;fontStyle=1;align=center;" value="D" vertex="1">
+          <mxGeometry height="22" width="22" x="1068" y="585" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-33" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-6" style="endArrow=block;endFill=1;startArrow=block;startFill=1;strokeColor=#1B5E20;strokeWidth=2;" target="BTKmICmen9ppY2Z-e57W-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-34" parent="1" style="text;html=0;strokeColor=none;fillColor=none;fontSize=10;fontStyle=2;fontColor=#1B5E20;" value="Shared Kernel&#xa;(Estoque)" vertex="1">
+          <mxGeometry height="35" width="130" x="390" y="475" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-35" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-9" style="endArrow=block;endFill=1;strokeColor=#C62828;strokeWidth=2;dashed=1;" target="BTKmICmen9ppY2Z-e57W-7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="690" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-36" parent="1" style="text;html=0;strokeColor=none;fillColor=none;fontSize=10;fontStyle=2;fontColor=#C62828;" value="ACL&#xa;(estorno)" vertex="1">
+          <mxGeometry height="30" width="80" x="690" y="475" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-37" edge="1" parent="1" source="BTKmICmen9ppY2Z-e57W-8" style="endArrow=block;endFill=1;strokeColor=#880E4F;strokeWidth=2;" target="BTKmICmen9ppY2Z-e57W-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-38" parent="1" style="text;html=0;strokeColor=none;fillColor=#880E4F;fontColor=#ffffff;fontSize=10;fontStyle=1;" value="OHS" vertex="1">
+          <mxGeometry height="22" width="34" x="748" y="308" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-39" parent="1" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FAFAFA;strokeColor=#AAAAAA;fontSize=10;" value="" vertex="1">
+          <mxGeometry height="180" width="620" x="50" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-40" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=11;fontStyle=1;" value="Tipos de Relacionamento" vertex="1">
+          <mxGeometry height="20" width="230" x="60" y="618" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-41" edge="1" parent="1" style="endArrow=block;endFill=1;strokeColor=#333333;strokeWidth=2;" value="">
+          <mxGeometry height="10" width="60" x="60" y="650" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="650" />
+              <mxPoint x="120" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-42" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=10;" value="Customer-Supplier: contexto upstream (U) fornece dados ao downstream (D). Downstream consome a API do upstream." vertex="1">
+          <mxGeometry height="30" width="550" x="86" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-43" edge="1" parent="1" style="endArrow=block;endFill=1;startArrow=block;startFill=1;strokeColor=#1B5E20;strokeWidth=2;" value="">
+          <mxGeometry height="10" width="60" x="60" y="685" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="685" />
+              <mxPoint x="120" y="685" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-44" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=10;" value="Shared Kernel: dois contextos compartilham um modelo comum (Estoque). Mudanças exigem coordenação." vertex="1">
+          <mxGeometry height="30" width="550" x="86" y="675" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-45" edge="1" parent="1" style="endArrow=block;endFill=1;strokeColor=#C62828;strokeWidth=2;dashed=1;" value="">
+          <mxGeometry height="10" width="60" x="60" y="720" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="720" />
+              <mxPoint x="120" y="720" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-46" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=10;" value="ACL (Anti-Corruption Layer): contexto downstream traduz/adapta o modelo do upstream para proteger seu próprio modelo." vertex="1">
+          <mxGeometry height="30" width="560" x="86" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-47" edge="1" parent="1" style="endArrow=open;endFill=0;strokeColor=#37474F;dashed=1;strokeWidth=1;" value="">
+          <mxGeometry height="10" width="60" x="60" y="755" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="755" />
+              <mxPoint x="120" y="755" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="BTKmICmen9ppY2Z-e57W-48" parent="1" style="text;html=0;strokeColor=none;fillColor=none;align=left;fontSize=10;" value="OHS (Open Host Service): contexto expõe uma API estável e documentada que qualquer consumidor pode usar." vertex="1">
+          <mxGeometry height="30" width="550" x="86" y="745" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
