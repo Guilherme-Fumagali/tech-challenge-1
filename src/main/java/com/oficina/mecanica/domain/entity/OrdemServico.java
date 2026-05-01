@@ -2,6 +2,8 @@ package com.oficina.mecanica.domain.entity;
 
 import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
+import lombok.Getter;
+import lombok.AccessLevel;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -10,14 +12,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+@Getter
 public class OrdemServico {
 
     private UUID id;
     private UUID clienteId;
     private UUID veiculoId;
     private StatusOS status;
-    private final List<ItemServico> itensServico;
-    private final List<ItemPeca> itensPeca;
+    @Getter(AccessLevel.NONE) private final List<ItemServico> itensServico;
+    @Getter(AccessLevel.NONE) private final List<ItemPeca> itensPeca;
     private LocalDateTime dataAbertura;
     private LocalDateTime dataInicio;
     private LocalDateTime dataConclusao;
@@ -110,13 +113,6 @@ public class OrdemServico {
         }
     }
 
-    public UUID getId()                        { return id; }
-    public UUID getClienteId()                 { return clienteId; }
-    public UUID getVeiculoId()                 { return veiculoId; }
-    public StatusOS getStatus()                { return status; }
     public List<ItemServico> getItensServico() { return Collections.unmodifiableList(itensServico); }
     public List<ItemPeca> getItensPeca()       { return Collections.unmodifiableList(itensPeca); }
-    public LocalDateTime getDataAbertura()     { return dataAbertura; }
-    public LocalDateTime getDataInicio()       { return dataInicio; }
-    public LocalDateTime getDataConclusao()    { return dataConclusao; }
 }
