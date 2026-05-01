@@ -27,8 +27,8 @@
         <jacoco.version>0.8.12</jacoco.version>
         <owasp.version>10.0.4</owasp.version>
         <!-- SonarCloud -->
-        <sonar.organization>YOUR_ORG_KEY</sonar.organization>
-        <sonar.projectKey>YOUR_PROJECT_KEY</sonar.projectKey>
+        <sonar.organization>guilherme-fumagali</sonar.organization>
+        <sonar.projectKey>Guilherme-Fumagali_tech-challenge-1</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
         <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
