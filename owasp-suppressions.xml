@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <!--
+        CVE-2024-50379 — Tomcat: race condition no DefaultServlet durante deploy concorrente.
+        CONDIÇÃO: requer DefaultServlet habilitado servindo arquivos de diretório com escrita.
+        CONTEXTO: Spring Boot embedded Tomcat NÃO habilita DefaultServlet por padrão.
+        A aplicação não serve arquivos estáticos via Tomcat — todo conteúdo é gerado pelo
+        DispatcherServlet (Spring MVC). Falso positivo neste contexto.
+    -->
+    <suppress>
+        <notes>DefaultServlet não habilitado no Spring Boot embedded — CVE não aplicável.</notes>
+        <cve>CVE-2024-50379</cve>
+    </suppress>
+
+    <!--
+        CVE-2024-56337 — Tomcat: bypass de proteção de partial PUT no DefaultServlet.
+        CONDIÇÃO: requer DefaultServlet habilitado + partial PUT ativo.
+        CONTEXTO: DefaultServlet desabilitado + partial PUT não configurado
+        (server.tomcat.allow-partial-put não está definido). Falso positivo neste contexto.
+    -->
+    <suppress>
+        <notes>DefaultServlet desabilitado e partial PUT não configurado — CVE não aplicável.</notes>
+        <cve>CVE-2024-56337</cve>
+    </suppress>
+
+    <!--
+        CVE-2025-24813 — Tomcat: upload parcial via partial PUT permite execução de código.
+        CONDIÇÃO: requer partial PUT habilitado explicitamente
+        (server.tomcat.allow-partial-put=true) e DefaultServlet ativo.
+        CONTEXTO: aplicação não habilita partial PUT. Configuração padrão do Spring Boot
+        mantém partial PUT desabilitado. Falso positivo neste contexto.
+    -->
+    <suppress>
+        <notes>Partial PUT não habilitado na configuração da aplicação — CVE não aplicável.</notes>
+        <cve>CVE-2025-24813</cve>
+    </suppress>
+
+</suppressions>

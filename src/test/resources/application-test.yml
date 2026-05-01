@@ -1,0 +1,10 @@
+spring:
+  jpa:
+    show-sql: true
+  flyway:
+    enabled: true
+
+jwt:
+  secret: chave-de-teste-super-longa-para-hmac-sha-256-minimo-32-chars
+  access-expiration-ms: 3600000
+  refresh-expiration-ms: 86400000

@@ -1,0 +1,495 @@
+============================================================
+ FLUXOS DDD - SISTEMA OFICINA MECÂNICA
+ Tech Challenge Fase 1 - PosTech FIAP
+ Versão corrigida
+============================================================
+
+
+_____________________________________________ Fluxo 1 - Criação da Ordem de Serviço
+
+@startuml
+title Fluxo 1 - Criação da Ordem de Serviço
+
+actor Cliente
+actor Atendente
+actor Mecânico
+participant "Sistema (OS)" as Sistema
+
+Cliente -> Atendente : Solicita serviço
+
+Atendente -> Sistema : Identificar cliente (CPF/CNPJ)
+Sistema --> Atendente : Cliente encontrado / novo cadastro
+
+Atendente -> Sistema : Cadastrar veículo (se necessário)
+Atendente -> Sistema : Criar OS
+Sistema --> Atendente : OS criada [Status: Recebida]
+
+Atendente -> Mecânico : Encaminhar veículo para diagnóstico
+Sistema -> Sistema : Atualizar status = Em Diagnóstico
+
+Mecânico -> Sistema : Adicionar serviços identificados
+Mecânico -> Sistema : Adicionar peças e insumos
+
+Sistema -> Sistema : Calcular orçamento
+Sistema -> Sistema : Atualizar status = Aguardando Aprovação
+Sistema -> Cliente : Enviar orçamento para aprovação
+
+Cliente -> Sistema : Aprovar / Reprovar
+
+alt Aprovado
+    Sistema -> Sistema : Atualizar status = Em Execução
+else Reprovado
+    Sistema -> Sistema : Atualizar status = Cancelada
+end
+
+@enduml
+
+
+_____________________________________________ Fluxo 2 - State Machine - Ordem de Serviço
+' Fluxo 2 (Ciclo de Vida simplificado) foi removido por ser redundante com o Fluxo 3.
+
+@startuml
+title Fluxo 2 - State Machine - Ordem de Serviço
+
+[*] --> Recebida
+
+Recebida --> EmDiagnostico : iniciarDiagnostico()
+EmDiagnostico --> AguardandoAprovacao : gerarOrcamento()
+
+AguardandoAprovacao --> EmExecucao : aprovar()
+AguardandoAprovacao --> Cancelada : reprovar()
+
+EmExecucao --> Finalizada : concluirServicos()
+Finalizada --> Entregue : entregarVeiculo()
+
+Cancelada --> [*]
+Entregue --> [*]
+
+@enduml
+
+
+_____________________________________________ Fluxo 3 - Modelo de Domínio
+
+@startuml
+title Fluxo 3 - Modelo de Domínio
+
+class OrdemServico {
+  +Id: UUID
+  +Status: StatusOS
+  +DataCriacao: DateTime
+  +DataInicio: DateTime
+  +DataConclusao: DateTime
+  +Total: Decimal
+  +adicionarServico(servico, quantidade)
+  +adicionarPeca(peca, quantidade)
+  +gerarOrcamento(): Decimal
+  +aprovar()
+  +reprovar()
+  +concluir()
+  +entregar()
+}
+
+class ItemServico {
+  +ServicoId: UUID
+  +NomeServico: String
+  +PrecoUnitario: Decimal
+  +Quantidade: Int
+  +Subtotal(): Decimal
+}
+
+class ItemPeca {
+  +PecaId: UUID
+  +NomePeca: String
+  +PrecoUnitario: Decimal
+  +Quantidade: Int
+  +Subtotal(): Decimal
+}
+
+class Cliente {
+  +Id: UUID
+  +Nome: String
+  +CpfCnpj: String
+  +Email: String
+  +Telefone: String
+}
+
+class Veiculo {
+  +Placa: String
+  +Marca: String
+  +Modelo: String
+  +Ano: Int
+  +ClienteId: UUID
+}
+
+class Servico {
+  +Id: UUID
+  +Nome: String
+  +Descricao: String
+  +Preco: Decimal
+  +TempoEstimadoHoras: Decimal
+}
+
+class Peca {
+  +Id: UUID
+  +Nome: String
+  +Descricao: String
+  +Preco: Decimal
+  +EstoqueAtual: Int
+  +EstoqueMinimo: Int
+  +temEstoque(qtd): Boolean
+  +decrementarEstoque(qtd)
+}
+
+enum StatusOS {
+  Recebida
+  EmDiagnostico
+  AguardandoAprovacao
+  EmExecucao
+  Finalizada
+  Cancelada
+  Entregue
+}
+
+OrdemServico "1" --> "1" Cliente
+OrdemServico "1" --> "1" Veiculo
+OrdemServico "1" *-- "0..*" ItemServico
+OrdemServico "1" *-- "0..*" ItemPeca
+OrdemServico --> StatusOS
+ItemServico ..> Servico : referencia snapshot
+ItemPeca ..> Peca : referencia snapshot
+
+@enduml
+
+
+_____________________________________________ Fluxo 4 - CRUD Cliente
+
+@startuml
+title Fluxo 4 - CRUD Cliente
+
+actor Admin
+participant API
+participant Application
+participant Domain
+participant Database
+
+== Criar Cliente ==
+Admin -> API : POST /clientes\n{nome, cpfCnpj, email, telefone}
+API -> Application : CreateClienteCommand
+Application -> Domain : Validar CPF/CNPJ (formato e dígitos)
+alt CPF/CNPJ inválido
+    Domain --> Application : ValidationException
+    Application --> API : 422 Unprocessable Entity
+else Válido
+    Application -> Database : Verificar duplicidade de CPF/CNPJ
+    alt Já cadastrado
+        Database --> Application : ConflictException
+        Application --> API : 409 Conflict
+    else Novo
+        Application -> Database : Save Cliente
+        Application --> API : ClienteId
+        API --> Admin : 201 Created
+    end
+end
+
+== Buscar Cliente ==
+Admin -> API : GET /clientes/{cpfCnpj}
+API -> Application : GetClienteQuery
+Application -> Database : Find by CpfCnpj
+Database --> Application : Cliente
+Application --> API : ClienteDTO
+API --> Admin : 200 OK
+
+@enduml
+
+
+_____________________________________________ Fluxo 5 - CRUD Veículo
+
+@startuml
+title Fluxo 5 - CRUD Veículo
+
+actor Admin
+participant API
+participant Application
+participant Domain
+participant Database
+
+== Criar Veículo ==
+Admin -> API : POST /veiculos\n{placa, marca, modelo, ano, clienteId}
+API -> Application : CreateVeiculoCommand
+Application -> Domain : Validar placa (formato Mercosul/antigo)
+alt Placa inválida
+    Domain --> Application : ValidationException
+    Application --> API : 422 Unprocessable Entity
+else Válida
+    Application -> Database : Verificar placa duplicada
+    alt Já cadastrada
+        Database --> Application : ConflictException
+        Application --> API : 409 Conflict
+    else Nova
+        Application -> Database : Save Veiculo
+        API --> Admin : 201 Created
+    end
+end
+
+== Listar Veículos do Cliente ==
+Admin -> API : GET /clientes/{clienteId}/veiculos
+API -> Application : GetVeiculosByClienteQuery
+Application -> Database : Find by ClienteId
+Database --> Application : Veiculo[]
+API --> Admin : 200 OK
+
+@enduml
+
+
+_____________________________________________ Fluxo 6 - CRUD Serviços
+
+@startuml
+title Fluxo 6 - CRUD Serviços
+
+actor Admin
+participant API
+participant Application
+participant Domain
+participant Database
+
+== Criar Serviço ==
+Admin -> API : POST /servicos\n{nome, descricao, preco, tempoEstimadoHoras}
+API -> Application : CreateServicoCommand
+Application -> Domain : Validar (preco > 0, tempoEstimado > 0)
+alt Inválido
+    Domain --> Application : ValidationException
+    Application --> API : 422 Unprocessable Entity
+else Válido
+    Application -> Database : Save Servico
+    API --> Admin : 201 Created
+end
+
+== Atualizar Serviço ==
+Admin -> API : PUT /servicos/{id}
+API -> Application : UpdateServicoCommand
+Application -> Domain : Validar campos
+Application -> Database : Update Servico
+API --> Admin : 200 OK
+
+== Listar Serviços ==
+Admin -> API : GET /servicos
+API -> Application : GetServicosQuery
+Application -> Database : FindAll
+Database --> Application : Servico[]
+API --> Admin : 200 OK
+
+== Remover Serviço ==
+Admin -> API : DELETE /servicos/{id}
+API -> Application : DeleteServicoCommand
+Application -> Database : Verificar se há OS ativas usando este serviço
+alt OS ativas encontradas
+    Application --> API : 409 Conflict\n(serviço em uso)
+else Livre
+    Application -> Database : Delete Servico
+    API --> Admin : 204 No Content
+end
+
+@enduml
+
+
+_____________________________________________ Fluxo 7 - CRUD Peças + Controle de Estoque
+
+@startuml
+title Fluxo 7 - CRUD Peças + Controle de Estoque
+
+actor Admin
+participant API
+participant Application
+participant Domain
+participant Database
+
+== Criar Peça ==
+Admin -> API : POST /pecas\n{nome, preco, estoqueAtual, estoqueMinimo}
+API -> Application : CreatePecaCommand
+Application -> Domain : Validar (preco > 0, estoque >= 0)
+Application -> Database : Save Peca
+API --> Admin : 201 Created
+
+== Atualizar Estoque (entrada de mercadoria) ==
+Admin -> API : PATCH /pecas/{id}/estoque\n{quantidade}
+API -> Application : AtualizarEstoqueCommand
+Application -> Domain : IncrementarEstoque(quantidade)
+Application -> Database : Update EstoqueAtual
+API --> Admin : 200 OK
+
+== Consultar Estoque ==
+Admin -> API : GET /pecas/{id}
+API -> Application : GetPecaQuery
+Application -> Database : Find by Id
+Database --> Application : Peca (com EstoqueAtual)
+API --> Admin : 200 OK
+
+== Decremento automático ao adicionar à OS ==
+note over Application, Domain
+  Quando uma peça é adicionada a uma OS,
+  o estoque é decrementado automaticamente.
+  Ver Fluxo 1 (Criação da OS).
+end note
+
+Application -> Domain : AdicionarPecaCommand(pecaId, quantidade)
+Domain -> Domain : temEstoque(quantidade)?
+alt Estoque insuficiente
+    Domain --> Application : EstoqueInsuficienteException
+    Application --> API : 422 Unprocessable Entity
+else Estoque suficiente
+    Domain -> Database : Decrementar EstoqueAtual
+    Domain --> Application : OK
+end
+
+@enduml
+
+
+_____________________________________________ Fluxo 8 - Geração de Orçamento
+
+@startuml
+title Fluxo 8 - Geração de Orçamento
+
+participant "OS (Agregado)" as OS
+participant ItemServico
+participant ItemPeca
+participant "Sistema (Evento)" as Sistema
+
+Mecânico -> OS : gerarOrcamento()
+
+OS -> ItemServico : calcular subtotais\n(PrecoUnitario * Quantidade)
+ItemServico --> OS : totalServicos
+
+OS -> ItemPeca : calcular subtotais\n(PrecoUnitario * Quantidade)
+ItemPeca --> OS : totalPecas
+
+OS -> OS : Total = totalServicos + totalPecas
+OS -> OS : Atualizar status = AguardandoAprovacao
+
+OS -> Sistema : OrcamentoGeradoEvent\n{osId, total, itens}
+Sistema -> Cliente : Notificar cliente com orçamento
+
+@enduml
+
+
+_____________________________________________ Fluxo 9 - Autenticação JWT
+
+@startuml
+title Fluxo 9 - Autenticação JWT
+
+actor Usuario
+participant API
+participant AuthService
+participant Database
+
+Usuario -> API : POST /auth/login\n{username, password}
+API -> AuthService : ValidarCredenciais(username, password)
+AuthService -> Database : Buscar usuário por username
+Database --> AuthService : Usuario (hash da senha)
+
+alt Credenciais inválidas
+    AuthService --> API : 401 Unauthorized
+    API --> Usuario : Erro: credenciais inválidas
+else Credenciais válidas
+    AuthService -> AuthService : Gerar JWT\n(sub, roles, exp)
+    AuthService --> API : JWT Token
+    API --> Usuario : 200 OK\n{token, expiresIn}
+end
+
+note over Usuario, API
+  Requisições subsequentes às APIs administrativas
+  devem incluir: Authorization: Bearer {token}
+end note
+
+Usuario -> API : GET /ordens (com token)
+API -> AuthService : ValidarToken(jwt)
+alt Token expirado ou inválido
+    API --> Usuario : 401 Unauthorized
+else Token válido
+    API --> Usuario : 200 OK + dados
+end
+
+@enduml
+
+
+_____________________________________________ Fluxo 10 - Consulta Status OS (API Pública)
+
+@startuml
+title Fluxo 10 - Consulta Status OS (sem autenticação)
+
+actor Cliente
+participant API
+participant Application
+participant Database
+
+Cliente -> API : GET /ordens/{id}/status
+note right of API
+  Endpoint público — não requer JWT.
+  Cliente acompanha o progresso do serviço.
+end note
+
+API -> Application : GetStatusOSQuery(osId)
+Application -> Database : Find OS by Id
+alt OS não encontrada
+    Database --> Application : null
+    Application --> API : 404 Not Found
+else OS encontrada
+    Database --> Application : OS {status, dataAtualizacao}
+    Application --> API : StatusOSDTO
+    API --> Cliente : 200 OK\n{status, dataAtualizacao, previsaoEntrega}
+end
+
+@enduml
+
+
+_____________________________________________ Fluxo 11 - Monitoramento Tempo Médio de Execução
+
+@startuml
+title Fluxo 11 - Monitoramento Tempo Médio de Execução
+
+actor Admin
+participant API
+participant Application
+participant Database
+
+Admin -> API : GET /relatorios/tempo-medio\n?periodo=30d&servicoId=opcional
+API -> Application : GetTempoMedioExecucaoQuery
+Application -> Database : SELECT servico,\n  AVG(DataConclusao - DataInicio) as tempoMedio,\n  COUNT(*) as totalOS\nWHERE Status IN ('Finalizada','Entregue')\n  AND DataConclusao BETWEEN @inicio AND @fim\nGROUP BY servico
+
+Database --> Application : TempoMedioResult[]
+Application --> API : RelatorioTempoMedioDTO
+API --> Admin : 200 OK\n[\n  {servico, tempoMedioHoras, totalOS},\n  ...\n]
+
+@enduml
+
+
+_____________________________________________ Fluxo 12 - Arquitetura com MediatR (referência de implementação)
+
+@startuml
+title Fluxo 12 - Arquitetura com MediatR
+
+actor Controller
+participant MediatR
+participant Handler
+participant Domain
+participant Repository
+
+note over Controller, Repository
+  Padrão utilizado em todas as operações de escrita (Commands)
+  e leitura (Queries) da aplicação.
+end note
+
+Controller -> MediatR : Send(CreateOSCommand)
+MediatR -> Handler : Handle(command, cancellationToken)
+
+Handler -> Domain : new OrdemServico(clienteId, veiculoId)
+Domain --> Handler : OS (Status: Recebida)
+
+Handler -> Repository : SaveAsync(os)
+Repository --> Handler : osId
+
+Handler --> MediatR : OSCriadaResult {osId}
+MediatR --> Controller : OSCriadaResult
+
+Controller --> Controller : return CreatedAtAction(osId)
+
+@enduml

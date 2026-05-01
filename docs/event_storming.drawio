@@ -1,0 +1,165 @@
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3000" pageHeight="1000" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- ═══ LEGENDA ═══ -->
+    <mxCell id="L0" value="LEGENDA" style="text;html=0;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=11;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="10" y="12" width="80" height="25" as="geometry" /></mxCell>
+    <mxCell id="L1" value="[EV] Evento de Dominio" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="95" y="10" width="150" height="30" as="geometry" /></mxCell>
+    <mxCell id="L2" value="[CMD] Comando" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="255" y="10" width="120" height="30" as="geometry" /></mxCell>
+    <mxCell id="L3" value="[AT] Ator" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;fontColor=#000000;strokeColor=#BBAA00;fontSize=10;" vertex="1" parent="1"><mxGeometry x="385" y="10" width="90" height="30" as="geometry" /></mxCell>
+    <mxCell id="L4" value="[POL] Politica" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#CE93D8;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="485" y="10" width="110" height="30" as="geometry" /></mxCell>
+    <mxCell id="L5" value="[PA] Ponto de Atencao" style="rhombus;whiteSpace=wrap;html=0;fillColor=#FFAB91;fontColor=#000000;strokeColor=none;fontSize=9;" vertex="1" parent="1"><mxGeometry x="605" y="5" width="140" height="42" as="geometry" /></mxCell>
+    <mxCell id="L6" value="[ML] Modelo de Leitura" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#A5D6A7;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="755" y="10" width="145" height="30" as="geometry" /></mxCell>
+    <mxCell id="L7" value="[SE] Sistema Externo" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#F48FB1;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="910" y="10" width="130" height="30" as="geometry" /></mxCell>
+    <mxCell id="L8" value="[AG] Agregado" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFD54F;fontColor=#000000;strokeColor=#BB8800;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="1050" y="10" width="120" height="30" as="geometry" /></mxCell>
+    <mxCell id="L9" value="Contexto Delimitado" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#555555;fontSize=10;fontStyle=1;dashed=1;verticalAlign=middle;" vertex="1" parent="1"><mxGeometry x="1180" y="10" width="145" height="30" as="geometry" /></mxCell>
+    <mxCell id="L10" value="| Evento Pivotal" style="text;html=0;strokeColor=#888888;fillColor=none;fontSize=10;fontStyle=2;" vertex="1" parent="1"><mxGeometry x="1335" y="10" width="120" height="30" as="geometry" /></mxCell>
+
+    <!-- ═══ BOUNDED CONTEXTS ═══ -->
+    <mxCell id="BC1" value="Atendimento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#E65100;fontSize=12;fontStyle=1;dashed=1;fontColor=#E65100;verticalAlign=top;" vertex="1" parent="1"><mxGeometry x="15" y="120" width="295" height="410" as="geometry" /></mxCell>
+    <mxCell id="BC2" value="Diagnostico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#2E7D32;fontSize=12;fontStyle=1;dashed=1;fontColor=#2E7D32;verticalAlign=top;" vertex="1" parent="1"><mxGeometry x="310" y="120" width="295" height="410" as="geometry" /></mxCell>
+    <mxCell id="BC3" value="Gestao de Servicos e Pecas" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#1565C0;fontSize=12;fontStyle=1;dashed=1;fontColor=#1565C0;verticalAlign=top;" vertex="1" parent="1"><mxGeometry x="605" y="120" width="575" height="410" as="geometry" /></mxCell>
+    <mxCell id="BC4" value="Orcamento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#6A1B9A;fontSize=12;fontStyle=1;dashed=1;fontColor=#6A1B9A;verticalAlign=top;" vertex="1" parent="1"><mxGeometry x="1180" y="120" width="435" height="410" as="geometry" /></mxCell>
+    <mxCell id="BC5" value="Aprovacao / Cancelamento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#C62828;fontSize=12;fontStyle=1;dashed=1;fontColor=#C62828;verticalAlign=top;" vertex="1" parent="1"><mxGeometry x="1615" y="120" width="580" height="540" as="geometry" /></mxCell>
+    <mxCell id="BC6" value="Execucao" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#4A148C;fontSize=12;fontStyle=1;dashed=1;fontColor=#4A148C;verticalAlign=top;" vertex="1" parent="1"><mxGeometry x="1910" y="120" width="575" height="410" as="geometry" /></mxCell>
+    <mxCell id="BC7" value="Entrega" style="rounded=1;whiteSpace=wrap;html=0;fillColor=none;strokeColor=#BF360C;fontSize=12;fontStyle=1;dashed=1;fontColor=#BF360C;verticalAlign=top;" vertex="1" parent="1"><mxGeometry x="2485" y="120" width="280" height="410" as="geometry" /></mxCell>
+
+    <!-- ═══ AGGREGADOS ═══ -->
+    <mxCell id="AG1" value="[AG] Cliente" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFD54F;fontColor=#000000;strokeColor=#BB8800;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="22" y="148" width="120" height="30" as="geometry" /></mxCell>
+    <mxCell id="AG2" value="[AG] Veiculo" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFD54F;fontColor=#000000;strokeColor=#BB8800;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="150" y="148" width="120" height="30" as="geometry" /></mxCell>
+    <mxCell id="AG3" value="[AG] Ordem de Servico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFD54F;fontColor=#000000;strokeColor=#BB8800;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="612" y="148" width="560" height="30" as="geometry" /></mxCell>
+    <mxCell id="AG4" value="[AG] Ordem de Servico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFD54F;fontColor=#000000;strokeColor=#BB8800;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="1187" y="148" width="420" height="30" as="geometry" /></mxCell>
+    <mxCell id="AG5" value="[AG] Ordem de Servico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFD54F;fontColor=#000000;strokeColor=#BB8800;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="1622" y="148" width="565" height="30" as="geometry" /></mxCell>
+    <mxCell id="AG6" value="[AG] Peca" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFD54F;fontColor=#000000;strokeColor=#BB8800;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="1917" y="148" width="110" height="30" as="geometry" /></mxCell>
+    <mxCell id="AG7" value="[AG] Ordem de Servico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFD54F;fontColor=#000000;strokeColor=#BB8800;fontSize=10;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="2035" y="148" width="440" height="30" as="geometry" /></mxCell>
+
+    <!-- ═══ PIVOT LINES ═══ -->
+    <mxCell id="PV1" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#888888;strokeColor=#888888;" vertex="1" parent="1"><mxGeometry x="308" y="125" width="3" height="400" as="geometry" /></mxCell>
+    <mxCell id="PV2" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#888888;strokeColor=#888888;" vertex="1" parent="1"><mxGeometry x="603" y="125" width="3" height="400" as="geometry" /></mxCell>
+    <mxCell id="PV3" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#888888;strokeColor=#888888;" vertex="1" parent="1"><mxGeometry x="1178" y="125" width="3" height="400" as="geometry" /></mxCell>
+    <mxCell id="PV4" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#888888;strokeColor=#888888;" vertex="1" parent="1"><mxGeometry x="1613" y="125" width="3" height="400" as="geometry" /></mxCell>
+    <mxCell id="PV5" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#888888;strokeColor=#888888;" vertex="1" parent="1"><mxGeometry x="1908" y="125" width="3" height="400" as="geometry" /></mxCell>
+    <mxCell id="PV6" value="" style="rounded=0;whiteSpace=wrap;html=0;fillColor=#888888;strokeColor=#888888;" vertex="1" parent="1"><mxGeometry x="2483" y="125" width="3" height="400" as="geometry" /></mxCell>
+
+    <!-- ═══ MODELOS DE LEITURA (acima dos comandos que informam) ═══ -->
+    <mxCell id="ML1" value="[ML] Estoque Atual" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#A5D6A7;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="840" y="190" width="120" height="55" as="geometry" /></mxCell>
+    <mxCell id="ML2" value="[ML] Orcamento Detalhado" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#A5D6A7;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1630" y="190" width="120" height="55" as="geometry" /></mxCell>
+    <mxCell id="ML3" value="[ML] Detalhes da OS" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#A5D6A7;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2100" y="190" width="120" height="55" as="geometry" /></mxCell>
+    <mxCell id="ML4" value="[ML] Status da OS (consulta publica)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#A5D6A7;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2490" y="190" width="130" height="55" as="geometry" /></mxCell>
+
+    <!-- ═══ SISTEMA EXTERNO ═══ -->
+    <mxCell id="SE1" value="[SE] Servico de Notificacao (email/SMS)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#F48FB1;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1415" y="190" width="140" height="55" as="geometry" /></mxCell>
+
+    <!-- ═══ POLITICAS (acima do fluxo) ═══ -->
+    <mxCell id="PO1" value="[POL] Quando OS Aberta, Iniciar Diagnostico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#CE93D8;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="200" y="190" width="140" height="55" as="geometry" /></mxCell>
+    <mxCell id="PO2" value="[POL] Decrementar Estoque da Peca" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#CE93D8;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="975" y="190" width="140" height="55" as="geometry" /></mxCell>
+    <mxCell id="PO3" value="[POL] Estoque abaixo do minimo, Alertar Admin" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#CE93D8;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="975" y="255" width="140" height="55" as="geometry" /></mxCell>
+    <mxCell id="PO4" value="[POL] Quando Aprovado, Iniciar Execucao" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#CE93D8;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1800" y="190" width="140" height="55" as="geometry" /></mxCell>
+
+    <!-- ═══ FLUXO PRINCIPAL (y=290) ═══ -->
+    <!-- CMD: Abrir OS -->
+    <mxCell id="C1" value="[CMD] Abrir OS" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="30" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: OS Aberta -->
+    <mxCell id="E1" value="[EV] OS Aberta (Status: Recebida)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="170" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- CMD: Iniciar Diagnostico -->
+    <mxCell id="C2" value="[CMD] Iniciar Diagnostico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="325" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: Diagnostico Iniciado -->
+    <mxCell id="E2" value="[EV] Diagnostico Iniciado (Status: Em Diagnostico)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="465" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- CMD: Adicionar Servico -->
+    <mxCell id="C3" value="[CMD] Adicionar Servico a OS" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="620" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: Servico Adicionado -->
+    <mxCell id="E3" value="[EV] Servico Adicionado a OS" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="760" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- CMD: Adicionar Peca -->
+    <mxCell id="C4" value="[CMD] Adicionar Peca a OS" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="900" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: Peca Adicionada -->
+    <mxCell id="E4" value="[EV] Peca Adicionada a OS" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1040" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- CMD: Gerar Orcamento -->
+    <mxCell id="C5" value="[CMD] Gerar Orcamento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1195" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: Orcamento Calculado -->
+    <mxCell id="E5" value="[EV] Orcamento Calculado" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1335" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: Orcamento Enviado -->
+    <mxCell id="E6" value="[EV] Orcamento Enviado ao Cliente (Status: Aguardando Aprovacao)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1475" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- CMD: Aprovar Orcamento -->
+    <mxCell id="C6" value="[CMD] Aprovar Orcamento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1630" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: Orcamento Aprovado -->
+    <mxCell id="E7" value="[EV] Orcamento Aprovado" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1770" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- CMD: Iniciar Execucao -->
+    <mxCell id="C7" value="[CMD] Iniciar Execucao" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1925" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: Execucao Iniciada -->
+    <mxCell id="E8" value="[EV] Execucao Iniciada (Status: Em Execucao)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2065" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- CMD: Concluir Servicos -->
+    <mxCell id="C8" value="[CMD] Concluir Servicos" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2205" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: OS Finalizada -->
+    <mxCell id="E9" value="[EV] OS Finalizada (Status: Finalizada)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2345" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- CMD: Entregar Veiculo -->
+    <mxCell id="C9" value="[CMD] Entregar Veiculo" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2500" y="290" width="120" height="55" as="geometry" /></mxCell>
+    <!-- EV: Veiculo Entregue -->
+    <mxCell id="E10" value="[EV] Veiculo Entregue ao Cliente (Status: Entregue)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2640" y="290" width="120" height="55" as="geometry" /></mxCell>
+
+    <!-- ═══ ATORES (abaixo dos comandos) ═══ -->
+    <mxCell id="AT1" value="[AT] Atendente" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;fontColor=#000000;strokeColor=#BBAA00;fontSize=10;" vertex="1" parent="1"><mxGeometry x="45" y="360" width="90" height="35" as="geometry" /></mxCell>
+    <mxCell id="AT2" value="[AT] Mecanico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;fontColor=#000000;strokeColor=#BBAA00;fontSize=10;" vertex="1" parent="1"><mxGeometry x="635" y="360" width="90" height="35" as="geometry" /></mxCell>
+    <mxCell id="AT3" value="[AT] Mecanico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;fontColor=#000000;strokeColor=#BBAA00;fontSize=10;" vertex="1" parent="1"><mxGeometry x="915" y="360" width="90" height="35" as="geometry" /></mxCell>
+    <mxCell id="AT4" value="[AT] Cliente" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;fontColor=#000000;strokeColor=#BBAA00;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1645" y="360" width="90" height="35" as="geometry" /></mxCell>
+    <mxCell id="AT5" value="[AT] Mecanico" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;fontColor=#000000;strokeColor=#BBAA00;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2220" y="360" width="90" height="35" as="geometry" /></mxCell>
+    <mxCell id="AT6" value="[AT] Atendente" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;fontColor=#000000;strokeColor=#BBAA00;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2515" y="360" width="90" height="35" as="geometry" /></mxCell>
+
+    <!-- ═══ PONTOS DE ATENCAO — PA (losangos rosas) ═══ -->
+    <mxCell id="PA1" value="[PA] Mecanico disponivel para iniciar diagnostico?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#FFAB91;fontColor=#000000;strokeColor=none;fontSize=9;" vertex="1" parent="1"><mxGeometry x="320" y="415" width="135" height="75" as="geometry" /></mxCell>
+    <mxCell id="PA2" value="[PA] Como notificar o cliente? (email, SMS, push?)" style="rhombus;whiteSpace=wrap;html=0;fillColor=#FFAB91;fontColor=#000000;strokeColor=none;fontSize=9;" vertex="1" parent="1"><mxGeometry x="1410" y="400" width="145" height="75" as="geometry" /></mxCell>
+    <mxCell id="PA3" value="[PA] Qual o prazo maximo para o cliente aprovar?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#FFAB91;fontColor=#000000;strokeColor=none;fontSize=9;" vertex="1" parent="1"><mxGeometry x="1625" y="415" width="135" height="75" as="geometry" /></mxCell>
+    <mxCell id="PA4" value="[PA] Quem pode alterar status manualmente?" style="rhombus;whiteSpace=wrap;html=0;fillColor=#FFAB91;fontColor=#000000;strokeColor=none;fontSize=9;" vertex="1" parent="1"><mxGeometry x="2200" y="415" width="135" height="75" as="geometry" /></mxCell>
+
+    <!-- ═══ CAMINHO ALTERNATIVO — REPROVACAO (y=490) ═══ -->
+    <mxCell id="AC1" value="[CMD] Reprovar Orcamento" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1630" y="490" width="120" height="55" as="geometry" /></mxCell>
+    <mxCell id="AE1" value="[EV] Orcamento Reprovado" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1770" y="490" width="120" height="55" as="geometry" /></mxCell>
+    <mxCell id="APO1" value="[POL] Quando Reprovado, Cancelar OS e Estornar Estoque" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#CE93D8;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1910" y="490" width="140" height="55" as="geometry" /></mxCell>
+    <mxCell id="AC2" value="[CMD] Cancelar OS" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#26C6DA;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2065" y="490" width="120" height="55" as="geometry" /></mxCell>
+    <mxCell id="AE2" value="[EV] OS Cancelada (Status: Cancelada)" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFB300;fontColor=#000000;strokeColor=none;fontSize=10;" vertex="1" parent="1"><mxGeometry x="2205" y="490" width="120" height="55" as="geometry" /></mxCell>
+    <mxCell id="AT7" value="[AT] Cliente" style="rounded=1;whiteSpace=wrap;html=0;fillColor=#FFF176;fontColor=#000000;strokeColor=#BBAA00;fontSize=10;" vertex="1" parent="1"><mxGeometry x="1645" y="558" width="90" height="35" as="geometry" /></mxCell>
+
+    <!-- ═══ SETAS — FLUXO PRINCIPAL ═══ -->
+    <mxCell id="ARR1"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C1"  target="E1"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR2"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E1"  target="C2"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR3"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C2"  target="E2"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR4"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E2"  target="C3"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR5"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C3"  target="E3"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR6"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E3"  target="C4"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR7"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C4"  target="E4"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR8"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E4"  target="C5"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR9"  style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C5"  target="E5"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR10" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E5"  target="E6"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR11" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E6"  target="C6"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR12" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C6"  target="E7"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR13" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E7"  target="C7"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR14" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C7"  target="E8"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR15" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E8"  target="C8"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR16" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C8"  target="E9"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR17" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="E9"  target="C9"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR18" style="endArrow=block;endFill=1;strokeColor=#333333;" edge="1" source="C9"  target="E10" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ═══ SETAS — POLITICAS ═══ -->
+    <mxCell id="ARR19" style="endArrow=block;endFill=1;strokeColor=#8B00BE;dashed=1;" edge="1" source="E1"  target="PO1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR20" style="endArrow=block;endFill=1;strokeColor=#8B00BE;dashed=1;" edge="1" source="PO1" target="C2"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR21" style="endArrow=block;endFill=1;strokeColor=#8B00BE;dashed=1;" edge="1" source="E4"  target="PO2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR22" style="endArrow=block;endFill=1;strokeColor=#8B00BE;dashed=1;" edge="1" source="E7"  target="PO4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR23" style="endArrow=block;endFill=1;strokeColor=#8B00BE;dashed=1;" edge="1" source="PO4" target="C7"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ═══ SETAS — MODELOS DE LEITURA ═══ -->
+    <mxCell id="ARR24" style="endArrow=block;endFill=1;strokeColor=#2E7D32;dashed=1;" edge="1" source="ML1" target="C4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR25" style="endArrow=block;endFill=1;strokeColor=#2E7D32;dashed=1;" edge="1" source="ML2" target="C6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR26" style="endArrow=block;endFill=1;strokeColor=#2E7D32;dashed=1;" edge="1" source="ML3" target="C8" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ═══ SETAS — SISTEMA EXTERNO ═══ -->
+    <mxCell id="ARR27" style="endArrow=block;endFill=1;strokeColor=#880E4F;dashed=1;" edge="1" source="E6"  target="SE1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ═══ SETAS — CAMINHO ALTERNATIVO (vermelho tracejado) ═══ -->
+    <mxCell id="ARR28" style="endArrow=block;endFill=1;strokeColor=#CC0000;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" source="E6" target="AC1" parent="1"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="1535" y="460" /><mxPoint x="1690" y="460" /></Array></mxGeometry></mxCell>
+    <mxCell id="ARR29" style="endArrow=block;endFill=1;strokeColor=#CC0000;dashed=1;" edge="1" source="AC1"  target="AE1"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR30" style="endArrow=block;endFill=1;strokeColor=#CC0000;dashed=1;" edge="1" source="AE1"  target="APO1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR31" style="endArrow=block;endFill=1;strokeColor=#CC0000;dashed=1;" edge="1" source="APO1" target="AC2"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="ARR32" style="endArrow=block;endFill=1;strokeColor=#CC0000;dashed=1;" edge="1" source="AC2"  target="AE2"  parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+  </root>
+</mxGraphModel>
