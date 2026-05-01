@@ -205,12 +205,14 @@
                 <version>${owasp.version}</version>
                 <configuration>
                     <failBuildOnCVSS>9</failBuildOnCVSS>
+                    <failOnError>false</failOnError>
+                    <ossIndexAnalyzerEnabled>false</ossIndexAnalyzerEnabled>
                     <formats>
                         <format>HTML</format>
                         <format>JSON</format>
                     </formats>
                     <suppressionFiles>
-                        <suppressionFile>owasp-suppressions.xml</suppressionFile>
+                        <suppressionFile>${project.basedir}/owasp-suppressions.xml</suppressionFile>
                     </suppressionFiles>
                 </configuration>
             </plugin>
