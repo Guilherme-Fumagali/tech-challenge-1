@@ -1,5 +1,6 @@
 package com.oficina.mecanica.infrastructure.security.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.userdetails.User;
@@ -17,10 +18,11 @@ public class UserDetailsConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
+    public UserDetailsService userDetailsService(PasswordEncoder encoder,
+                                                 @Value("${app.admin.password}") String adminPassword) {
         var admin = User.builder()
             .username("admin")
-            .password(encoder.encode("admin123"))
+            .password(encoder.encode(adminPassword))
             .roles("ADMIN")
             .build();
         return new InMemoryUserDetailsManager(admin);
