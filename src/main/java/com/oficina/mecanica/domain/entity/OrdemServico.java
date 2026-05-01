@@ -40,11 +40,15 @@ public class OrdemServico {
     }
 
     public static final class Reconstitucao {
-        private UUID id, clienteId, veiculoId;
+        private UUID id;
+        private UUID clienteId;
+        private UUID veiculoId;
         private StatusOS status;
         private List<ItemServico> itensServico = List.of();
         private List<ItemPeca> itensPeca = List.of();
-        private LocalDateTime dataAbertura, dataInicio, dataConclusao;
+        private LocalDateTime dataAbertura;
+        private LocalDateTime dataInicio;
+        private LocalDateTime dataConclusao;
 
         private Reconstitucao() {}
 

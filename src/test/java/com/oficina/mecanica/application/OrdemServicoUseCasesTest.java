@@ -16,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -183,8 +182,9 @@ class OrdemServicoUseCasesTest {
         var clienteId = UUID.randomUUID();
         when(clienteRepository.buscarPorId(clienteId)).thenReturn(Optional.empty());
 
+        var randomVeiculoId = UUID.randomUUID();
         var uc = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository);
-        assertThatThrownBy(() -> uc.executar(clienteId, UUID.randomUUID()))
+        assertThatThrownBy(() -> uc.executar(clienteId, randomVeiculoId))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -260,8 +260,9 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
+        var randomServicoId = UUID.randomUUID();
         var uc = new AdicionarServicoAOSUseCase(osRepository, servicoRepository);
-        assertThatThrownBy(() -> uc.executar(id, UUID.randomUUID(), 1))
+        assertThatThrownBy(() -> uc.executar(id, randomServicoId, 1))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 
@@ -272,8 +273,9 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(servicoRepository.buscarPorId(servicoId)).thenReturn(Optional.empty());
 
+        var osId = os.getId();
         var uc = new AdicionarServicoAOSUseCase(osRepository, servicoRepository);
-        assertThatThrownBy(() -> uc.executar(os.getId(), servicoId, 1))
+        assertThatThrownBy(() -> uc.executar(osId, servicoId, 1))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 }
