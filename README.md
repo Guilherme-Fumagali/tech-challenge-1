@@ -311,6 +311,7 @@ Gerado via OWASP Dependency Check:
 | 1 | **Mappers manuais** — conversão entre entidades JPA e objetos de domínio feita manualmente nos adapters de persistência | Boilerplate repetitivo; risco de campo esquecido ao adicionar atributos | Migrar para [MapStruct](https://mapstruct.org/) (geração em compile-time, zero overhead em runtime) ou ModelMapper |
 | 2 | **Serviço de notificação stub** — `NotificacaoService` é um port sem implementação concreta; e-mail/SMS não são enviados | Requisito de notificação ao cliente não atendido em produção | Implementar adapter com JavaMail, SendGrid ou AWS SES |
 | 3 | **Construtor de reconstituição com muitos parâmetros** — método `fromPersistencia` em `OrdemServico` possui 9 parâmetros (Sonar S107) | Code smell de manutenibilidade | Encapsular em record `DadosOrdemServico` e receber como parâmetro único |
+| 4 | **CVEs sem patch disponível** — CVE-2026-22732 (Spring Security 6.4.5) e CVE-2025-55754, CVE-2025-66614, CVE-2026-29145 (Tomcat 10.1.40) sem versão corrigida em 01/05/2026; testado também em Spring Boot 3.5.0 (Tomcat 10.1.41 + Spring Security 6.5.0) com mesmo resultado | Vulnerabilidades críticas (CVSS ≥ 9.0) suprimidas com justificativa em `owasp-suppressions.xml`; não endereçáveis por upgrade enquanto fornecedores não publicarem patch | Monitorar releases do Apache Tomcat e Spring Security; remover supressões e retestar quando patches forem publicados |
 
 ---
 
