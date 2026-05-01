@@ -3,11 +3,11 @@
 Sistema backend MVP para gestão de uma oficina mecânica de médio porte.  
 Desenvolvido como **Tech Challenge — Fase 1** da Pós-Graduação em Arquitetura de Software (PosTech FIAP).
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=alert_status&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=coverage&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=bugs&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=security_rating&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=sqale_rating&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
 
 ---
 
