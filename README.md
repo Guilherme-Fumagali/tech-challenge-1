@@ -304,6 +304,16 @@ Gerado via OWASP Dependency Check:
 
 ---
 
+## Débitos técnicos conhecidos
+
+| # | Débito | Impacto | Solução sugerida |
+|---|--------|---------|-----------------|
+| 1 | **Mappers manuais** — conversão entre entidades JPA e objetos de domínio feita manualmente nos adapters de persistência | Boilerplate repetitivo; risco de campo esquecido ao adicionar atributos | Migrar para [MapStruct](https://mapstruct.org/) (geração em compile-time, zero overhead em runtime) ou ModelMapper |
+| 2 | **Serviço de notificação stub** — `NotificacaoService` é um port sem implementação concreta; e-mail/SMS não são enviados | Requisito de notificação ao cliente não atendido em produção | Implementar adapter com JavaMail, SendGrid ou AWS SES |
+| 3 | **Construtor de reconstituição com muitos parâmetros** — método `fromPersistencia` em `OrdemServico` possui 9 parâmetros (Sonar S107) | Code smell de manutenibilidade | Encapsular em record `DadosOrdemServico` e receber como parâmetro único |
+
+---
+
 ## Estrutura do repositório
 
 ```
