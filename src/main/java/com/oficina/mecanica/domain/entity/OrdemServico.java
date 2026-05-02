@@ -2,6 +2,7 @@ package com.oficina.mecanica.domain.entity;
 
 import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.AccessLevel;
 
@@ -35,43 +36,19 @@ public class OrdemServico {
         this.dataAbertura = LocalDateTime.now();
     }
 
-    public static Reconstitucao reconstituir() {
-        return new Reconstitucao();
-    }
-
-    public static final class Reconstitucao {
-        private UUID id;
-        private UUID clienteId;
-        private UUID veiculoId;
-        private StatusOS status;
-        private List<ItemServico> itensServico = List.of();
-        private List<ItemPeca> itensPeca = List.of();
-        private LocalDateTime dataAbertura;
-        private LocalDateTime dataInicio;
-        private LocalDateTime dataConclusao;
-
-        private Reconstitucao() {}
-
-        public Reconstitucao id(UUID v)                       { id = v;            return this; }
-        public Reconstitucao clienteId(UUID v)                { clienteId = v;     return this; }
-        public Reconstitucao veiculoId(UUID v)                { veiculoId = v;     return this; }
-        public Reconstitucao status(StatusOS v)               { status = v;        return this; }
-        public Reconstitucao itensServico(List<ItemServico> v){ itensServico = v;  return this; }
-        public Reconstitucao itensPeca(List<ItemPeca> v)      { itensPeca = v;     return this; }
-        public Reconstitucao dataAbertura(LocalDateTime v)    { dataAbertura = v;  return this; }
-        public Reconstitucao dataInicio(LocalDateTime v)      { dataInicio = v;    return this; }
-        public Reconstitucao dataConclusao(LocalDateTime v)   { dataConclusao = v; return this; }
-
-        public OrdemServico build() {
-            var os = new OrdemServico(id, clienteId, veiculoId);
-            os.status = status;
-            os.itensServico = new ArrayList<>(itensServico);
-            os.itensPeca = new ArrayList<>(itensPeca);
-            os.dataAbertura = dataAbertura;
-            os.dataInicio = dataInicio;
-            os.dataConclusao = dataConclusao;
-            return os;
-        }
+    @Builder(builderMethodName = "reconstituir", buildMethodName = "build")
+    private static OrdemServico fromPersistencia(
+            UUID id, UUID clienteId, UUID veiculoId, StatusOS status,
+            List<ItemServico> itensServico, List<ItemPeca> itensPeca,
+            LocalDateTime dataAbertura, LocalDateTime dataInicio, LocalDateTime dataConclusao) {
+        var os = new OrdemServico(id, clienteId, veiculoId);
+        os.status = status;
+        os.itensServico = itensServico != null ? new ArrayList<>(itensServico) : new ArrayList<>();
+        os.itensPeca = itensPeca != null ? new ArrayList<>(itensPeca) : new ArrayList<>();
+        os.dataAbertura = dataAbertura;
+        os.dataInicio = dataInicio;
+        os.dataConclusao = dataConclusao;
+        return os;
     }
 
     public void iniciarDiagnostico() {
