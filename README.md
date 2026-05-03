@@ -199,8 +199,9 @@ export JAVA_HOME=<caminho-do-seu-jdk-21>
 | `DB_URL` | `jdbc:postgresql://localhost:5432/oficina` | URL do banco |
 | `DB_USER` | `oficina` | Usuário do banco |
 | `DB_PASS` | `oficina` | Senha do banco |
-| `JWT_SECRET` | `minha-chave-...` | Chave HMAC-SHA256 (mín. 32 chars) |
-| `JWT_EXPIRATION_MS` | `86400000` (24h) | Expiração do token em ms |
+| `JWT_SECRET` | `minha-chave-...` | Chave HMAC — algoritmo auto-selecionado pelo JJWT pelo tamanho (≥32 chars→HS256, ≥48→HS384, ≥64→HS512) |
+| `JWT_ACCESS_EXPIRATION_MS` | `900000` (15 min) | Expiração do access token em ms |
+| `JWT_REFRESH_EXPIRATION_MS` | `604800000` (7 dias) | Expiração do refresh token em ms |
 | `PORT` | `8080` | Porta da aplicação |
 
 ---
@@ -215,7 +216,7 @@ curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
-# Resposta: {"token":"eyJ...","tipo":"Bearer"}
+# Resposta: {"accessToken":"eyJ...","refreshToken":"uuid-opaco","tipo":"Bearer","expiresIn":900}
 
 # 2. Usar o token nas requisições
 curl http://localhost:8080/api/clientes \
@@ -249,9 +250,9 @@ GET  /api/ordens/{id}/status
 
 | Grupo | Base URL | Autenticação |
 |---|---|---|
-| Auth | `POST /api/auth/login` | Pública |
+| Auth | `POST /api/auth/login` · `POST /api/auth/refresh` · `POST /api/auth/logout` | Pública |
 | Clientes | `GET/POST/PUT/DELETE /api/clientes` | JWT |
-| Veículos | `GET/POST/DELETE /api/veiculos` | JWT |
+| Veículos | `GET/POST/PUT/DELETE /api/veiculos` | JWT |
 | Serviços | `GET/POST/PUT/DELETE /api/servicos` | JWT |
 | Peças/Estoque | `GET/POST/PUT/DELETE /api/pecas` | JWT |
 | Ordens de Serviço | `GET/POST /api/ordens` + ações de ciclo de vida | JWT |

@@ -2,6 +2,7 @@ package com.oficina.mecanica.infrastructure.web.controller;
 
 import com.oficina.mecanica.application.usecase.veiculo.VeiculoUseCase;
 import com.oficina.mecanica.domain.valueobject.Placa;
+import com.oficina.mecanica.infrastructure.web.dto.request.AtualizarVeiculoRequest;
 import com.oficina.mecanica.infrastructure.web.dto.request.CriarVeiculoRequest;
 import com.oficina.mecanica.infrastructure.web.dto.response.VeiculoResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,6 +53,14 @@ public class VeiculoController {
     public ResponseEntity<List<VeiculoResponse>> listarPorCliente(@PathVariable UUID clienteId) {
         return ResponseEntity.ok(useCase.listarPorCliente(clienteId).stream()
             .map(VeiculoResponse::from).toList());
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Atualizar veículo")
+    public ResponseEntity<VeiculoResponse> atualizar(@PathVariable UUID id,
+                                                     @Valid @RequestBody AtualizarVeiculoRequest req) {
+        var veiculo = useCase.atualizar(id, req.marca(), req.modelo(), req.anoFabricacao());
+        return ResponseEntity.ok(VeiculoResponse.from(veiculo));
     }
 
     @DeleteMapping("/{id}")

@@ -30,7 +30,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Consulta pública de status de OS (sem autenticação)
-                .requestMatchers(HttpMethod.GET, "/api/ordens/{id}/status").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/ordens/*/status").permitAll()
                 // Autenticação pública
                 .requestMatchers("/api/auth/**").permitAll()
                 // Swagger/OpenAPI

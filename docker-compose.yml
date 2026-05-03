@@ -30,6 +30,7 @@ services:
       DB_PASS: oficina
       JWT_SECRET: minha-chave-jwt-segura-para-producao-minimo-32-chars
       PORT: 8080
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
     ports:
       - "8080:8080"
 
