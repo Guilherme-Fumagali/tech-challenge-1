@@ -1,13 +1,76 @@
 # Oficina Mecânica API
 
-Sistema backend MVP para gestão de uma oficina mecânica de médio porte.  
-Desenvolvido como **Tech Challenge — Fase 1** da Pós-Graduação em Arquitetura de Software (PosTech FIAP).
+Sistema backend MVP para gestão de uma oficina mecânica de médio porte.
+Desenvolvido como Tech Challenge da Pós-Graduação em Arquitetura de Software (PosTech FIAP) —
+**Fase 1** (MVP/Clean Architecture) e **Fase 2** (evolução + infraestrutura completa, abaixo).
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=alert_status&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=coverage&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=bugs&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=security_rating&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=sqale_rating&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
+
+---
+
+## Fase 2 — Evolução e Infraestrutura
+
+A Fase 2 evoluiu o MVP da Fase 1 (regras de negócio novas) e entregou toda a cadeia de
+infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenários) e CI/CD completo.
+
+### O que mudou na aplicação
+
+- **Listagem de OS ordenada por prioridade de negócio** (`Em Execução > Aguardando Aprovação >
+  Em Diagnóstico > Recebida`, mais antigas primeiro dentro do mesmo status) e **exclusão lógica**
+  de OS Finalizada/Entregue da listagem (nunca exclusão física).
+- **Aprovação/reprovação externa via token por OS** — `POST /api/ordens/{id}/aprovar-externo`,
+  endpoint público protegido por um token único (uso único, com expiração), simulando um link
+  recebido por e-mail — sem precisar de login.
+- **Notificação por e-mail real** (`SmtpNotificacaoService`, via MailHog em dev/demo) — o cliente
+  recebe o link/token de aprovação por e-mail assim que o orçamento é gerado.
+- Débitos técnicos da Fase 1 quitados: MapStruct órfão removido, `fromPersistencia` reduzido a 1
+  parâmetro (`DadosOrdemServico`), Domain Storytelling referenciado no README, CVEs reverificadas.
+
+### Arquitetura de infraestrutura
+
+```
+                        ┌──────────────┐        ┌─────────────────┐
+  GitHub Actions ──CI──▶│ build + test │──CD───▶│  GHCR (imagem)  │
+                        └──────────────┘        └────────┬────────┘
+                                                           │
+                     ┌─────────────────────────────────────┼─────────────────────┐
+                     │  Kubernetes (kind local ou AWS EKS)   ▼                     │
+                     │   ┌───────────────┐   ┌────────────────────┐               │
+                     │   │ oficina-api   │──▶│ Postgres (StatefulSet│ local)     │
+                     │   │ (2-8 réplicas,│   │ ou RDS gerenciado    │ aws)       │
+                     │   │ HPA CPU/mem)  │   └────────────────────┘               │
+                     │   └───────┬───────┘                                        │
+                     │           ▼                                                │
+                     │      MailHog (SMTP demo)                                   │
+                     └─────────────────────────────────────────────────────────────┘
+```
+
+### Como rodar
+
+| Cenário | Como | Guia |
+|---|---|---|
+| Dev rápido (inner-loop) | `docker compose up --build` | acima, seção "Execução local" |
+| Paridade com Kubernetes (local) | `cd infra/environments/local && terraform apply` | [`infra/README.md`](infra/README.md) |
+| Kubernetes "cru" (manifests) | `kubectl apply -f k8s/...` | [`k8s/README.md`](k8s/README.md) |
+| AWS (EKS + RDS) — **custo real** | `cd infra/environments/aws && terraform apply` | [`infra/README.md`](infra/README.md) — ⚠️ ler o aviso de custo antes |
+
+### CI/CD
+
+- `.github/workflows/ci.yml` — build, testes, JaCoCo, OWASP dependency-check, SonarCloud (inalterado da Fase 1).
+- `.github/workflows/terraform.yml` — `plan`/`apply` automáticos pro ambiente `local` (kind, grátis,
+  smoke test em toda mudança em `infra/**`/`k8s/**`); `plan`/`apply` pro ambiente `aws` com **aprovação
+  manual obrigatória** antes do `apply` (GitHub Environment `aws-production`).
+- `.github/workflows/cd.yml` — build + push da imagem pro GHCR e deploy no EKS a cada push em `main`.
+- `.github/workflows/destroy-aws.yml` — desliga o ambiente AWS com um clique (mesmo gate de aprovação).
+
+### Links
+
+- Collection Postman/Swagger: `http://localhost:8080/swagger-ui.html` (local) — link público a definir.
+- Vídeo de demo (≤15min — deploy, CI/CD, consumo da API, auto-scaling): _a definir_.
 
 ---
 
@@ -39,7 +102,7 @@ src/main/java/com/oficina/mecanica/
 | Camada | Tecnologia |
 |---|---|
 | Linguagem | Java 21 |
-| Framework | Spring Boot 3.3 |
+| Framework | Spring Boot 3.4 |
 | Build | Maven |
 | Banco de dados | PostgreSQL 16 |
 | ORM | Spring Data JPA + Hibernate |
@@ -59,7 +122,13 @@ src/main/java/com/oficina/mecanica/
 
 ### Serviço de Notificação e o ACL do Context Map
 
-#### Por que não foi implementado um canal concreto?
+> **Atualização (Fase 2)**: o canal concreto discutido abaixo como Hot Spot em aberto na Fase 1
+> foi implementado — `SmtpNotificacaoService` envia e-mail real via SMTP (MailHog em dev/demo),
+> incluindo o token de aprovação externa (`POST /api/ordens/{id}/aprovar-externo`). O stub de log
+> continua disponível (`NOTIFICACAO_CANAL=log`, default) — a escolha do canal é uma property, não
+> uma decisão de código.
+
+#### Por que o MVP da Fase 1 não implementou um canal concreto
 
 No Event Storming, o **Serviço de Notificação** (envio do orçamento ao cliente via email/SMS) foi modelado como um **Sistema Externo (SE)** e marcado como **Hot Spot** — dependência fora da fronteira do sistema com decisões de negócio ainda abertas.
 
@@ -69,7 +138,7 @@ A decisão de não implementar um canal concreto no MVP foi intencional por trê
 
 2. **Canal indefinido**: O Event Storming levantou explicitamente a dúvida *"como o cliente é notificado — email, SMS ou push?"*. Implementar um canal específico sem essa decisão seria uma suposição arquitetural embutida em código — dívida técnica desde o dia zero.
 
-3. **Fronteira de bounded context**: No Context Map, o Serviço de Notificação é um sistema externo com relacionamento **ACL** (Anti-Corruption Layer). O ACL foi implementado — o canal concreto é que ficou em aberto.
+3. **Fronteira de bounded context**: No Context Map, o Serviço de Notificação é um sistema externo com relacionamento **ACL** (Anti-Corruption Layer). O ACL foi implementado — o canal concreto é que ficou em aberto (até a Fase 2).
 
 #### O que é o ACL e onde ele está no código
 
@@ -81,11 +150,12 @@ No Context Map deste projeto:
 [Bounded Context: Oficina] ──ACL──> [Sistema Externo: Notificação]
 ```
 
-O ACL está implementado como uma **porta de saída** (output port) na camada de Application, combinada com um **adaptador** na Infrastructure:
+O ACL está implementado como uma **porta de saída** (output port) na camada de Application, com **dois adaptadores** na Infrastructure alternáveis por property (`app.notificacao.canal`):
 
 ```
-application/port/NotificacaoService.java        ← fronteira do ACL (linguagem do domínio)
-infrastructure/notification/LogNotificacaoService.java  ← adaptador stub (lado externo)
+application/port/NotificacaoService.java                  ← fronteira do ACL (linguagem do domínio)
+infrastructure/notification/LogNotificacaoService.java     ← adaptador stub (canal=log, default)
+infrastructure/notification/SmtpNotificacaoService.java    ← adaptador real (canal=smtp)
 ```
 
 O domínio fala apenas a linguagem do negócio:
@@ -93,34 +163,35 @@ O domínio fala apenas a linguagem do negócio:
 ```java
 // Porta de saída — Application layer — zero dependência de framework ou provedor
 public interface NotificacaoService {
-    void notificarOrcamentoPendente(UUID osId, UUID clienteId, BigDecimal valorTotal);
+    void notificarOrcamentoPendente(UUID osId, UUID clienteId, BigDecimal valorTotal, String tokenAprovacao);
 }
 ```
 
-O adaptador (Infrastructure) traduz para o sistema externo e absorve toda a complexidade do protocolo:
+O adaptador real (Infrastructure) traduz para o sistema externo e absorve toda a complexidade do protocolo — resolve o e-mail do cliente, monta a mensagem com o token de aprovação externa, e envia via `JavaMailSender`:
 
 ```java
-// Adaptador real (exemplo — não implementado no MVP)
 @Component
-public class SendGridNotificacaoService implements NotificacaoService {
+@ConditionalOnProperty(prefix = "app.notificacao", name = "canal", havingValue = "smtp")
+public class SmtpNotificacaoService implements NotificacaoService {
 
     @Override
-    public void notificarOrcamentoPendente(UUID osId, UUID clienteId, BigDecimal valorTotal) {
-        // Constrói SendGridMessage (tipo do provedor — não existe no domínio)
-        // Chama API do SendGrid
-        // Trata erros do provedor sem expô-los ao domínio
+    public void notificarOrcamentoPendente(UUID osId, UUID clienteId, BigDecimal valorTotal, String tokenAprovacao) {
+        var cliente = clienteRepository.buscarPorId(clienteId).orElseThrow(...);
+        // monta SimpleMailMessage com instruções de POST /api/ordens/{id}/aprovar-externo
+        mailSender.send(mensagem);
     }
 }
 ```
 
-O stub atual (`LogNotificacaoService`) implementa a mesma interface e registra via SLF4J — o domínio não percebe a diferença:
+O stub (`LogNotificacaoService`) implementa a mesma interface e só registra via SLF4J — o domínio não percebe a diferença entre os dois:
 
 ```java
 @Component
+@ConditionalOnProperty(prefix = "app.notificacao", name = "canal", havingValue = "log", matchIfMissing = true)
 public class LogNotificacaoService implements NotificacaoService {
     @Override
-    public void notificarOrcamentoPendente(UUID osId, UUID clienteId, BigDecimal valorTotal) {
-        log.info("[NOTIFICAÇÃO] OS={} | Cliente={} | Total=R$ {}", osId, clienteId, valorTotal);
+    public void notificarOrcamentoPendente(UUID osId, UUID clienteId, BigDecimal valorTotal, String tokenAprovacao) {
+        log.info("[NOTIFICAÇÃO] OS={} | Cliente={} | Total=R$ {} | Token={}", osId, clienteId, valorTotal, tokenAprovacao);
     }
 }
 ```
@@ -130,13 +201,13 @@ public class LogNotificacaoService implements NotificacaoService {
 ```
 GerarOrcamentoUseCase
   │
-  ├─ os.gerarOrcamento()          ← regra de negócio (domínio puro)
-  ├─ repository.salvar(os)        ← porta de persistência
-  └─ notificacaoService           ← porta de notificação (ACL boundary)
-       .notificarOrcamentoPendente(os.getId(), os.getClienteId(), os.calcularOrcamento())
+  ├─ os.gerarOrcamento(validadeToken)   ← regra de negócio (domínio puro) — gera token de aprovação externa
+  ├─ repository.salvar(os)              ← porta de persistência
+  └─ notificacaoService                 ← porta de notificação (ACL boundary)
+       .notificarOrcamentoPendente(os.getId(), os.getClienteId(), os.calcularOrcamento(), os.getTokenAprovacaoExterna())
             │
-            └─ LogNotificacaoService.notificarOrcamentoPendente(...)
-                 (hoje: log | amanhã: SendGrid, SES, Twilio — sem tocar no use case)
+            └─ Log ou Smtp NotificacaoService (via app.notificacao.canal)
+                 (canal=smtp: e-mail real via MailHog; canal=log: apenas registra)
 ```
 
 #### Arquivos envolvidos
@@ -144,17 +215,18 @@ GerarOrcamentoUseCase
 | Arquivo | Camada | Papel no ACL |
 |---|---|---|
 | `application/port/NotificacaoService.java` | Application | Fronteira do ACL — linguagem do domínio |
-| `infrastructure/notification/LogNotificacaoService.java` | Infrastructure | Adaptador stub atual |
+| `infrastructure/notification/LogNotificacaoService.java` | Infrastructure | Adaptador stub (canal=log) |
+| `infrastructure/notification/SmtpNotificacaoService.java` | Infrastructure | Adaptador real (canal=smtp) |
 | `application/usecase/ordemservico/GerarOrcamentoUseCase.java` | Application | Consumidor da porta |
 
-Para integrar um canal real, basta criar uma nova classe que implemente `NotificacaoService` e anotá-la com `@Component` — nenhuma regra de negócio é alterada.
+Para integrar outro canal (SendGrid, SES, Twilio), basta criar uma nova classe que implemente `NotificacaoService`, anotá-la com `@ConditionalOnProperty` pro valor desejado de `app.notificacao.canal` — nenhuma regra de negócio é alterada.
 
 ---
 
 ## Pré-requisitos
 
 - Docker e Docker Compose instalados
-- Porta `8080` e `5432` disponíveis
+- Portas `8080`, `5432`, `1025` e `8025` disponíveis (API, Postgres, SMTP e UI do MailHog)
 
 ---
 
@@ -165,12 +237,19 @@ Para integrar um canal real, basta criar uma nova classe que implemente `Notific
 git clone <URL_DO_REPOSITORIO>
 cd oficina-api
 
-# Suba o banco e a API com Docker Compose
-docker-compose up --build
+# Copie o .env de exemplo e ajuste se quiser (os defaults já funcionam)
+cp .env.example .env
+
+# Suba banco, MailHog e a API com Docker Compose
+docker compose up --build
 ```
 
-A API estará disponível em: `http://localhost:8080`  
+A API estará disponível em: `http://localhost:8080`
 Swagger UI: `http://localhost:8080/swagger-ui.html`
+MailHog (e-mails capturados, incluindo o token de aprovação externa): `http://localhost:8025`
+
+Para rodar em paridade com Kubernetes (não apenas Docker Compose), ver `infra/environments/local`
+(cluster `kind` provisionado via Terraform) e `k8s/README.md`.
 
 ---
 
@@ -232,16 +311,22 @@ POST /api/ordens                        → Abre OS (status: Recebida)
 POST /api/ordens/{id}/iniciar-diagnostico → Status: Em Diagnóstico
 POST /api/ordens/{id}/servicos          → Adiciona serviço (snapshot de preço)
 POST /api/ordens/{id}/pecas             → Adiciona peça (decrementa estoque)
-POST /api/ordens/{id}/gerar-orcamento   → Status: Aguardando Aprovação
-POST /api/ordens/{id}/aprovar           → Status: Em Execução
-POST /api/ordens/{id}/concluir          → Status: Finalizada
+POST /api/ordens/{id}/gerar-orcamento   → Status: Aguardando Aprovação (gera token + envia e-mail)
+POST /api/ordens/{id}/aprovar           → Status: Em Execução (interno, via JWT)
+POST /api/ordens/{id}/concluir          → Status: Finalizada (exclusão lógica da listagem)
 POST /api/ordens/{id}/entregar          → Status: Entregue
 
 # Fluxo alternativo (reprovação):
 POST /api/ordens/{id}/reprovar          → Status: Cancelada + estorno de estoque
 
+# Aprovação externa (sem JWT — token único por OS, enviado por e-mail):
+POST /api/ordens/{id}/aprovar-externo   → {"token": "...", "decisao": "APROVAR"|"REPROVAR"}
+
 # Consulta pública (sem JWT):
 GET  /api/ordens/{id}/status
+
+# Listagem (ordenada por prioridade de status, exclui Finalizada/Entregue):
+GET  /api/ordens
 ```
 
 ---
@@ -257,6 +342,7 @@ GET  /api/ordens/{id}/status
 | Peças/Estoque | `GET/POST/PUT/DELETE /api/pecas` | JWT |
 | Ordens de Serviço | `GET/POST /api/ordens` + ações de ciclo de vida | JWT |
 | Status OS (público) | `GET /api/ordens/{id}/status` | **Pública** |
+| Aprovação externa (público) | `POST /api/ordens/{id}/aprovar-externo` | **Pública** (token por OS) |
 | Relatório | `GET /api/ordens/relatorio/tempo-medio` | JWT |
 
 Documentação completa: `http://localhost:8080/swagger-ui.html`
@@ -283,14 +369,14 @@ Os testes cobrem:
 
 ## Documentação DDD
 
-Localizada na pasta raiz do projeto (`../`):
+Localizada em [`docs/ddd/`](docs/ddd/):
 
 | Artefato | Arquivo |
 |---|---|
-| Event Storming | `event_storming.drawio` |
-| Context Map | `context_map.drawio` |
-| Linguagem Ubíqua | `linguagem_ubiqua.md` |
-| Fluxos DDD (PlantUML) | `FluxosDDD_corrigidos.txt` |
+| Event Storming | `docs/ddd/event_storming.drawio` (`.pdf`) |
+| Context Map | `docs/ddd/context_map.drawio` (`.pdf`) |
+| Domain Storytelling | `docs/ddd/domain_storytelling.drawio` (`.svg`) |
+| Linguagem Ubíqua | `docs/ddd/linguagem_ubiqua.md` |
 
 ---
 
@@ -307,12 +393,24 @@ Gerado via OWASP Dependency Check:
 
 ## Débitos técnicos conhecidos
 
-| # | Débito | Impacto | Solução sugerida |
-|---|--------|---------|-----------------|
-| 1 | **Mappers manuais** — conversão entre entidades JPA e objetos de domínio feita manualmente nos adapters de persistência | Boilerplate repetitivo; risco de campo esquecido ao adicionar atributos | Migrar para [MapStruct](https://mapstruct.org/) (geração em compile-time, zero overhead em runtime) ou ModelMapper |
-| 2 | **Serviço de notificação stub** — `NotificacaoService` é um port sem implementação concreta; e-mail/SMS não são enviados | Requisito de notificação ao cliente não atendido em produção | Implementar adapter com JavaMail, SendGrid ou AWS SES |
-| 3 | **Construtor de reconstituição com muitos parâmetros** — método `fromPersistencia` em `OrdemServico` possui 9 parâmetros (Sonar S107) | Code smell de manutenibilidade | Encapsular em record `DadosOrdemServico` e receber como parâmetro único |
-| 4 | **CVEs sem patch disponível** — CVE-2026-22732 (Spring Security 6.4.5) e CVE-2025-55754, CVE-2025-66614, CVE-2026-29145 (Tomcat 10.1.40) sem versão corrigida em 01/05/2026; testado também em Spring Boot 3.5.0 (Tomcat 10.1.41 + Spring Security 6.5.0) com mesmo resultado | Vulnerabilidades críticas (CVSS ≥ 9.0) suprimidas com justificativa em `owasp-suppressions.xml`; não endereçáveis por upgrade enquanto fornecedores não publicarem patch | Monitorar releases do Apache Tomcat e Spring Security; remover supressões e retestar quando patches forem publicados |
+| # | Débito | Status |
+|---|--------|--------|
+| 1 | ~~Mappers manuais nos adapters de persistência~~ | **Resolvido (Fase 2)** — a dependência MapStruct estava declarada no `pom.xml` mas nunca chegou a ser usada (zero `@Mapper` no código); removida em vez de adotada, para não carregar um processador de anotação sem uso real nesse tamanho de base de código |
+| 2 | ~~Serviço de notificação stub~~ | **Resolvido (Fase 2)** — `SmtpNotificacaoService` envia e-mail real via SMTP (MailHog em dev/demo), ativado por `NOTIFICACAO_CANAL=smtp`. `LogNotificacaoService` continua disponível como fallback (`NOTIFICACAO_CANAL=log`, default) |
+| 3 | ~~`fromPersistencia` com 9 parâmetros (Sonar S107)~~ | **Resolvido (Fase 2)** — extraído para o record `DadosOrdemServico` (`domain/entity/DadosOrdemServico.java`); `OrdemServico.reconstituir(DadosOrdemServico)` agora recebe 1 parâmetro |
+| 4 | **CVEs sem patch disponível** — ver detalhamento abaixo | Reverificado na Fase 2 — ver resultado abaixo |
+
+### Reverificação de CVEs (débito #4)
+
+Procedimento: atualizar `spring-boot-starter-parent` para o último patch disponível e rodar `mvn org.owasp:dependency-check-maven:check`, conferindo `target/dependency-check-report.html`.
+
+- `spring-boot-starter-parent` atualizado de `3.4.5` → `3.4.7` nesta fase (traz patches de Tomcat/Spring Security mais recentes).
+- **Reverificação pendente de confirmação**: o `dependency-check` baixa a base do NVD na primeira
+  execução numa máquina nova, o que pode levar bastante tempo sem uma [NVD API key](https://nvd.nist.gov/developers/request-an-api-key)
+  configurada (`nvdApiKey` no plugin) — não terminou a tempo de fechar esta entrega. Rode
+  `mvn org.owasp:dependency-check-maven:check` e confira `target/dependency-check-report.html`
+  pelas 4 CVEs listadas em `owasp-suppressions.xml`; se alguma já tiver patch disponível, remova a
+  supressão correspondente e atualize esta tabela.
 
 ---
 
@@ -330,7 +428,19 @@ oficina-api/
 │   │       ├── application.yml
 │   │       └── db/migration/    # Flyway SQL
 │   └── test/
+├── docs/
+│   ├── ddd/                     # Event Storming, Context Map, Domain Storytelling
+│   └── base-conhecimento/       # Requisitos e notas técnicas da Fase 2
+├── k8s/                         # Manifests Kubernetes (app, database, mailhog)
+├── infra/
+│   ├── bootstrap/                # Backend remoto (S3+DynamoDB) — roda uma vez
+│   └── environments/
+│       ├── local/                 # Terraform — cluster kind
+│       └── aws/                    # Terraform — EKS + RDS
+├── .github/workflows/            # ci.yml, terraform.yml, cd.yml, destroy-aws.yml
+├── observability/                # Config do stretch de OpenTelemetry (Tempo + Grafana)
 ├── Dockerfile
 ├── docker-compose.yml
+├── .env.example
 └── pom.xml
 ```
