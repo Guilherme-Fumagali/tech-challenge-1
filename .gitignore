@@ -16,6 +16,7 @@ target/
 !*.tfvars.example
 tfplan
 **/kubeconfig
+infra/environments/aws/rendered/
 
 # Kubernetes — segredos locais reais (nunca os placeholders versionados)
 k8s/**/secret.local.yaml

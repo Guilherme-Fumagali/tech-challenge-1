@@ -104,3 +104,74 @@ jobs:
       - name: Destroy (garantido mesmo se o smoke test falhar)
         if: always()
         run: terraform destroy -auto-approve
+
+  # ── Ambiente AWS (EKS + RDS) — infraestrutura real e cobrada ──────────────
+  # plan roda sempre (barato, só leitura); apply exige aprovação humana via
+  # GitHub Environment "aws-production" (Settings → Environments → Required
+  # reviewers) — o revisor vê exatamente o plano calculado antes de aprovar.
+
+  plan-aws:
+    name: Plan (aws)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/environments/aws
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          # Fallback se OIDC não estiver configurado na conta: comente a linha acima e use
+          # aws-access-key-id / aws-secret-access-key a partir de secrets estáticos.
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - run: terraform init
+      - run: terraform validate
+      - name: Plan
+        env:
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_jwt_secret: ${{ secrets.TF_VAR_JWT_SECRET }}
+          TF_VAR_admin_password: ${{ secrets.TF_VAR_ADMIN_PASSWORD }}
+        run: terraform plan -out=tfplan
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-aws
+          path: infra/environments/aws/tfplan
+          retention-days: 1
+
+  apply-aws:
+    name: Apply (aws) — requer aprovação
+    needs: plan-aws
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: aws-production
+    defaults:
+      run:
+        working-directory: infra/environments/aws
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - run: terraform init
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-aws
+          path: infra/environments/aws
+
+      # Aplica exatamente o plano já revisado pelo aprovador — sem re-plan às cegas.
+      - run: terraform apply -auto-approve tfplan

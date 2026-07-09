@@ -1,0 +1,33 @@
+name: Destroy AWS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  destroy-aws:
+    name: Destroy (aws) — requer aprovação
+    runs-on: ubuntu-latest
+    environment: aws-production
+    defaults:
+      run:
+        working-directory: infra/environments/aws
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - run: terraform init
+
+      - name: Destroy
+        env:
+          TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
+          TF_VAR_jwt_secret: ${{ secrets.TF_VAR_JWT_SECRET }}
+          TF_VAR_admin_password: ${{ secrets.TF_VAR_ADMIN_PASSWORD }}
+        run: terraform destroy -auto-approve
