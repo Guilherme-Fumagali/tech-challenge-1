@@ -1,0 +1,106 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - 'k8s/**'
+  pull_request:
+    paths:
+      - 'infra/**'
+      - 'k8s/**'
+
+jobs:
+  # ── Ambiente local (kind) — gratuito e descartável, roda 100% automático ──
+
+  plan-local:
+    name: Plan (local/kind)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/environments/local
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - run: terraform init
+      - run: terraform validate
+      - run: terraform plan -out=tfplan
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-local
+          path: infra/environments/local/tfplan
+          retention-days: 1
+
+  apply-local-smoketest:
+    name: Apply + Smoke Test (local/kind)
+    needs: plan-local
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/environments/local
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Install kind CLI
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Build app image (fresh — não depende de push prévio no GHCR)
+        working-directory: .
+        run: docker build -t oficina-api:ci .
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-local
+          path: infra/environments/local
+
+      - run: terraform init
+      - run: terraform apply -auto-approve tfplan
+
+      - name: Substituir secrets placeholder por valores válidos só para o smoke test
+        # k8s/*/secret.yaml versionados só têm REPLACE_ME (propositalmente — nunca segredo real).
+        # JWT_SECRET precisa de >=32 bytes (HS256) ou o boot falha com WeakKeyException.
+        run: |
+          kubectl --kubeconfig=./kubeconfig create secret generic oficina-db-secret -n oficina \
+            --from-literal=POSTGRES_USER=oficina --from-literal=POSTGRES_PASSWORD=ci-smoketest-pass \
+            --dry-run=client -o yaml | kubectl --kubeconfig=./kubeconfig apply -f -
+          kubectl --kubeconfig=./kubeconfig create secret generic oficina-api-secret -n oficina \
+            --from-literal=DB_USER=oficina --from-literal=DB_PASS=ci-smoketest-pass \
+            --from-literal=JWT_SECRET=chave-temporaria-apenas-para-smoketest-ci-32c \
+            --from-literal=ADMIN_PASSWORD=admin123 \
+            --dry-run=client -o yaml | kubectl --kubeconfig=./kubeconfig apply -f -
+
+      - name: Carregar imagem no kind e apontar o Deployment pra ela
+        run: |
+          kind load docker-image oficina-api:ci --name oficina-local
+          kubectl --kubeconfig=./kubeconfig set image deployment/oficina-api oficina-api=oficina-api:ci -n oficina
+          kubectl --kubeconfig=./kubeconfig patch deployment oficina-api -n oficina \
+            -p '{"spec":{"template":{"spec":{"containers":[{"name":"oficina-api","imagePullPolicy":"Never"}]}}}}'
+          kubectl --kubeconfig=./kubeconfig rollout restart statefulset/oficina-db -n oficina
+
+      - name: Aguardar rollout
+        run: |
+          kubectl --kubeconfig=./kubeconfig rollout status statefulset/oficina-db -n oficina --timeout=120s
+          kubectl --kubeconfig=./kubeconfig rollout status deployment/oficina-api -n oficina --timeout=180s
+
+      - name: Smoke test — actuator health via port-forward
+        run: |
+          kubectl --kubeconfig=./kubeconfig port-forward svc/oficina-api 8080:80 -n oficina &
+          sleep 5
+          curl -sf http://localhost:8080/actuator/health
+
+      - name: Destroy (garantido mesmo se o smoke test falhar)
+        if: always()
+        run: terraform destroy -auto-approve
