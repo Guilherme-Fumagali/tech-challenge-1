@@ -1,0 +1,2 @@
+cluster_name       = "oficina-local"
+k8s_manifests_path = "../../../k8s"
