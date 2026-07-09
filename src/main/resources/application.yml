@@ -67,6 +67,14 @@ management:
       enabled: true
     readinessState:
       enabled: true
+  # Observabilidade (OpenTelemetry) — diferencial opcional. Sem OTEL_EXPORTER_OTLP_ENDPOINT
+  # configurado, o exporter tenta localhost:4317 e falha silenciosamente (não derruba a app).
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
 
 logging:
   level:

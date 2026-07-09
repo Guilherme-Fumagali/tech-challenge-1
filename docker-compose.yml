@@ -46,6 +46,7 @@ services:
       SMTP_HOST: mailhog
       SMTP_PORT: 1025
       MAIL_FROM: ${MAIL_FROM:-oficina@example.com}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
     ports:
       - "8080:8080"
     healthcheck:
@@ -54,6 +55,38 @@ services:
       timeout: 3s
       start_period: 40s
       retries: 3
+    networks:
+      - oficina-net
+
+  # ── Observabilidade (stretch, opcional) ────────────────────────────────
+  # `docker compose --profile observability up` para incluir. Esboço mínimo:
+  # Tempo recebe traces via OTLP diretamente (dispensa um Collector separado
+  # pra esse escopo) e o Grafana já vem com Tempo pré-configurado como datasource.
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: oficina-tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+    profiles: ["observability"]
+    networks:
+      - oficina-net
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: oficina-grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./observability/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - tempo
+    profiles: ["observability"]
     networks:
       - oficina-net
 
