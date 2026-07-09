@@ -53,6 +53,21 @@ app:
   mail:
     from: ${MAIL_FROM:oficina@example.com}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+
 logging:
   level:
     com.oficina: INFO
