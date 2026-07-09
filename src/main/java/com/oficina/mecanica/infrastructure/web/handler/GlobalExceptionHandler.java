@@ -3,6 +3,7 @@ package com.oficina.mecanica.infrastructure.web.handler;
 import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.EstoqueInsuficienteException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
+import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -29,6 +30,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EstoqueInsuficienteException.class)
     public ResponseEntity<ProblemDetail> handleEstoque(EstoqueInsuficienteException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(TokenAprovacaoInvalidoException.class)
+    public ResponseEntity<ProblemDetail> handleTokenAprovacao(TokenAprovacaoInvalidoException ex) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(DomainException.class)

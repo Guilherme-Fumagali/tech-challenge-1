@@ -1,6 +1,7 @@
 package com.oficina.mecanica.application;
 
 import com.oficina.mecanica.application.usecase.ordemservico.AdicionarPecaAOSUseCase;
+import com.oficina.mecanica.domain.entity.DadosOrdemServico;
 import com.oficina.mecanica.domain.entity.OrdemServico;
 import com.oficina.mecanica.domain.entity.Peca;
 import com.oficina.mecanica.domain.exception.EstoqueInsuficienteException;
@@ -81,9 +82,9 @@ class AdicionarPecaAOSUseCaseTest {
     }
 
     private OrdemServico osEmDiagnostico() {
-        return OrdemServico.reconstituir()
+        return OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.EM_DIAGNOSTICO).itensServico(new ArrayList<>()).itensPeca(new ArrayList<>())
-            .build();
+            .build());
     }
 }

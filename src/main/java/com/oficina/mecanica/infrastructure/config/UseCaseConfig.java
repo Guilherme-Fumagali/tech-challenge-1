@@ -8,8 +8,11 @@ import com.oficina.mecanica.application.usecase.relatorio.RelatorioTempoMedioUse
 import com.oficina.mecanica.application.usecase.servico.ServicoUseCase;
 import com.oficina.mecanica.application.usecase.veiculo.VeiculoUseCase;
 import com.oficina.mecanica.domain.repository.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.Duration;
 
 @Configuration
 public class UseCaseConfig {
@@ -54,8 +57,9 @@ public class UseCaseConfig {
 
     @Bean
     public GerarOrcamentoUseCase gerarOrcamentoUseCase(OrdemServicoRepository r,
-                                                        NotificacaoService n) {
-        return new GerarOrcamentoUseCase(r, n);
+                                                        NotificacaoService n,
+                                                        @Value("${app.aprovacao-externa.validade-horas}") long validadeHoras) {
+        return new GerarOrcamentoUseCase(r, n, Duration.ofHours(validadeHoras));
     }
 
     @Bean
@@ -67,6 +71,17 @@ public class UseCaseConfig {
     public ReprovarOrcamentoUseCase reprovarOrcamentoUseCase(OrdemServicoRepository os,
                                                                PecaRepository p) {
         return new ReprovarOrcamentoUseCase(os, p);
+    }
+
+    @Bean
+    public AprovarOrcamentoExternoUseCase aprovarOrcamentoExternoUseCase(OrdemServicoRepository r) {
+        return new AprovarOrcamentoExternoUseCase(r);
+    }
+
+    @Bean
+    public ReprovarOrcamentoExternoUseCase reprovarOrcamentoExternoUseCase(OrdemServicoRepository os,
+                                                                            PecaRepository p) {
+        return new ReprovarOrcamentoExternoUseCase(os, p);
     }
 
     @Bean

@@ -31,6 +31,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Consulta pública de status de OS (sem autenticação)
                 .requestMatchers(HttpMethod.GET, "/api/ordens/*/status").permitAll()
+                // Aprovação/reprovação externa via token por e-mail (sem autenticação)
+                .requestMatchers(HttpMethod.POST, "/api/ordens/*/aprovar-externo").permitAll()
                 // Autenticação pública
                 .requestMatchers("/api/auth/**").permitAll()
                 // Swagger/OpenAPI

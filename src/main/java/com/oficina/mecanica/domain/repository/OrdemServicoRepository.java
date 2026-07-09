@@ -12,6 +12,7 @@ public interface OrdemServicoRepository {
     OrdemServico salvar(OrdemServico os);
     Optional<OrdemServico> buscarPorId(UUID id);
     List<OrdemServico> listarTodas();
+    List<OrdemServico> listarAtivasOrdenadas();
     List<OrdemServico> listarPorStatus(StatusOS status);
     List<OrdemServico> listarPorVeiculo(UUID veiculoId);
     List<OrdemServico> listarFinalizadasNoPeriodo(LocalDateTime inicio, LocalDateTime fim);

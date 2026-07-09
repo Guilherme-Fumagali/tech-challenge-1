@@ -40,6 +40,18 @@ public class OrdemServicoJpaEntity {
     @Column(name = "data_conclusao")
     private LocalDateTime dataConclusao;
 
+    @Column(name = "excluida_logicamente", nullable = false)
+    private boolean excluidaLogicamente;
+
+    @Column(name = "data_exclusao_logica")
+    private LocalDateTime dataExclusaoLogica;
+
+    @Column(name = "token_aprovacao_externa", length = 64)
+    private String tokenAprovacaoExterna;
+
+    @Column(name = "token_expiracao")
+    private LocalDateTime tokenExpiracao;
+
     @OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemServicoJpaEntity> itensServico = new ArrayList<>();
 

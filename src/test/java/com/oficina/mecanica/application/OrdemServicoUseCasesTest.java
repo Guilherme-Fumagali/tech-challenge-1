@@ -5,6 +5,7 @@ import com.oficina.mecanica.application.usecase.ordemservico.*;
 import com.oficina.mecanica.domain.entity.*;
 import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
+import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.domain.repository.*;
 import com.oficina.mecanica.domain.valueobject.CpfCnpj;
 import com.oficina.mecanica.domain.valueobject.Placa;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -34,23 +36,23 @@ class OrdemServicoUseCasesTest {
     @Mock NotificacaoService notificacaoService;
 
     private OrdemServico osComStatus(StatusOS status) {
-        return OrdemServico.reconstituir()
+        return OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
-            .status(status).dataAbertura(LocalDateTime.now()).build();
+            .status(status).dataAbertura(LocalDateTime.now()).build());
     }
 
     private OrdemServico osEmExecucao() {
-        return OrdemServico.reconstituir()
+        return OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.EM_EXECUCAO).dataAbertura(LocalDateTime.now()).dataInicio(LocalDateTime.now())
-            .build();
+            .build());
     }
 
     private OrdemServico osFinalizada() {
-        return OrdemServico.reconstituir()
+        return OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.FINALIZADA).dataAbertura(LocalDateTime.now())
-            .dataInicio(LocalDateTime.now()).dataConclusao(LocalDateTime.now()).build();
+            .dataInicio(LocalDateTime.now()).dataConclusao(LocalDateTime.now()).build());
     }
 
     // ── IniciarDiagnosticoUseCase ─────────────────────────────────────────
@@ -98,6 +100,41 @@ class OrdemServicoUseCasesTest {
         var uc = new AprovarOrcamentoUseCase(osRepository);
         assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
+    // ── AprovarOrcamentoExternoUseCase ────────────────────────────────────
+
+    @Test
+    void aprovarExterno_deveMudarStatusParaEmExecucaoComTokenValido() {
+        var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.AGUARDANDO_APROVACAO).dataAbertura(LocalDateTime.now())
+            .tokenAprovacaoExterna("token-123").tokenExpiracao(LocalDateTime.now().plusHours(1))
+            .build());
+
+        when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
+        when(osRepository.salvar(os)).thenReturn(os);
+
+        new AprovarOrcamentoExternoUseCase(osRepository).executar(os.getId(), "token-123");
+
+        assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
+        assertThat(os.getTokenAprovacaoExterna()).isNull();
+    }
+
+    @Test
+    void aprovarExterno_deveLancarExcecaoComTokenInvalido() {
+        var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.AGUARDANDO_APROVACAO).dataAbertura(LocalDateTime.now())
+            .tokenAprovacaoExterna("token-123").tokenExpiracao(LocalDateTime.now().plusHours(1))
+            .build());
+
+        when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
+
+        var uc = new AprovarOrcamentoExternoUseCase(osRepository);
+        var osId = os.getId();
+        assertThatThrownBy(() -> uc.executar(osId, "token-errado"))
+            .isInstanceOf(TokenAprovacaoInvalidoException.class);
     }
 
     // ── ConcluirServicosUseCase ───────────────────────────────────────────
@@ -151,7 +188,7 @@ class OrdemServicoUseCasesTest {
 
     @Test
     void consultarStatus_listarTodas_deveRetornarLista() {
-        when(osRepository.listarTodas()).thenReturn(List.of(osComStatus(StatusOS.RECEBIDA)));
+        when(osRepository.listarAtivasOrdenadas()).thenReturn(List.of(osComStatus(StatusOS.RECEBIDA)));
 
         assertThat(new ConsultarStatusOSUseCase(osRepository).listarTodas()).hasSize(1);
     }
@@ -211,18 +248,19 @@ class OrdemServicoUseCasesTest {
     void gerarOrcamento_deveGerarENotificar() {
         var itemServico = new ItemServico(UUID.randomUUID(), UUID.randomUUID(), "Troca óleo",
             new BigDecimal("120.00"), 1);
-        var os = OrdemServico.reconstituir()
+        var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.EM_DIAGNOSTICO).itensServico(List.of(itemServico))
-            .dataAbertura(LocalDateTime.now()).build();
+            .dataAbertura(LocalDateTime.now()).build());
 
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(osRepository.salvar(os)).thenReturn(os);
 
-        new GerarOrcamentoUseCase(osRepository, notificacaoService).executar(os.getId());
+        new GerarOrcamentoUseCase(osRepository, notificacaoService, Duration.ofHours(168)).executar(os.getId());
 
         assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
-        verify(notificacaoService).notificarOrcamentoPendente(any(), any(), any());
+        assertThat(os.getTokenAprovacaoExterna()).isNotBlank();
+        verify(notificacaoService).notificarOrcamentoPendente(any(), any(), any(), any());
     }
 
     @Test
@@ -230,7 +268,7 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        var uc = new GerarOrcamentoUseCase(osRepository, notificacaoService);
+        var uc = new GerarOrcamentoUseCase(osRepository, notificacaoService, Duration.ofHours(168));
         assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }

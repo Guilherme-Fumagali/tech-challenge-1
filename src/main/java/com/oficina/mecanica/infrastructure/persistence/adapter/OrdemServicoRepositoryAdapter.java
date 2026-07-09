@@ -1,5 +1,6 @@
 package com.oficina.mecanica.infrastructure.persistence.adapter;
 
+import com.oficina.mecanica.domain.entity.DadosOrdemServico;
 import com.oficina.mecanica.domain.entity.ItemPeca;
 import com.oficina.mecanica.domain.entity.ItemServico;
 import com.oficina.mecanica.domain.entity.OrdemServico;
@@ -43,6 +44,11 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
     }
 
     @Override
+    public List<OrdemServico> listarAtivasOrdenadas() {
+        return jpa.findAtivasOrdenadasPorPrioridade().stream().map(this::toDomain).toList();
+    }
+
+    @Override
     public List<OrdemServico> listarPorStatus(StatusOS status) {
         return jpa.findByStatus(status).stream().map(this::toDomain).toList();
     }
@@ -66,6 +72,10 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
         entity.setDataAbertura(os.getDataAbertura());
         entity.setDataInicio(os.getDataInicio());
         entity.setDataConclusao(os.getDataConclusao());
+        entity.setExcluidaLogicamente(os.isExcluidaLogicamente());
+        entity.setDataExclusaoLogica(os.getDataExclusaoLogica());
+        entity.setTokenAprovacaoExterna(os.getTokenAprovacaoExterna());
+        entity.setTokenExpiracao(os.getTokenExpiracao());
 
         var itensServico = os.getItensServico().stream()
             .map(i -> toItemServicoEntity(i, entity))
@@ -101,7 +111,7 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
             .map(i -> new ItemPeca(i.getId(), i.getPecaId(), i.getNomePeca(),
                 i.getPrecoSnapshot(), i.getQuantidade()))
             .toList();
-        return OrdemServico.reconstituir()
+        var dados = DadosOrdemServico.builder()
             .id(e.getId())
             .clienteId(e.getClienteId())
             .veiculoId(e.getVeiculoId())
@@ -111,6 +121,11 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
             .dataAbertura(e.getDataAbertura())
             .dataInicio(e.getDataInicio())
             .dataConclusao(e.getDataConclusao())
+            .excluidaLogicamente(e.isExcluidaLogicamente())
+            .dataExclusaoLogica(e.getDataExclusaoLogica())
+            .tokenAprovacaoExterna(e.getTokenAprovacaoExterna())
+            .tokenExpiracao(e.getTokenExpiracao())
             .build();
+        return OrdemServico.reconstituir(dados);
     }
 }

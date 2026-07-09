@@ -4,23 +4,20 @@ import com.oficina.mecanica.domain.entity.OrdemServico;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
 import com.oficina.mecanica.domain.repository.OrdemServicoRepository;
 
-import java.util.List;
 import java.util.UUID;
 
-public class ConsultarStatusOSUseCase {
+public class AprovarOrcamentoExternoUseCase {
 
     private final OrdemServicoRepository repository;
 
-    public ConsultarStatusOSUseCase(OrdemServicoRepository repository) {
+    public AprovarOrcamentoExternoUseCase(OrdemServicoRepository repository) {
         this.repository = repository;
     }
 
-    public OrdemServico executar(UUID osId) {
-        return repository.buscarPorId(osId)
+    public OrdemServico executar(UUID osId, String token) {
+        var os = repository.buscarPorId(osId)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Ordem de Serviço", osId));
-    }
-
-    public List<OrdemServico> listarTodas() {
-        return repository.listarAtivasOrdenadas();
+        os.aprovarViaTokenExterno(token);
+        return repository.salvar(os);
     }
 }

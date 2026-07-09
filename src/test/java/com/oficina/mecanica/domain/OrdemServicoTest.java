@@ -4,6 +4,7 @@ import com.oficina.mecanica.domain.entity.ItemPeca;
 import com.oficina.mecanica.domain.entity.ItemServico;
 import com.oficina.mecanica.domain.entity.OrdemServico;
 import com.oficina.mecanica.domain.exception.DomainException;
+import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -57,9 +59,12 @@ class OrdemServicoTest {
             os.concluir();
             assertThat(os.getStatus()).isEqualTo(StatusOS.FINALIZADA);
             assertThat(os.getDataConclusao()).isNotNull();
+            assertThat(os.isExcluidaLogicamente()).isTrue();
+            assertThat(os.getDataExclusaoLogica()).isNotNull();
 
             os.entregar();
             assertThat(os.getStatus()).isEqualTo(StatusOS.ENTREGUE);
+            assertThat(os.isExcluidaLogicamente()).isTrue();
         }
 
         @Test
@@ -136,6 +141,76 @@ class OrdemServicoTest {
                 "Troca de óleo", new BigDecimal("80.00"), 1);
             assertThatThrownBy(() -> os.adicionarServico(item))
                 .isInstanceOf(DomainException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Aprovação externa via token")
+    class AprovacaoExterna {
+
+        @Test
+        void gerarOrcamento_deveGerarTokenComExpiracao() {
+            var os = criarOsComItem();
+            os.gerarOrcamento();
+
+            assertThat(os.getTokenAprovacaoExterna()).isNotBlank();
+            assertThat(os.getTokenExpiracao()).isAfter(java.time.LocalDateTime.now());
+        }
+
+        @Test
+        void aprovarViaTokenExterno_deveAprovarEInvalidarToken() {
+            var os = criarOsComItem();
+            os.gerarOrcamento();
+            var token = os.getTokenAprovacaoExterna();
+
+            os.aprovarViaTokenExterno(token);
+
+            assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
+            assertThat(os.getTokenAprovacaoExterna()).isNull();
+            assertThat(os.getTokenExpiracao()).isNull();
+        }
+
+        @Test
+        void reprovarViaTokenExterno_deveCancelarEInvalidarToken() {
+            var os = criarOsComItem();
+            os.gerarOrcamento();
+            var token = os.getTokenAprovacaoExterna();
+
+            os.reprovarViaTokenExterno(token);
+
+            assertThat(os.getStatus()).isEqualTo(StatusOS.CANCELADA);
+            assertThat(os.getTokenAprovacaoExterna()).isNull();
+        }
+
+        @Test
+        void aprovarViaTokenExterno_deveRejeitarTokenInvalido() {
+            var os = criarOsComItem();
+            os.gerarOrcamento();
+
+            assertThatThrownBy(() -> os.aprovarViaTokenExterno("token-errado"))
+                .isInstanceOf(TokenAprovacaoInvalidoException.class);
+            assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
+        }
+
+        @Test
+        void aprovarViaTokenExterno_deveRejeitarTokenExpirado() {
+            var os = criarOsComItem();
+            os.gerarOrcamento(Duration.ofSeconds(-1)); // já expirado
+            var token = os.getTokenAprovacaoExterna();
+
+            assertThatThrownBy(() -> os.aprovarViaTokenExterno(token))
+                .isInstanceOf(TokenAprovacaoInvalidoException.class);
+        }
+
+        @Test
+        void aprovarViaTokenExterno_deveRejeitarTokenJaUsado() {
+            var os = criarOsComItem();
+            os.gerarOrcamento();
+            var token = os.getTokenAprovacaoExterna();
+            os.aprovarViaTokenExterno(token); // consome o token
+
+            assertThatThrownBy(() -> os.reprovarViaTokenExterno(token))
+                .isInstanceOf(TokenAprovacaoInvalidoException.class);
         }
     }
 

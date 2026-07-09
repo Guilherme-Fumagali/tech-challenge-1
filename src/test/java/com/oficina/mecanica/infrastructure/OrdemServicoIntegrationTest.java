@@ -1,6 +1,7 @@
 package com.oficina.mecanica.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.oficina.mecanica.domain.repository.OrdemServicoRepository;
 import com.oficina.mecanica.infrastructure.web.dto.request.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -42,6 +44,7 @@ class OrdemServicoIntegrationTest {
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
+    @Autowired OrdemServicoRepository osRepository;
 
     @Test
     void deveExecutarFluxoCompletoDeUmaOrdemDeServico() throws Exception {
@@ -199,7 +202,113 @@ class OrdemServicoIntegrationTest {
             .andExpect(jsonPath("$.quantidadeEstoque").value(10));
     }
 
+    @Test
+    void listagem_deveOrdenarPorPrioridadeEExcluirFinalizadas() throws Exception {
+        var token = obterToken();
+        var clienteId = criarCliente(token, "22.333.444/0001-92");
+        var veiculoId = criarVeiculo(token, clienteId, "LST0001");
+        var pecaId = criarPeca(token, 10);
+
+        var osRecebida = criarOS(token, clienteId, veiculoId);
+
+        var osEmDiagnostico = criarOS(token, clienteId, veiculoId);
+        avancarParaDiagnostico(token, osEmDiagnostico, pecaId);
+
+        var osAguardandoAprovacao = criarOS(token, clienteId, veiculoId);
+        avancarParaDiagnostico(token, osAguardandoAprovacao, pecaId);
+        mvc.perform(post("/api/ordens/{id}/gerar-orcamento", osAguardandoAprovacao)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+
+        var osEmExecucao = criarOS(token, clienteId, veiculoId);
+        avancarParaDiagnostico(token, osEmExecucao, pecaId);
+        mvc.perform(post("/api/ordens/{id}/gerar-orcamento", osEmExecucao)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        mvc.perform(post("/api/ordens/{id}/aprovar", osEmExecucao)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+
+        var osFinalizada = criarOS(token, clienteId, veiculoId);
+        avancarParaDiagnostico(token, osFinalizada, pecaId);
+        mvc.perform(post("/api/ordens/{id}/gerar-orcamento", osFinalizada)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        mvc.perform(post("/api/ordens/{id}/aprovar", osFinalizada)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        mvc.perform(post("/api/ordens/{id}/concluir", osFinalizada)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+
+        var listaResp = mvc.perform(get("/api/ordens").header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+
+        // A tabela não é limpa entre testes desta classe (mesmo container Postgres) — filtra
+        // apenas os IDs criados aqui e valida a ordem relativa entre eles, ignorando o restante.
+        var idsRelevantes = java.util.List.of(osEmExecucao, osAguardandoAprovacao, osEmDiagnostico, osRecebida);
+        var ordemObtida = new java.util.ArrayList<String>();
+        for (var node : mapper.readTree(listaResp)) {
+            var id = node.get("id").asText();
+            if (idsRelevantes.contains(id)) {
+                ordemObtida.add(id);
+            }
+            assertThat(id).isNotEqualTo(osFinalizada);
+        }
+
+        assertThat(ordemObtida).containsExactly(osEmExecucao, osAguardandoAprovacao, osEmDiagnostico, osRecebida);
+    }
+
+    @Test
+    void aprovacaoExterna_deveAprovarComTokenValidoSemAutenticacao() throws Exception {
+        var token = obterToken();
+        var clienteId = criarCliente(token, "33.444.555/0001-03");
+        var veiculoId = criarVeiculo(token, clienteId, "EXT0001");
+        var pecaId = criarPeca(token, 10);
+        var osId = criarOS(token, clienteId, veiculoId);
+
+        avancarParaDiagnostico(token, osId, pecaId);
+        mvc.perform(post("/api/ordens/{id}/gerar-orcamento", osId)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+
+        // Token lido diretamente do repositório — nunca exposto pela API, simula o link recebido por e-mail
+        var tokenAprovacao = osRepository.buscarPorId(java.util.UUID.fromString(osId))
+            .orElseThrow().getTokenAprovacaoExterna();
+
+        mvc.perform(post("/api/ordens/{id}/aprovar-externo", osId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AprovarOrcamentoExternoRequest(
+                    tokenAprovacao, DecisaoAprovacaoExterna.APROVAR))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("EM_EXECUCAO"));
+    }
+
+    @Test
+    void aprovacaoExterna_deveRejeitarTokenInvalido() throws Exception {
+        var token = obterToken();
+        var clienteId = criarCliente(token, "44.555.666/0001-14");
+        var veiculoId = criarVeiculo(token, clienteId, "EXT0002");
+        var pecaId = criarPeca(token, 10);
+        var osId = criarOS(token, clienteId, veiculoId);
+
+        avancarParaDiagnostico(token, osId, pecaId);
+        mvc.perform(post("/api/ordens/{id}/gerar-orcamento", osId)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+
+        mvc.perform(post("/api/ordens/{id}/aprovar-externo", osId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AprovarOrcamentoExternoRequest(
+                    "token-invalido", DecisaoAprovacaoExterna.APROVAR))))
+            .andExpect(status().isUnauthorized());
+    }
+
     // ── Helpers ────────────────────────────────────────────
+
+    private void avancarParaDiagnostico(String token, String osId, String pecaId) throws Exception {
+        mvc.perform(post("/api/ordens/{id}/iniciar-diagnostico", osId)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+        mvc.perform(post("/api/ordens/{id}/pecas", osId)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(new AdicionarItemRequest(
+                    java.util.UUID.fromString(pecaId), 1))))
+            .andExpect(status().isOk());
+    }
 
     private String obterToken() throws Exception {
         var resp = mvc.perform(post("/api/auth/login")

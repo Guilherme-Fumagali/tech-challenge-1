@@ -1,6 +1,7 @@
 package com.oficina.mecanica.application;
 
 import com.oficina.mecanica.application.usecase.relatorio.RelatorioTempoMedioUseCase;
+import com.oficina.mecanica.domain.entity.DadosOrdemServico;
 import com.oficina.mecanica.domain.entity.OrdemServico;
 import com.oficina.mecanica.domain.repository.OrdemServicoRepository;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
@@ -33,10 +34,10 @@ class RelatorioTempoMedioUseCaseTest {
     }
 
     private OrdemServico osComDatas(LocalDateTime dataInicio, LocalDateTime dataConclusao) {
-        return OrdemServico.reconstituir()
+        return OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.FINALIZADA).dataAbertura(LocalDateTime.now())
-            .dataInicio(dataInicio).dataConclusao(dataConclusao).build();
+            .dataInicio(dataInicio).dataConclusao(dataConclusao).build());
     }
 
     @Test

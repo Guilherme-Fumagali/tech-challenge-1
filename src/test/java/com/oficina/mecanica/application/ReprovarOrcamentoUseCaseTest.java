@@ -1,9 +1,12 @@
 package com.oficina.mecanica.application;
 
+import com.oficina.mecanica.application.usecase.ordemservico.ReprovarOrcamentoExternoUseCase;
 import com.oficina.mecanica.application.usecase.ordemservico.ReprovarOrcamentoUseCase;
+import com.oficina.mecanica.domain.entity.DadosOrdemServico;
 import com.oficina.mecanica.domain.entity.ItemPeca;
 import com.oficina.mecanica.domain.entity.OrdemServico;
 import com.oficina.mecanica.domain.entity.Peca;
+import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.domain.repository.OrdemServicoRepository;
 import com.oficina.mecanica.domain.repository.PecaRepository;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
@@ -14,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,10 +45,10 @@ class ReprovarOrcamentoUseCaseTest {
         var pecaId = UUID.randomUUID();
         var item = new ItemPeca(UUID.randomUUID(), pecaId, "Filtro", new BigDecimal("50.00"), 3);
 
-        var os = OrdemServico.reconstituir()
+        var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.AGUARDANDO_APROVACAO).itensServico(new ArrayList<>()).itensPeca(List.of(item))
-            .build();
+            .build());
 
         var peca = new Peca(pecaId, "Filtro", "", new BigDecimal("50.00"), 5, 2);
 
@@ -59,5 +63,51 @@ class ReprovarOrcamentoUseCaseTest {
         assertThat(peca.getQuantidadeEstoque()).isEqualTo(8);
         assertThat(os.getStatus()).isEqualTo(StatusOS.CANCELADA);
         verify(pecaRepository).salvar(peca);
+    }
+
+    @Test
+    void reprovarExterno_deveEstornarPecasEInvalidarToken() {
+        var pecaId = UUID.randomUUID();
+        var item = new ItemPeca(UUID.randomUUID(), pecaId, "Filtro", new BigDecimal("50.00"), 3);
+
+        var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.AGUARDANDO_APROVACAO).itensServico(new ArrayList<>()).itensPeca(List.of(item))
+            .tokenAprovacaoExterna("token-valido").tokenExpiracao(LocalDateTime.now().plusHours(1))
+            .build());
+
+        var peca = new Peca(pecaId, "Filtro", "", new BigDecimal("50.00"), 5, 2);
+
+        when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
+        when(pecaRepository.buscarPorId(pecaId)).thenReturn(Optional.of(peca));
+        when(pecaRepository.salvar(any())).thenReturn(peca);
+        when(osRepository.salvar(any())).thenReturn(os);
+
+        new ReprovarOrcamentoExternoUseCase(osRepository, pecaRepository).executar(os.getId(), "token-valido");
+
+        assertThat(peca.getQuantidadeEstoque()).isEqualTo(8);
+        assertThat(os.getStatus()).isEqualTo(StatusOS.CANCELADA);
+        assertThat(os.getTokenAprovacaoExterna()).isNull();
+    }
+
+    @Test
+    void reprovarExterno_deveLancarExcecaoENaoEstornarSeTokenInvalido() {
+        var pecaId = UUID.randomUUID();
+        var item = new ItemPeca(UUID.randomUUID(), pecaId, "Filtro", new BigDecimal("50.00"), 3);
+
+        var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
+            .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
+            .status(StatusOS.AGUARDANDO_APROVACAO).itensServico(new ArrayList<>()).itensPeca(List.of(item))
+            .tokenAprovacaoExterna("token-valido").tokenExpiracao(LocalDateTime.now().plusHours(1))
+            .build());
+
+        when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
+
+        var uc = new ReprovarOrcamentoExternoUseCase(osRepository, pecaRepository);
+        var osId = os.getId();
+        assertThatThrownBy(() -> uc.executar(osId, "token-errado"))
+            .isInstanceOf(TokenAprovacaoInvalidoException.class);
+
+        verifyNoInteractions(pecaRepository);
     }
 }

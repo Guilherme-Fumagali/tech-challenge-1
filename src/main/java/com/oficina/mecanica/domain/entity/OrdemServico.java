@@ -1,12 +1,14 @@
 package com.oficina.mecanica.domain.entity;
 
 import com.oficina.mecanica.domain.exception.DomainException;
+import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
-import lombok.Builder;
+import com.oficina.mecanica.domain.valueobject.TokenAprovacaoExterna;
 import lombok.Getter;
 import lombok.AccessLevel;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,6 +17,8 @@ import java.util.UUID;
 
 @Getter
 public class OrdemServico {
+
+    private static final Duration VALIDADE_TOKEN_PADRAO = Duration.ofHours(168);
 
     private UUID id;
     private UUID clienteId;
@@ -25,6 +29,10 @@ public class OrdemServico {
     private LocalDateTime dataAbertura;
     private LocalDateTime dataInicio;
     private LocalDateTime dataConclusao;
+    private boolean excluidaLogicamente;
+    private LocalDateTime dataExclusaoLogica;
+    private String tokenAprovacaoExterna;
+    private LocalDateTime tokenExpiracao;
 
     public OrdemServico(UUID id, UUID clienteId, UUID veiculoId) {
         this.id = id;
@@ -36,18 +44,18 @@ public class OrdemServico {
         this.dataAbertura = LocalDateTime.now();
     }
 
-    @Builder(builderMethodName = "reconstituir", buildMethodName = "build")
-    private static OrdemServico fromPersistencia(
-            UUID id, UUID clienteId, UUID veiculoId, StatusOS status,
-            List<ItemServico> itensServico, List<ItemPeca> itensPeca,
-            LocalDateTime dataAbertura, LocalDateTime dataInicio, LocalDateTime dataConclusao) {
-        var os = new OrdemServico(id, clienteId, veiculoId);
-        os.status = status;
-        os.itensServico = itensServico != null ? new ArrayList<>(itensServico) : new ArrayList<>();
-        os.itensPeca = itensPeca != null ? new ArrayList<>(itensPeca) : new ArrayList<>();
-        os.dataAbertura = dataAbertura;
-        os.dataInicio = dataInicio;
-        os.dataConclusao = dataConclusao;
+    public static OrdemServico reconstituir(DadosOrdemServico dados) {
+        var os = new OrdemServico(dados.id(), dados.clienteId(), dados.veiculoId());
+        os.status = dados.status();
+        os.itensServico = dados.itensServico() != null ? new ArrayList<>(dados.itensServico()) : new ArrayList<>();
+        os.itensPeca = dados.itensPeca() != null ? new ArrayList<>(dados.itensPeca()) : new ArrayList<>();
+        os.dataAbertura = dados.dataAbertura();
+        os.dataInicio = dados.dataInicio();
+        os.dataConclusao = dados.dataConclusao();
+        os.excluidaLogicamente = dados.excluidaLogicamente();
+        os.dataExclusaoLogica = dados.dataExclusaoLogica();
+        os.tokenAprovacaoExterna = dados.tokenAprovacaoExterna();
+        os.tokenExpiracao = dados.tokenExpiracao();
         return os;
     }
 
@@ -67,12 +75,18 @@ public class OrdemServico {
     }
 
     public void gerarOrcamento() {
+        gerarOrcamento(VALIDADE_TOKEN_PADRAO);
+    }
+
+    public void gerarOrcamento(Duration validadeToken) {
         exigirStatus(StatusOS.EM_DIAGNOSTICO, "gerar orçamento");
         if (itensServico.isEmpty() && itensPeca.isEmpty()) {
             throw new DomainException("A OS deve ter ao menos um item antes de gerar o orçamento.");
         }
         status.validarTransicaoPara(StatusOS.AGUARDANDO_APROVACAO);
         this.status = StatusOS.AGUARDANDO_APROVACAO;
+        this.tokenAprovacaoExterna = TokenAprovacaoExterna.gerar();
+        this.tokenExpiracao = LocalDateTime.now().plus(validadeToken);
     }
 
     public void aprovar() {
@@ -86,10 +100,38 @@ public class OrdemServico {
         this.status = StatusOS.CANCELADA;
     }
 
+    public void aprovarViaTokenExterno(String token) {
+        validarTokenAprovacao(token);
+        aprovar();
+        invalidarTokenAprovacao();
+    }
+
+    public void reprovarViaTokenExterno(String token) {
+        validarTokenAprovacao(token);
+        reprovar();
+        invalidarTokenAprovacao();
+    }
+
+    private void validarTokenAprovacao(String token) {
+        if (tokenAprovacaoExterna == null || !tokenAprovacaoExterna.equals(token)) {
+            throw new TokenAprovacaoInvalidoException("Token de aprovação inválido.");
+        }
+        if (tokenExpiracao == null || tokenExpiracao.isBefore(LocalDateTime.now())) {
+            throw new TokenAprovacaoInvalidoException("Token de aprovação expirado.");
+        }
+    }
+
+    private void invalidarTokenAprovacao() {
+        this.tokenAprovacaoExterna = null;
+        this.tokenExpiracao = null;
+    }
+
     public void concluir() {
         status.validarTransicaoPara(StatusOS.FINALIZADA);
         this.status = StatusOS.FINALIZADA;
         this.dataConclusao = LocalDateTime.now();
+        this.excluidaLogicamente = true;
+        this.dataExclusaoLogica = LocalDateTime.now();
     }
 
     public void entregar() {
