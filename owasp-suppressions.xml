@@ -38,7 +38,7 @@
 
     <!--
         CVE-2026-22732 — Spring Security: vulnerabilidade reportada no NVD.
-        SITUAÇÃO: CVE presente em Spring Security 6.4.x e 6.5.x verificado em 01/05/2026.
+        SITUAÇÃO: CVE presente em Spring Security 6.4.x e 6.5.x verificado em 09/07/2026.
         Nenhuma versão corrigida disponível pelo fornecedor na data do scan.
         Risco aceito explicitamente: aplicação usa autenticação stateless via JWT (HMAC-SHA384),
         sem sessões HTTP, sem CSRF, sem state management no servidor — superfície de ataque
@@ -46,7 +46,7 @@
         Supressão temporária: será reavaliada quando patch for publicado.
     -->
     <suppress>
-        <notes>Sem versão corrigida disponível em 01/05/2026. Risco aceito com escopo delimitado: JWT stateless, sem sessões.</notes>
+        <notes>Sem versão corrigida disponível em 09/07/2026. Risco aceito com escopo delimitado: JWT stateless, sem sessões.</notes>
         <cve>CVE-2026-22732</cve>
     </suppress>
 
@@ -54,8 +54,9 @@
         CVE-2025-55754 — Tomcat 10.1.x: vulnerabilidade reportada no NVD (CVSS 9.6).
         CVE-2025-66614 — Tomcat 10.1.x: vulnerabilidade reportada no NVD (CVSS 9.1).
         CVE-2026-29145 — Tomcat 10.1.x: vulnerabilidade reportada no NVD (CVSS 9.1).
-        SITUAÇÃO: CVEs presentes no Tomcat 10.1.40 e 10.1.41 (Spring Boot 3.4.5 e 3.5.0).
-        Nenhuma versão corrigida do Tomcat disponível na data do scan (01/05/2026).
+        SITUAÇÃO: CVEs presentes no Tomcat embarcado no Spring Boot 3.4.5/3.5.0 e reconfirmadas
+        após upgrade para Spring Boot 3.4.7 (Fase 2) — mesmo resultado, sem patch disponível.
+        Nenhuma versão corrigida do Tomcat disponível na data do scan (09/07/2026).
         CONTEXTO: aplicação usa Spring Boot embedded Tomcat com configuração padrão —
         DefaultServlet desabilitado, partial PUT desabilitado, sem CGI servlet, sem
         WebSocket application, sem clustering/session replication. Todas as funcionalidades
@@ -64,15 +65,15 @@
         Supressão temporária: será reavaliada quando patch for publicado pelo Apache Tomcat.
     -->
     <suppress>
-        <notes>Sem versão corrigida em 01/05/2026. Configuração padrão Spring Boot embedded minimiza superfície de ataque do Tomcat.</notes>
+        <notes>Sem versão corrigida em 09/07/2026. Configuração padrão Spring Boot embedded minimiza superfície de ataque do Tomcat.</notes>
         <cve>CVE-2025-55754</cve>
     </suppress>
     <suppress>
-        <notes>Sem versão corrigida em 01/05/2026. Configuração padrão Spring Boot embedded minimiza superfície de ataque do Tomcat.</notes>
+        <notes>Sem versão corrigida em 09/07/2026. Configuração padrão Spring Boot embedded minimiza superfície de ataque do Tomcat.</notes>
         <cve>CVE-2025-66614</cve>
     </suppress>
     <suppress>
-        <notes>Sem versão corrigida em 01/05/2026. Configuração padrão Spring Boot embedded minimiza superfície de ataque do Tomcat.</notes>
+        <notes>Sem versão corrigida em 09/07/2026. Configuração padrão Spring Boot embedded minimiza superfície de ataque do Tomcat.</notes>
         <cve>CVE-2026-29145</cve>
     </suppress>
 

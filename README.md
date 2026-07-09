@@ -405,12 +405,12 @@ Gerado via OWASP Dependency Check:
 Procedimento: atualizar `spring-boot-starter-parent` para o último patch disponível e rodar `mvn org.owasp:dependency-check-maven:check`, conferindo `target/dependency-check-report.html`.
 
 - `spring-boot-starter-parent` atualizado de `3.4.5` → `3.4.7` nesta fase (traz patches de Tomcat/Spring Security mais recentes).
-- **Reverificação pendente de confirmação**: o `dependency-check` baixa a base do NVD na primeira
-  execução numa máquina nova, o que pode levar bastante tempo sem uma [NVD API key](https://nvd.nist.gov/developers/request-an-api-key)
-  configurada (`nvdApiKey` no plugin) — não terminou a tempo de fechar esta entrega. Rode
-  `mvn org.owasp:dependency-check-maven:check` e confira `target/dependency-check-report.html`
-  pelas 4 CVEs listadas em `owasp-suppressions.xml`; se alguma já tiver patch disponível, remova a
-  supressão correspondente e atualize esta tabela.
+- **Reverificação concluída em 09/07/2026**: `mvn org.owasp:dependency-check-maven:check` rodou
+  limpo (build não quebrou o gate `failBuildOnCVSS=9`) — as mesmas 4 CVEs (`CVE-2026-22732`,
+  `CVE-2025-55754`, `CVE-2025-66614`, `CVE-2026-29145`) continuam sem patch publicado pelos
+  fornecedores (Spring Security e Apache Tomcat) mesmo após o upgrade de patch do Spring Boot.
+  Supressões mantidas em `owasp-suppressions.xml` com a data atualizada; reavaliar quando os
+  mantenedores publicarem correção.
 
 ---
 
