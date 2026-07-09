@@ -7,3 +7,16 @@ target/
 .vscode/
 .DS_Store
 .env
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+tfplan
+**/kubeconfig
+
+# Kubernetes — segredos locais reais (nunca os placeholders versionados)
+k8s/**/secret.local.yaml
+k8s/**/*.local.yaml
