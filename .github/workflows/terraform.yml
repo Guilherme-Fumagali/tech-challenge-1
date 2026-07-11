@@ -1,19 +1,13 @@
 name: Terraform
 
+# Disparo manual (Actions → Terraform → Run workflow). Infra AWS é cobrada, então
+# nunca roda sozinha em push/PR — sempre por decisão explícita.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'infra/**'
-      - 'k8s/**'
-  pull_request:
-    paths:
-      - 'infra/**'
-      - 'k8s/**'
+  workflow_dispatch:
 
 jobs:
   # ── Ambiente AWS (EKS + RDS) — infraestrutura real e cobrada ──────────────
-  # plan roda sempre (barato, só leitura); apply exige aprovação humana via
+  # plan roda ao disparar (barato, só leitura); apply exige aprovação humana via
   # GitHub Environment "aws-production" (Settings → Environments → Required
   # reviewers) — o revisor vê exatamente o plano calculado antes de aprovar.
 
@@ -58,7 +52,7 @@ jobs:
   apply-aws:
     name: Apply (aws) — requer aprovação
     needs: plan-aws
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: aws-production
     permissions:
