@@ -25,7 +25,6 @@
 set -euo pipefail
 
 AWS_REGION="${AWS_REGION:-us-east-1}"
-BUCKET="${TFSTATE_BUCKET:-oficina-api-tfstate}"
 LOCK_TABLE="${TFSTATE_LOCK_TABLE:-oficina-api-tfstate-lock}"
 STATE_KEY="aws/terraform.tfstate"
 
@@ -35,6 +34,16 @@ die() { printf '\033[1;31mERRO:\033[0m %s\n' "$*" >&2; exit 1; }
 command -v aws >/dev/null || die "AWS CLI não encontrado no PATH."
 command -v jq  >/dev/null || die "jq não encontrado no PATH."
 
+# O bucket vive no "account regional namespace": o nome termina em -<conta>-<região>-an e é
+# reservado só pra esta conta AWS. Duas vantagens sobre o namespace global (default histórico):
+# ninguém mais pode tomar o nome, e — mais importante — quando este bucket for deletado no fim
+# do projeto, o nome NÃO volta pro pool global (onde outra conta poderia recriá-lo e passar a
+# receber requisições destinadas ao bucket antigo). O nome é derivado, não fixo, pra o script
+# continuar funcionando em qualquer conta/região.
+ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)" \
+  || die "AWS CLI não está autenticado."
+BUCKET="${TFSTATE_BUCKET:-oficina-api-tfstate-${ACCOUNT_ID}-${AWS_REGION}-an}"
+
 bucket_exists() { aws s3api head-bucket --bucket "$BUCKET" >/dev/null 2>&1; }
 table_exists()  { aws dynamodb describe-table --table-name "$LOCK_TABLE" --region "$AWS_REGION" >/dev/null 2>&1; }
 
@@ -43,12 +52,19 @@ create() {
     log "Bucket s3://$BUCKET já existe — nada a criar."
   else
     log "Criando bucket s3://$BUCKET em $AWS_REGION..."
+    # --bucket-namespace só é exigido no CreateBucket. Leitura/escrita (tudo que o backend do
+    # Terraform faz depois) é idêntica à de um bucket global — nenhum ajuste necessário lá.
+    local ns_flag=()
+    case "$BUCKET" in
+      *-an) ns_flag=(--bucket-namespace account-regional) ;;
+    esac
+
     # us-east-1 é a única região que rejeita LocationConstraint (é o default da API).
     if [ "$AWS_REGION" = "us-east-1" ]; then
-      aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION"
+      aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" "${ns_flag[@]}"
     else
       aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" \
-        --create-bucket-configuration "LocationConstraint=$AWS_REGION"
+        --create-bucket-configuration "LocationConstraint=$AWS_REGION" "${ns_flag[@]}"
     fi
     aws s3api wait bucket-exists --bucket "$BUCKET"
   fi

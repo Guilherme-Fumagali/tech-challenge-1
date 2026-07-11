@@ -142,11 +142,28 @@ access key estática guardada em secret (que vaza e nunca é rotacionada).
 > removê-los. O `bootstrap.sh destroy` **se recusa a rodar** se detectar que o state ainda tem
 > recursos, exatamente pra impedir esse acidente.
 
-> **Se o passo 1 falhar com `BucketAlreadyExists`**: nomes de bucket S3 são únicos globalmente,
-> entre todas as contas AWS do mundo — alguém pode já ter levado `oficina-api-tfstate`. Escolha
-> outro nome (ex.: `oficina-api-tfstate-<seu-id-de-conta>`) e ajuste nos dois lugares que o
-> referenciam: a env `TFSTATE_BUCKET` do script e o campo `bucket` em
-> `environments/aws/backend.tf` (bloco `backend` não aceita variável — tem que ser literal).
+### Sobre o nome do bucket
+
+O bucket é criado no **account regional namespace** da AWS, não no namespace global histórico.
+Daí o formato `oficina-api-tfstate-<conta>-<região>-an` — o sufixo é obrigatório nesse modo.
+
+Dois motivos:
+
+- **Não colide.** No namespace global, nomes são únicos entre *todas* as contas AWS do mundo:
+  um `oficina-api-tfstate` qualquer pode já ter dono e o create falharia. No account regional,
+  o nome é reservado à conta.
+- **Não vira alvo depois de deletado.** No namespace global, ao deletar o bucket no fim do
+  projeto o nome volta pro pool e outra conta pode recriá-lo — passando a receber requisições
+  destinadas ao bucket antigo. No account regional isso é impossível. A AWS classifica isso
+  como *security best practice*.
+
+Isso **não afeta o Terraform**: o `--bucket-namespace` só é exigido no `CreateBucket` (que o
+`bootstrap.sh` faz). Ler e escrever objetos — tudo que o backend faz — é idêntico nos dois
+namespaces.
+
+O `bootstrap.sh` **deriva** o nome da conta/região em que está rodando, então funciona em
+qualquer conta sem edição. Já o `environments/aws/backend.tf` precisa do nome **literal**
+(bloco `backend` não aceita variável): se trocar de conta AWS, é lá que se ajusta.
 
 ### Dry run local (opcional, sem custo)
 
