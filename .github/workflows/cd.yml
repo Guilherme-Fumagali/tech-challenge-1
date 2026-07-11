@@ -47,6 +47,9 @@ jobs:
     name: Deploy no EKS
     needs: build-and-push-image
     runs-on: ubuntu-latest
+    # Deploy no EKS custa (exige cluster de pé) — mesmo gate de aprovação humana do terraform.
+    # A imagem já subiu pro GHCR no job anterior (grátis); este só roda após alguém aprovar.
+    environment: aws-production
     permissions:
       id-token: write # obrigatório pro configure-aws-credentials assumir a role via OIDC
       contents: read
