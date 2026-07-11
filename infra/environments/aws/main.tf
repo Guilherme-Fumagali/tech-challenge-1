@@ -175,7 +175,7 @@ resource "aws_db_subnet_group" "oficina" {
 # Só permite tráfego 5432 vindo do Security Group dos nós do EKS — nunca 0.0.0.0/0.
 resource "aws_security_group" "rds" {
   name        = "oficina-api-rds-sg"
-  description = "Permite Postgres apenas a partir dos nós do EKS"
+  description = "Permite Postgres apenas a partir dos nos do EKS"
   vpc_id      = aws_vpc.oficina.id
 
   ingress {
