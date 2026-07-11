@@ -47,6 +47,9 @@ jobs:
     name: Deploy no EKS
     needs: build-and-push-image
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # obrigatório pro configure-aws-credentials assumir a role via OIDC
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:

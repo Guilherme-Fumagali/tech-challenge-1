@@ -113,6 +113,9 @@ jobs:
   plan-aws:
     name: Plan (aws)
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # obrigatório pro configure-aws-credentials assumir a role via OIDC
+      contents: read
     defaults:
       run:
         working-directory: infra/environments/aws
@@ -151,6 +154,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: aws-production
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         working-directory: infra/environments/aws

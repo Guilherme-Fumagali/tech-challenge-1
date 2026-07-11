@@ -3,6 +3,10 @@ name: Destroy AWS
 on:
   workflow_dispatch:
 
+permissions:
+  id-token: write # obrigatório pro configure-aws-credentials assumir a role via OIDC
+  contents: read
+
 jobs:
   destroy-aws:
     name: Destroy (aws) — requer aprovação
