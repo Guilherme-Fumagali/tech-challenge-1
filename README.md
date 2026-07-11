@@ -59,11 +59,12 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
 
 ### CI/CD
 
-- `.github/workflows/ci.yml` — build, testes, JaCoCo, OWASP dependency-check, SonarCloud (inalterado da Fase 1).
+- `.github/workflows/ci-cd.yml` — pipeline único: build, testes, JaCoCo, OWASP dependency-check e
+  SonarCloud a todo push/PR em `main`; só em push segue automático pro build + push da imagem no
+  GHCR e deploy no EKS (mesma **aprovação manual obrigatória**, `aws-production`).
 - `.github/workflows/terraform.yml` — `plan` automático (só leitura, sem custo) a toda mudança em
   `infra/**`/`k8s/**`; `apply` no ambiente `aws` com **aprovação manual obrigatória** antes de tocar
   em qualquer recurso cobrado (GitHub Environment `aws-production`).
-- `.github/workflows/cd.yml` — build + push da imagem pro GHCR e deploy no EKS a cada push em `main`.
 - `.github/workflows/bootstrap-aws.yml` — cria/remove o backend de state (S3 + DynamoDB) com um clique.
 - `.github/workflows/destroy-aws.yml` — desliga o ambiente AWS com um clique (mesmo gate de aprovação).
 
@@ -440,7 +441,7 @@ oficina-api/
 │   ├── bootstrap/                # Scripts de pré-requisito AWS (OIDC + backend de state)
 │   └── environments/
 │       └── aws/                    # Terraform — EKS + RDS
-├── .github/workflows/            # ci.yml, terraform.yml, cd.yml, bootstrap-aws.yml, destroy-aws.yml
+├── .github/workflows/            # ci-cd.yml, terraform.yml, bootstrap-aws.yml, destroy-aws.yml
 ├── observability/                # Config do stretch de OpenTelemetry (Tempo + Grafana)
 ├── Dockerfile
 ├── docker-compose.yml
