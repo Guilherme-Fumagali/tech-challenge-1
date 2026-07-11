@@ -32,7 +32,6 @@ log() { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31mERRO:\033[0m %s\n' "$*" >&2; exit 1; }
 
 command -v aws >/dev/null || die "AWS CLI não encontrado no PATH."
-command -v jq  >/dev/null || die "jq não encontrado no PATH."
 
 # O bucket vive no "account regional namespace": o nome termina em -<conta>-<região>-an e é
 # reservado só pra esta conta AWS. Duas vantagens sobre o namespace global (default histórico):
@@ -125,6 +124,10 @@ assert_state_vazio() {
 }
 
 destroy() {
+  # Só o destroy depende de jq (ler o state, varrer as versões do bucket) — o create não usa.
+  # Exigir jq lá em cima quebraria o create numa máquina que só tem o AWS CLI, sem motivo.
+  command -v jq >/dev/null || die "jq não encontrado no PATH (necessário só para o destroy)."
+
   if [ "${FORCE_DESTROY:-0}" = "1" ]; then
     log "FORCE_DESTROY=1 — pulando a verificação de state órfão."
   else
