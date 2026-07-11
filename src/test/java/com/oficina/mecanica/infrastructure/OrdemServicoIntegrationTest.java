@@ -1,7 +1,7 @@
 package com.oficina.mecanica.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.oficina.mecanica.domain.repository.OrdemServicoRepository;
+import com.oficina.mecanica.infrastructure.persistence.repository.OrdemServicoJpaRepository;
 import com.oficina.mecanica.infrastructure.web.dto.request.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,7 @@ class OrdemServicoIntegrationTest {
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
-    @Autowired OrdemServicoRepository osRepository;
+    @Autowired OrdemServicoJpaRepository osJpaRepository;
 
     @Test
     void deveExecutarFluxoCompletoDeUmaOrdemDeServico() throws Exception {
@@ -266,8 +266,11 @@ class OrdemServicoIntegrationTest {
         mvc.perform(post("/api/ordens/{id}/gerar-orcamento", osId)
                 .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
 
-        // Token lido diretamente do repositório — nunca exposto pela API, simula o link recebido por e-mail
-        var tokenAprovacao = osRepository.buscarPorId(java.util.UUID.fromString(osId))
+        // Token lido direto do banco — nunca exposto pela API, simula o link recebido por e-mail.
+        // Via repositório JPA (e não pela porta de domínio) porque o adapter mapeia as coleções
+        // lazy da OS, e aqui não há sessão Hibernate aberta: fora de uma requisição HTTP o
+        // open-in-view não vale. Ler só a coluna do token dispensa a sessão.
+        var tokenAprovacao = osJpaRepository.findById(java.util.UUID.fromString(osId))
             .orElseThrow().getTokenAprovacaoExterna();
 
         mvc.perform(post("/api/ordens/{id}/aprovar-externo", osId)
