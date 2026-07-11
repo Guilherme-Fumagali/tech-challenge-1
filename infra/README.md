@@ -6,7 +6,9 @@ grafo de providers — não só em valores de variável: `local` usa `kind`+`kub
 
 ```
 infra/
-├── bootstrap/            # cria o backend S3+DynamoDB do ambiente aws (rodar uma única vez, manual)
+├── bootstrap/            # scripts de pré-requisito da AWS (não são Terraform — ver "Bootstrap" abaixo)
+│   ├── github-oidc.sh    #   dá ao GitHub Actions acesso à conta AWS (único passo local, roda 1x)
+│   └── bootstrap.sh      #   cria/remove o backend de state S3+DynamoDB (roda via Actions)
 └── environments/
     ├── local/             # cluster kind — grátis, efêmero, sem pré-requisitos de nuvem
     └── aws/                # EKS + RDS — ver seção "Ambiente AWS" abaixo (custo real)
@@ -77,47 +79,89 @@ Decisões de custo mínimo: sem NAT Gateway (nós em subnets públicas com Secur
 trade-off aceitável só porque o cluster é efêmero), instâncias pequenas, single-AZ no RDS, storage
 mínimo (20GB gp3).
 
-### Pré-requisito único: bootstrap do backend remoto
+### Bootstrap: por que o backend de state não é Terraform
 
-Rodar **uma única vez**, manualmente (não faz parte de nenhum pipeline):
+`environments/aws/backend.tf` guarda o state num bucket S3 com lock em DynamoDB. Esses dois
+recursos **não são gerenciados por Terraform**, e isso é deliberado.
+
+O motivo é um ovo-e-galinha: no primeiro `apply` que fosse criar o bucket, o bucket ainda não
+existe — logo o state dessa execução teria que ficar em disco. Um state local morre junto com
+o runner efêmero do CI (ou com a máquina de quem rodou), e na execução seguinte o Terraform
+"esqueceria" que o bucket existe, tentaria recriá-lo e falharia. Contornar isso exigiria
+commitar o `.tfstate` no repo ou migrar o state pra dentro do próprio bucket que ele
+gerencia — ambos consertam o sintoma, não a causa.
+
+A causa é tratar um pré-requisito de infraestrutura como recurso de aplicação. Um script
+idempotente (`bootstrap/bootstrap.sh`, AWS CLI puro) **não tem state**: pode rodar N vezes,
+converge sempre pro mesmo lugar, e não há nada pra perder entre execuções. Por isso ele roda
+tranquilo num runner efêmero — e é por isso que existe o workflow `bootstrap-aws.yml`.
+
+O Terraform continua sendo dono de tudo que o Tech Challenge pede (VPC, EKS, RDS); só o
+backend que hospeda o próprio state dele é que fica de fora, que é a prática usual.
+
+### Setup inicial (uma vez na vida do projeto)
+
+**Passo 1 — dar à pipeline acesso à sua conta AWS.** Este é o **único passo que roda na sua
+máquina**, e não por escolha: pra criar a credencial que o pipeline usa, o pipeline
+precisaria já ter uma credencial. Alguém, uma vez, precisa rodar isso com as próprias
+credenciais de admin.
 
 ```bash
-cd infra/bootstrap
-terraform init
-terraform apply
+aws configure                    # se ainda não tiver credenciais locais
+./infra/bootstrap/github-oidc.sh # cria o OIDC provider + IAM role, imprime o ARN
 ```
 
-Isso cria o bucket S3 e a tabela DynamoDB que `environments/aws/backend.tf` espera encontrar.
+O script cria uma IAM role que **só este repositório** consegue assumir, via OIDC — sem
+access key estática guardada em secret (que vaza e nunca é rotacionada).
 
-### Rodar localmente (dry run, sem custo)
+**Passo 2 — configurar o repositório no GitHub:**
+
+- **Settings → Environments** → criar `aws-production` com **Required reviewers** (você
+  mesmo). É esse ambiente que faz `apply`/`destroy`/`bootstrap` pausarem pedindo aprovação
+  humana antes de tocar em qualquer coisa cobrada.
+- **Settings → Secrets → Actions** → criar:
+  `AWS_ROLE_ARN` (o ARN impresso no passo 1), `TF_VAR_DB_PASSWORD`,
+  `TF_VAR_JWT_SECRET` (≥32 caracteres — HS256 exige, senão a app nem sobe),
+  `TF_VAR_ADMIN_PASSWORD`.
+
+**Daqui em diante, nada mais roda localmente.** Todo o ciclo de vida é um clique no Actions.
+
+### Ciclo de vida (tudo via GitHub Actions)
+
+| # | Quando | Actions → workflow | O que faz |
+|---|---|---|---|
+| 1 | Uma vez, antes de tudo | **Bootstrap AWS** (`action: create`) | Cria bucket S3 + DynamoDB de lock. Idempotente. |
+| 2 | A cada mudança em `infra/**` | **Terraform** → `plan-aws` | Automático, só leitura, sem custo. |
+| 3 | Push em `main` | **Terraform** → `apply-aws` | **Pausa aguardando aprovação.** Aplica exatamente o plano revisado. Cria VPC/EKS/RDS — **começa a cobrar aqui.** |
+| 4 | A cada push em `main` | **CD** | Builda a imagem, publica no GHCR, faz rollout no EKS. Só funciona depois do passo 3. |
+| 5 | **Assim que terminar a demo** | **Destroy AWS** | Destrói EKS + RDS. **Para a cobrança.** |
+| 6 | No fim do projeto | **Bootstrap AWS** (`action: destroy`) | Remove o bucket + tabela. Zera a pegada na conta. |
+
+> A ordem de 5 → 6 importa: o state vive dentro do bucket. Apagar o bucket antes de destruir
+> o EKS/RDS deixaria esses recursos órfãos na conta — de pé, cobrando, e sem Terraform pra
+> removê-los. O `bootstrap.sh destroy` **se recusa a rodar** se detectar que o state ainda tem
+> recursos, exatamente pra impedir esse acidente.
+
+> **Se o passo 1 falhar com `BucketAlreadyExists`**: nomes de bucket S3 são únicos globalmente,
+> entre todas as contas AWS do mundo — alguém pode já ter levado `oficina-api-tfstate`. Escolha
+> outro nome (ex.: `oficina-api-tfstate-<seu-id-de-conta>`) e ajuste nos dois lugares que o
+> referenciam: a env `TFSTATE_BUCKET` do script e o campo `bucket` em
+> `environments/aws/backend.tf` (bloco `backend` não aceita variável — tem que ser literal).
+
+### Dry run local (opcional, sem custo)
+
+Só leitura, pra revisar o diff antes de aprovar um `apply` de verdade:
 
 ```bash
 cd infra/environments/aws
 cp terraform.tfvars.example terraform.tfvars   # preencher db_password/jwt_secret reais
 terraform init
-terraform plan   # só leitura — revisar o diff antes de qualquer apply real
+terraform plan
 ```
 
-### CI/CD (`.github/workflows/terraform.yml` + `destroy-aws.yml`)
+### Destruir (parar a cobrança)
 
-1. Configurar em **Settings → Environments** um ambiente chamado `aws-production` com
-   **Required reviewers** (você mesmo, ou outro membro do grupo).
-2. Configurar os secrets do repositório: `AWS_ROLE_ARN` (role assumível via OIDC —
-   preferível — ou trocar por `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`),
-   `TF_VAR_DB_PASSWORD`, `TF_VAR_JWT_SECRET`, `TF_VAR_ADMIN_PASSWORD`.
-3. Qualquer mudança em `infra/**` roda `plan-aws` automaticamente. Em push pra `main`,
-   `apply-aws` **pausa** aguardando aprovação no Environment antes de aplicar exatamente
-   o plano já calculado.
-4. Depois que `apply-aws` provisiona o cluster pela primeira vez, o `cd.yml` (deploy da
-   aplicação a cada push em `main`) passa a funcionar — ele só faz `kubectl set image`
-   contra um cluster que já precisa existir.
+**Assim que terminar de gravar a demo:** Actions → **Destroy AWS** → Run workflow (mesmo gate
+de aprovação). Confirme no console AWS que EKS e RDS não existem mais.
 
-### Destruir
-
-**Sempre que terminar de gravar a demo, destrua o ambiente AWS.** Duas formas:
-
-- **Via GitHub Actions** (recomendado — auditável): Actions → workflow "Destroy AWS" →
-  Run workflow. Mesmo gate de aprovação do `apply-aws`.
-- **Localmente**: `cd infra/environments/aws && terraform destroy`.
-
-Confirme no console AWS que o EKS e o RDS realmente não existem mais depois.
+Alternativa local: `cd infra/environments/aws && terraform destroy`.

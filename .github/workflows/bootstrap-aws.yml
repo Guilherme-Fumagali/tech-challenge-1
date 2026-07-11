@@ -1,0 +1,41 @@
+name: Bootstrap AWS
+
+# Cria (ou remove) o backend remoto de state — bucket S3 + tabela DynamoDB de lock — que
+# environments/aws/backend.tf espera encontrar. Não é Terraform de propósito: o backend não
+# pode ser gerenciado pelo Terraform que o usa (ovo e galinha — ver comentário em
+# infra/bootstrap/bootstrap.sh). Script idempotente não tem state, então não há nada a perder
+# entre execuções, e isto roda tranquilo num runner efêmero.
+#
+# Roda uma vez no começo do projeto (create) e uma vez no fim (destroy).
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "create = provisiona o backend | destroy = remove (rode DEPOIS de 'Destroy AWS')"
+        required: true
+        type: choice
+        default: create
+        options: [create, destroy]
+
+permissions:
+  id-token: write # obrigatório pro configure-aws-credentials assumir a role via OIDC
+  contents: read
+
+jobs:
+  bootstrap:
+    name: "Backend de state — ${{ inputs.action }}"
+    runs-on: ubuntu-latest
+    environment: aws-production # mesmo gate de aprovação humana do apply/destroy
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Executar bootstrap
+        run: |
+          chmod +x infra/bootstrap/bootstrap.sh
+          infra/bootstrap/bootstrap.sh "${{ inputs.action }}"

@@ -65,7 +65,13 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
   smoke test em toda mudança em `infra/**`/`k8s/**`); `plan`/`apply` pro ambiente `aws` com **aprovação
   manual obrigatória** antes do `apply` (GitHub Environment `aws-production`).
 - `.github/workflows/cd.yml` — build + push da imagem pro GHCR e deploy no EKS a cada push em `main`.
+- `.github/workflows/bootstrap-aws.yml` — cria/remove o backend de state (S3 + DynamoDB) com um clique.
 - `.github/workflows/destroy-aws.yml` — desliga o ambiente AWS com um clique (mesmo gate de aprovação).
+
+Depois de um único passo local (`infra/bootstrap/github-oidc.sh`, que dá ao GitHub Actions acesso
+via OIDC à conta AWS — impossível automatizar, já que criar a primeira credencial exigiria já ter
+uma), **todo o ciclo de vida da infraestrutura roda pelo Actions**: bootstrap → plan → apply →
+deploy → destroy. Ver [`infra/README.md`](infra/README.md).
 
 ### Links
 
@@ -433,11 +439,11 @@ oficina-api/
 │   └── base-conhecimento/       # Requisitos e notas técnicas da Fase 2
 ├── k8s/                         # Manifests Kubernetes (app, database, mailhog)
 ├── infra/
-│   ├── bootstrap/                # Backend remoto (S3+DynamoDB) — roda uma vez
+│   ├── bootstrap/                # Scripts de pré-requisito AWS (OIDC + backend de state)
 │   └── environments/
 │       ├── local/                 # Terraform — cluster kind
 │       └── aws/                    # Terraform — EKS + RDS
-├── .github/workflows/            # ci.yml, terraform.yml, cd.yml, destroy-aws.yml
+├── .github/workflows/            # ci.yml, terraform.yml, cd.yml, bootstrap-aws.yml, destroy-aws.yml
 ├── observability/                # Config do stretch de OpenTelemetry (Tempo + Grafana)
 ├── Dockerfile
 ├── docker-compose.yml

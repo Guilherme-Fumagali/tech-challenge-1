@@ -1,0 +1,4 @@
+# Scripts de shell rodam em runners Linux (GitHub Actions) mas são editados no Windows.
+# Sem isto, um commit feito com core.autocrlf=false gravaria CRLF no repo e o runner
+# quebraria no shebang: "/usr/bin/env: 'bash\r': No such file or directory".
+*.sh text eol=lf
