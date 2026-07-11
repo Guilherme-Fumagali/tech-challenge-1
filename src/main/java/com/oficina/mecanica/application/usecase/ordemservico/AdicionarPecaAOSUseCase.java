@@ -24,7 +24,6 @@ public class AdicionarPecaAOSUseCase {
         var peca = pecaRepository.buscarPorId(pecaId)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Peça", pecaId));
 
-        // Decrementa estoque atomicamente — lança EstoqueInsuficienteException se não houver saldo
         peca.decrementarEstoque(quantidade);
 
         var item = new ItemPeca(

@@ -29,17 +29,12 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Consulta pública de status de OS (sem autenticação)
+                // Público sem JWT por decisão de negócio: status de OS e aprovação externa por token de e-mail
                 .requestMatchers(HttpMethod.GET, "/api/ordens/*/status").permitAll()
-                // Aprovação/reprovação externa via token por e-mail (sem autenticação)
                 .requestMatchers(HttpMethod.POST, "/api/ordens/*/aprovar-externo").permitAll()
-                // Autenticação pública
                 .requestMatchers("/api/auth/**").permitAll()
-                // Swagger/OpenAPI
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
-                // Actuator
                 .requestMatchers("/actuator/**").permitAll()
-                // Tudo mais exige autenticação
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

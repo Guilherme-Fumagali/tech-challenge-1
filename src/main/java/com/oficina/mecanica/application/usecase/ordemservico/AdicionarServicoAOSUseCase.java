@@ -25,7 +25,7 @@ public class AdicionarServicoAOSUseCase {
         var servico = servicoRepository.buscarPorId(servicoId)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Serviço", servicoId));
 
-        // Snapshot de Preço: captura o preço atual do catálogo no momento da adição
+        // Snapshot de preço: cópia do valor do catálogo — reajuste futuro não altera esta OS
         var item = new ItemServico(
             UUID.randomUUID(),
             servico.getId(),

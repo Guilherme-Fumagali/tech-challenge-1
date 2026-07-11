@@ -21,7 +21,6 @@ public class ReprovarOrcamentoUseCase {
         var os = osRepository.buscarPorId(osId)
             .orElseThrow(() -> new RecursoNaoEncontradoException("Ordem de Serviço", osId));
 
-        // Estorno de Estoque: devolve as peças reservadas antes de cancelar
         estornoPecasHelper.estornarPecas(os);
 
         os.reprovar();

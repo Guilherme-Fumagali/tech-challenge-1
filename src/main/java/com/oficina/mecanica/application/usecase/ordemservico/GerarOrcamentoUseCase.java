@@ -29,7 +29,6 @@ public class GerarOrcamentoUseCase {
         os.gerarOrcamento(validadeTokenAprovacao);
         var osSalva = repository.salvar(os);
 
-        // Dispara notificação após persistir — canal concreto é definido pelo adaptador injetado
         notificacaoService.notificarOrcamentoPendente(
             osSalva.getId(),
             osSalva.getClienteId(),

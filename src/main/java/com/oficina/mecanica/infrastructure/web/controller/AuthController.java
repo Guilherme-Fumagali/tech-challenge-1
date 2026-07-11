@@ -46,7 +46,6 @@ public class AuthController {
     @PostMapping("/refresh")
     @Operation(summary = "Renovar access token usando refresh token (rotação automática)")
     public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-        // Rotaciona: invalida o token atual e emite um novo par
         var novoRefreshToken = refreshTokenService.rotacionar(request.refreshToken());
         var username         = refreshTokenService.extrairUsername(novoRefreshToken);
         var novoAccessToken  = jwtService.gerarAccessToken(username);

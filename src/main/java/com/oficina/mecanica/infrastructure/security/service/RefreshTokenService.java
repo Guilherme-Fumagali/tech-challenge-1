@@ -34,7 +34,6 @@ public class RefreshTokenService {
         return token;
     }
 
-    // Valida, revoga o token atual e emite um novo — refresh token rotation
     @Transactional
     public String rotacionar(String tokenAtual) {
         var entity = repository.findByToken(tokenAtual)
