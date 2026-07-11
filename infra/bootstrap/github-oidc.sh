@@ -50,8 +50,9 @@ else
 fi
 
 # ── 2. IAM role assumível só por este repo ───────────────────────────────────
-TRUST_POLICY="$(mktemp)"
-cat > "$TRUST_POLICY" <<EOF
+# JSON inline em vez de `file://$(mktemp)`: no Windows/git-bash o aws.exe é um binário
+# nativo e não entende um path POSIX como /tmp/tmp.XXXX. Inline funciona nos dois mundos.
+TRUST_POLICY=$(cat <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [{
@@ -65,18 +66,18 @@ cat > "$TRUST_POLICY" <<EOF
   }]
 }
 EOF
+)
 
 if aws iam get-role --role-name "$ROLE_NAME" >/dev/null 2>&1; then
   log "Role $ROLE_NAME já existe — atualizando a trust policy."
   aws iam update-assume-role-policy --role-name "$ROLE_NAME" \
-    --policy-document "file://${TRUST_POLICY}"
+    --policy-document "$TRUST_POLICY"
 else
   log "Criando role $ROLE_NAME..."
   aws iam create-role --role-name "$ROLE_NAME" \
     --description "Deploy do oficina-api via GitHub Actions (Tech Challenge Fase 2)" \
-    --assume-role-policy-document "file://${TRUST_POLICY}" >/dev/null
+    --assume-role-policy-document "$TRUST_POLICY" >/dev/null
 fi
-rm -f "$TRUST_POLICY"
 
 # AdministratorAccess é deliberado, não preguiça: o Terraform aqui cria VPC, IGW, IAM roles,
 # EKS e RDS — uma policy "mínima" pra isso tem dezenas de actions e qualquer uma faltando
