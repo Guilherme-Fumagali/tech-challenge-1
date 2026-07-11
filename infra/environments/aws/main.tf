@@ -245,12 +245,16 @@ resource "null_resource" "deploy_app" {
   ]
 
   triggers = {
-    configmap_hash = local_file.app_configmap.content_md5
-    secret_hash    = local_file.app_secret.content_md5
-    manifests_hash = sha1(join("", [for f in fileset("${var.k8s_manifests_path}/app", "*.yaml") : filesha1("${var.k8s_manifests_path}/app/${f}")]))
+    configmap_hash      = local_file.app_configmap.content_md5
+    secret_hash         = local_file.app_secret.content_md5
+    manifests_hash      = sha1(join("", [for f in fileset("${var.k8s_manifests_path}/app", "*.yaml") : filesha1("${var.k8s_manifests_path}/app/${f}")]))
+    metrics_server_hash = filesha1("${var.k8s_manifests_path}/metrics-server/components.yaml")
   }
 
+  # metrics-server entra antes do app: o HPA (app/hpa.yaml) depende dele pra ler CPU/memória.
+  # Mesmo manifesto vendorizado do ambiente local (k8s/metrics-server/) — EKS também não o
+  # traz por padrão. Não aplica k8s/database/* (o banco é o RDS, não in-cluster).
   provisioner "local-exec" {
-    command = "aws eks update-kubeconfig --name ${aws_eks_cluster.oficina.name} --region ${var.aws_region} && kubectl apply -f ${var.k8s_manifests_path}/namespace.yaml && kubectl apply -f ${path.module}/rendered/app-configmap.yaml && kubectl apply -f ${path.module}/rendered/app-secret.yaml && kubectl apply -f ${var.k8s_manifests_path}/mailhog/ && kubectl apply -f ${var.k8s_manifests_path}/app/deployment.yaml -f ${var.k8s_manifests_path}/app/service.yaml -f ${var.k8s_manifests_path}/app/hpa.yaml"
+    command = "aws eks update-kubeconfig --name ${aws_eks_cluster.oficina.name} --region ${var.aws_region} && kubectl apply -f ${var.k8s_manifests_path}/namespace.yaml && kubectl apply -f ${var.k8s_manifests_path}/metrics-server/ && kubectl apply -f ${path.module}/rendered/app-configmap.yaml && kubectl apply -f ${path.module}/rendered/app-secret.yaml && kubectl apply -f ${var.k8s_manifests_path}/mailhog/ && kubectl apply -f ${var.k8s_manifests_path}/app/deployment.yaml -f ${var.k8s_manifests_path}/app/service.yaml -f ${var.k8s_manifests_path}/app/hpa.yaml"
   }
 }

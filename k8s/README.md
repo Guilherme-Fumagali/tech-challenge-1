@@ -4,13 +4,11 @@ Manifests para rodar a aplicação completa (API + Postgres + MailHog) em qualqu
 
 ## Pré-requisitos
 
-- Um cluster acessível via `kubectl` (local via `kind` — ver `../infra/environments/local` — ou remoto).
-- **metrics-server** instalado no cluster (necessário para o HPA funcionar). Em `kind`:
-  ```
-  kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-  kubectl patch deployment metrics-server -n kube-system --type=json \
-    -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
-  ```
+- Um cluster Kubernetes acessível via `kubectl` (AWS EKS — ver `../infra/environments/aws` — ou qualquer outro).
+- **metrics-server** — necessário para o HPA ler CPU/memória (sem ele o HPA fica `<unknown>` e não
+  escala). Vendorizado como manifesto em [`metrics-server/`](metrics-server/) (upstream v0.7.2, sem
+  modificações — no EKS o kubelet serve cert assinado pela CA do cluster, então não precisa de
+  `--kubelet-insecure-tls`). O fluxo de apply abaixo — e o Terraform do ambiente AWS — já o incluem.
 
 ## Segredos
 
@@ -36,6 +34,7 @@ kubectl create secret generic oficina-api-secret -n oficina \
 
 ```
 kubectl apply -f namespace.yaml
+kubectl apply -f metrics-server/
 kubectl apply -f database/
 kubectl apply -f mailhog/
 kubectl apply -f app/
@@ -62,4 +61,4 @@ k6 run -e BASE_URL=http://localhost:8080 loadtest/k6-script.js
 ## Acesso
 
 Sem Ingress configurado (fora de escopo por simplicidade) — use `kubectl port-forward` como acima. Um
-`ingress-nginx` local é um stretch opcional caso se queira uma URL fixa para a demo.
+`ingress-nginx` é um stretch opcional caso se queira uma URL fixa para a demo.

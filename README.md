@@ -38,10 +38,10 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
                         └──────────────┘        └────────┬────────┘
                                                            │
                      ┌─────────────────────────────────────┼─────────────────────┐
-                     │  Kubernetes (kind local ou AWS EKS)   ▼                     │
+                     │  Kubernetes (AWS EKS)                 ▼                     │
                      │   ┌───────────────┐   ┌────────────────────┐               │
-                     │   │ oficina-api   │──▶│ Postgres (StatefulSet│ local)     │
-                     │   │ (2-8 réplicas,│   │ ou RDS gerenciado    │ aws)       │
+                     │   │ oficina-api   │──▶│ RDS PostgreSQL      │               │
+                     │   │ (2-8 réplicas,│   │ (gerenciado)        │               │
                      │   │ HPA CPU/mem)  │   └────────────────────┘               │
                      │   └───────┬───────┘                                        │
                      │           ▼                                                │
@@ -54,16 +54,15 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
 | Cenário | Como | Guia |
 |---|---|---|
 | Dev rápido (inner-loop) | `docker compose up --build` | acima, seção "Execução local" |
-| Paridade com Kubernetes (local) | `cd infra/environments/local && terraform apply` | [`infra/README.md`](infra/README.md) |
-| Kubernetes "cru" (manifests) | `kubectl apply -f k8s/...` | [`k8s/README.md`](k8s/README.md) |
+| Kubernetes "cru" (manifests, cluster próprio) | `kubectl apply -f k8s/...` | [`k8s/README.md`](k8s/README.md) |
 | AWS (EKS + RDS) — **custo real** | `cd infra/environments/aws && terraform apply` | [`infra/README.md`](infra/README.md) — ⚠️ ler o aviso de custo antes |
 
 ### CI/CD
 
 - `.github/workflows/ci.yml` — build, testes, JaCoCo, OWASP dependency-check, SonarCloud (inalterado da Fase 1).
-- `.github/workflows/terraform.yml` — `plan`/`apply` automáticos pro ambiente `local` (kind, grátis,
-  smoke test em toda mudança em `infra/**`/`k8s/**`); `plan`/`apply` pro ambiente `aws` com **aprovação
-  manual obrigatória** antes do `apply` (GitHub Environment `aws-production`).
+- `.github/workflows/terraform.yml` — `plan` automático (só leitura, sem custo) a toda mudança em
+  `infra/**`/`k8s/**`; `apply` no ambiente `aws` com **aprovação manual obrigatória** antes de tocar
+  em qualquer recurso cobrado (GitHub Environment `aws-production`).
 - `.github/workflows/cd.yml` — build + push da imagem pro GHCR e deploy no EKS a cada push em `main`.
 - `.github/workflows/bootstrap-aws.yml` — cria/remove o backend de state (S3 + DynamoDB) com um clique.
 - `.github/workflows/destroy-aws.yml` — desliga o ambiente AWS com um clique (mesmo gate de aprovação).
@@ -254,8 +253,8 @@ A API estará disponível em: `http://localhost:8080`
 Swagger UI: `http://localhost:8080/swagger-ui.html`
 MailHog (e-mails capturados, incluindo o token de aprovação externa): `http://localhost:8025`
 
-Para rodar em paridade com Kubernetes (não apenas Docker Compose), ver `infra/environments/local`
-(cluster `kind` provisionado via Terraform) e `k8s/README.md`.
+Para rodar em Kubernetes, ver `k8s/README.md` (aplicar os manifests num cluster próprio) ou
+`infra/environments/aws` (provisionar EKS + RDS via Terraform).
 
 ---
 
@@ -435,13 +434,11 @@ oficina-api/
 │   │       └── db/migration/    # Flyway SQL
 │   └── test/
 ├── docs/
-│   ├── ddd/                     # Event Storming, Context Map, Domain Storytelling
-│   └── base-conhecimento/       # Requisitos e notas técnicas da Fase 2
-├── k8s/                         # Manifests Kubernetes (app, database, mailhog)
+│   └── ddd/                     # Event Storming, Context Map, Domain Storytelling
+├── k8s/                         # Manifests Kubernetes (app, database, mailhog, metrics-server)
 ├── infra/
 │   ├── bootstrap/                # Scripts de pré-requisito AWS (OIDC + backend de state)
 │   └── environments/
-│       ├── local/                 # Terraform — cluster kind
 │       └── aws/                    # Terraform — EKS + RDS
 ├── .github/workflows/            # ci.yml, terraform.yml, cd.yml, bootstrap-aws.yml, destroy-aws.yml
 ├── observability/                # Config do stretch de OpenTelemetry (Tempo + Grafana)
