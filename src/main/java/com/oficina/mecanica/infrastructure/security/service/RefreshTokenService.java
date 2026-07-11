@@ -8,6 +8,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
@@ -26,10 +27,10 @@ public class RefreshTokenService {
     @Transactional
     public String gerar(String username) {
         var token = UUID.randomUUID().toString();
-        var expiresAt = LocalDateTime.now().plusNanos(refreshExpirationMs * 1_000_000L);
+        var expiresAt = LocalDateTime.now(ZoneOffset.UTC).plusNanos(refreshExpirationMs * 1_000_000L);
 
         var entity = new RefreshTokenJpaEntity(
-            UUID.randomUUID(), token, username, expiresAt, LocalDateTime.now(), false);
+            UUID.randomUUID(), token, username, expiresAt, LocalDateTime.now(ZoneOffset.UTC), false);
         repository.save(entity);
         return token;
     }
@@ -46,7 +47,7 @@ public class RefreshTokenService {
                 "Refresh token já utilizado. Todos os tokens deste usuário foram revogados.");
         }
 
-        if (entity.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (entity.getExpiresAt().isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
             throw new BadCredentialsException("Refresh token expirado. Faça login novamente.");
         }
 

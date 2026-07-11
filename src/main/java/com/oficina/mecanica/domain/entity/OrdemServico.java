@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +42,7 @@ public class OrdemServico {
         this.status = StatusOS.RECEBIDA;
         this.itensServico = new ArrayList<>();
         this.itensPeca = new ArrayList<>();
-        this.dataAbertura = LocalDateTime.now();
+        this.dataAbertura = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public static OrdemServico reconstituir(DadosOrdemServico dados) {
@@ -86,13 +87,13 @@ public class OrdemServico {
         status.validarTransicaoPara(StatusOS.AGUARDANDO_APROVACAO);
         this.status = StatusOS.AGUARDANDO_APROVACAO;
         this.tokenAprovacaoExterna = TokenAprovacaoExterna.gerar();
-        this.tokenExpiracao = LocalDateTime.now().plus(validadeToken);
+        this.tokenExpiracao = LocalDateTime.now(ZoneOffset.UTC).plus(validadeToken);
     }
 
     public void aprovar() {
         status.validarTransicaoPara(StatusOS.EM_EXECUCAO);
         this.status = StatusOS.EM_EXECUCAO;
-        this.dataInicio = LocalDateTime.now();
+        this.dataInicio = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public void reprovar() {
@@ -116,7 +117,7 @@ public class OrdemServico {
         if (tokenAprovacaoExterna == null || !tokenAprovacaoExterna.equals(token)) {
             throw new TokenAprovacaoInvalidoException("Token de aprovação inválido.");
         }
-        if (tokenExpiracao == null || tokenExpiracao.isBefore(LocalDateTime.now())) {
+        if (tokenExpiracao == null || tokenExpiracao.isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
             throw new TokenAprovacaoInvalidoException("Token de aprovação expirado.");
         }
     }
@@ -129,9 +130,9 @@ public class OrdemServico {
     public void concluir() {
         status.validarTransicaoPara(StatusOS.FINALIZADA);
         this.status = StatusOS.FINALIZADA;
-        this.dataConclusao = LocalDateTime.now();
+        this.dataConclusao = LocalDateTime.now(ZoneOffset.UTC);
         this.excluidaLogicamente = true;
-        this.dataExclusaoLogica = LocalDateTime.now();
+        this.dataExclusaoLogica = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public void entregar() {

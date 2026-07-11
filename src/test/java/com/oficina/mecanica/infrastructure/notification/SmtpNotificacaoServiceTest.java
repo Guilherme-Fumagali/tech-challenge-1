@@ -59,8 +59,10 @@ class SmtpNotificacaoServiceTest {
         var clienteId = UUID.randomUUID();
         when(clienteRepository.buscarPorId(clienteId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.notificarOrcamentoPendente(
-            UUID.randomUUID(), clienteId, new BigDecimal("10.00"), "token"))
+        var osId = UUID.randomUUID();
+        var valor = new BigDecimal("10.00");
+
+        assertThatThrownBy(() -> service.notificarOrcamentoPendente(osId, clienteId, valor, "token"))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
 }

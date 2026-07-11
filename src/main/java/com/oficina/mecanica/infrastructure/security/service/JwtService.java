@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 
 @Service
@@ -24,11 +25,12 @@ public class JwtService {
     }
 
     public String gerarAccessToken(String username) {
+        Instant agora = Instant.now();
         return Jwts.builder()
             .subject(username)
             .claim("typ", "access")
-            .issuedAt(new Date())
-            .expiration(new Date(System.currentTimeMillis() + accessExpirationMs))
+            .issuedAt(Date.from(agora))
+            .expiration(Date.from(agora.plusMillis(accessExpirationMs)))
             .signWith(key)
             .compact();
     }

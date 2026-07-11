@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,8 +26,8 @@ class RelatorioTempoMedioUseCaseTest {
 
     RelatorioTempoMedioUseCase useCase;
 
-    private final LocalDateTime inicio = LocalDateTime.of(2026, 1, 1, 0, 0);
-    private final LocalDateTime fim    = LocalDateTime.of(2026, 12, 31, 23, 59);
+    private final LocalDateTime inicio = LocalDateTime.of(2026, Month.JANUARY, 1, 0, 0);
+    private final LocalDateTime fim    = LocalDateTime.of(2026, Month.DECEMBER, 31, 23, 59);
 
     @BeforeEach
     void setUp() {
@@ -52,8 +53,8 @@ class RelatorioTempoMedioUseCaseTest {
 
     @Test
     void executar_deveCalcularTempoMedioCorreto() {
-        var dataInicio = LocalDateTime.of(2026, 5, 1, 8, 0);
-        var dataConclusao = LocalDateTime.of(2026, 5, 1, 10, 0); // 2 horas
+        var dataInicio = LocalDateTime.of(2026, Month.MAY, 1, 8, 0);
+        var dataConclusao = LocalDateTime.of(2026, Month.MAY, 1, 10, 0); // 2 horas
         var os = osComDatas(dataInicio, dataConclusao);
         when(repository.listarFinalizadasNoPeriodo(inicio, fim)).thenReturn(List.of(os));
 
@@ -76,10 +77,10 @@ class RelatorioTempoMedioUseCaseTest {
 
     @Test
     void executar_deveCalcularMediaDeMultiplasOrdens() {
-        var t1Inicio = LocalDateTime.of(2026, 5, 1, 8, 0);
-        var t1Fim    = LocalDateTime.of(2026, 5, 1, 10, 0); // 2h
-        var t2Inicio = LocalDateTime.of(2026, 5, 2, 8, 0);
-        var t2Fim    = LocalDateTime.of(2026, 5, 2, 12, 0); // 4h
+        var t1Inicio = LocalDateTime.of(2026, Month.MAY, 1, 8, 0);
+        var t1Fim    = LocalDateTime.of(2026, Month.MAY, 1, 10, 0); // 2h
+        var t2Inicio = LocalDateTime.of(2026, Month.MAY, 2, 8, 0);
+        var t2Fim    = LocalDateTime.of(2026, Month.MAY, 2, 12, 0); // 4h
         when(repository.listarFinalizadasNoPeriodo(inicio, fim))
             .thenReturn(List.of(osComDatas(t1Inicio, t1Fim), osComDatas(t2Inicio, t2Fim)));
 
