@@ -1,21 +1,15 @@
 name: Terraform
 
-# Disparo manual (Actions → Terraform → Run workflow). Infra AWS é cobrada, então
-# nunca roda sozinha em push/PR — sempre por decisão explícita.
+# Manual. Infra AWS é cobrada. Ver infra/README.md.
 on:
   workflow_dispatch:
 
 jobs:
-  # ── Ambiente AWS (EKS + RDS) — infraestrutura real e cobrada ──────────────
-  # plan roda ao disparar (barato, só leitura); apply exige aprovação humana via
-  # GitHub Environment "aws-production" (Settings → Environments → Required
-  # reviewers) — o revisor vê exatamente o plano calculado antes de aprovar.
-
   plan-aws:
     name: Plan (aws)
     runs-on: ubuntu-latest
     permissions:
-      id-token: write # obrigatório pro configure-aws-credentials assumir a role via OIDC
+      id-token: write
       contents: read
     defaults:
       run:
@@ -27,8 +21,6 @@ jobs:
         with:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          # Fallback se OIDC não estiver configurado na conta: comente a linha acima e use
-          # aws-access-key-id / aws-secret-access-key a partir de secrets estáticos.
 
       - uses: hashicorp/setup-terraform@v3
         with:
@@ -80,5 +72,4 @@ jobs:
           name: tfplan-aws
           path: infra/environments/aws
 
-      # Aplica exatamente o plano já revisado pelo aprovador — sem re-plan às cegas.
       - run: terraform apply -auto-approve tfplan

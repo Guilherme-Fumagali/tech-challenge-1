@@ -47,11 +47,9 @@ jobs:
     name: Deploy no EKS
     needs: build-and-push-image
     runs-on: ubuntu-latest
-    # Deploy no EKS custa (exige cluster de pé) — mesmo gate de aprovação humana do terraform.
-    # A imagem já subiu pro GHCR no job anterior (grátis); este só roda após alguém aprovar.
     environment: aws-production
     permissions:
-      id-token: write # obrigatório pro configure-aws-credentials assumir a role via OIDC
+      id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -64,10 +62,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
 
       - name: Configurar kubeconfig
-        # Dinâmico via update-kubeconfig — sem secret KUBE_CONFIG base64 estático pra rotacionar.
-        # Só funciona se infra/environments/aws já tiver sido aplicado (workflow terraform.yml)
-        # ao menos uma vez antes — sequenciamento manual, documentado em infra/README.md
-        # (GitHub Actions não tem `needs:` nativo entre arquivos de workflow diferentes).
+        # Exige infra/environments/aws já aplicado antes. Ver infra/README.md.
         run: aws eks update-kubeconfig --name oficina-api-aws --region us-east-1
 
       - run: kubectl apply -f k8s/namespace.yaml -f k8s/app/

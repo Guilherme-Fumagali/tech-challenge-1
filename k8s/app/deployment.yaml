@@ -4,8 +4,7 @@ metadata:
   name: oficina-api
   namespace: oficina
 spec:
-  # Sem replicas fixo: o HPA (hpa.yaml) é dono da contagem (min 2 / max 8). Fixar aqui faria
-  # cada `kubectl apply` resetar pra o valor declarado e brigar com o autoscaler.
+  # Sem replicas: o HPA (hpa.yaml) gerencia a contagem.
   selector:
     matchLabels:
       app: oficina-api

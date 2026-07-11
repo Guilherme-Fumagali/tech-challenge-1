@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write # obrigatório pro configure-aws-credentials assumir a role via OIDC
+  id-token: write
   contents: read
 
 jobs:
