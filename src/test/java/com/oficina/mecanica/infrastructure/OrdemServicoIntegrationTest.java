@@ -205,7 +205,7 @@ class OrdemServicoIntegrationTest {
     @Test
     void listagem_deveOrdenarPorPrioridadeEExcluirFinalizadas() throws Exception {
         var token = obterToken();
-        var clienteId = criarCliente(token, "22.333.444/0001-92");
+        var clienteId = criarCliente(token, "22.333.444/0001-81");
         var veiculoId = criarVeiculo(token, clienteId, "LST0001");
         var pecaId = criarPeca(token, 10);
 
@@ -257,7 +257,7 @@ class OrdemServicoIntegrationTest {
     @Test
     void aprovacaoExterna_deveAprovarComTokenValidoSemAutenticacao() throws Exception {
         var token = obterToken();
-        var clienteId = criarCliente(token, "33.444.555/0001-03");
+        var clienteId = criarCliente(token, "33.444.555/0001-81");
         var veiculoId = criarVeiculo(token, clienteId, "EXT0001");
         var pecaId = criarPeca(token, 10);
         var osId = criarOS(token, clienteId, veiculoId);
@@ -281,7 +281,7 @@ class OrdemServicoIntegrationTest {
     @Test
     void aprovacaoExterna_deveRejeitarTokenInvalido() throws Exception {
         var token = obterToken();
-        var clienteId = criarCliente(token, "44.555.666/0001-14");
+        var clienteId = criarCliente(token, "44.555.666/0001-81");
         var veiculoId = criarVeiculo(token, clienteId, "EXT0002");
         var pecaId = criarPeca(token, 10);
         var osId = criarOS(token, clienteId, veiculoId);
