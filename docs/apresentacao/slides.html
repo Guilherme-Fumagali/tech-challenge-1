@@ -1,0 +1,746 @@
+<title>Oficina Mecânica API — Tech Challenge Fase 2</title>
+
+<style>
+  :root {
+    --ink:      #0E1519;
+    --panel:    #17222B;
+    --line:     #24333E;
+    --fg:       #E8E2D6;
+    --fg-dim:   #93A2AD;
+    --signal:   #E2622C;
+    --brass:    #C8A02E;
+    --ok:       #5C9E7A;
+
+    --ground:   var(--ink);
+    --surface:  var(--panel);
+    --border:   var(--line);
+    --text:     var(--fg);
+    --muted:    var(--fg-dim);
+
+    --display: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+    --body:    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono:    ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "DejaVu Sans Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground:  #EDE7DC;
+      --surface: #FBF7EF;
+      --border:  #D3C9B7;
+      --text:    #14202A;
+      --muted:   #5C6873;
+      --signal:  #C64F1C;
+      --brass:   #96771B;
+      --ok:      #3F7657;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground:  #EDE7DC;
+    --surface: #FBF7EF;
+    --border:  #D3C9B7;
+    --text:    #14202A;
+    --muted:   #5C6873;
+    --signal:  #C64F1C;
+    --brass:   #96771B;
+    --ok:      #3F7657;
+  }
+  :root[data-theme="dark"] {
+    --ground:  var(--ink);
+    --surface: var(--panel);
+    --border:  var(--line);
+    --text:    var(--fg);
+    --muted:   var(--fg-dim);
+    --signal:  #E2622C;
+    --brass:   #C8A02E;
+    --ok:      #5C9E7A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--text);
+    font-family: var(--body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- deck shell ---- */
+
+  .deck { position: relative; }
+
+  .slide {
+    display: none;
+    min-height: 100vh;
+    padding: clamp(2rem, 5vh, 4rem) clamp(1.5rem, 6vw, 6rem) 5.5rem;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(1.25rem, 3vh, 2.25rem);
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .slide.is-active { display: flex; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    align-items: center;
+  }
+  .eyebrow .who {
+    color: var(--ground);
+    background: var(--signal);
+    padding: 0.15rem 0.5rem;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+  }
+  .eyebrow .clock { color: var(--brass); letter-spacing: 0.12em; }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(2rem, 5.2vw, 4rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h2 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(1.6rem, 3.6vw, 2.9rem);
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .lede {
+    font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  /* ---- content blocks ---- */
+
+  .grid { display: grid; gap: 1rem; }
+  .grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--signal);
+    padding: 1.15rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .card .k {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .card .t {
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+  .card .d {
+    font-size: 0.95rem;
+    color: var(--muted);
+    margin: 0;
+  }
+  .card.quiet { border-top-color: var(--border); }
+
+  ul.points { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.85rem; }
+  ul.points li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.85rem;
+    align-items: baseline;
+    font-size: clamp(1rem, 1.4vw, 1.15rem);
+  }
+  ul.points li::before {
+    content: "";
+    width: 0.62rem;
+    height: 0.62rem;
+    background: var(--signal);
+    transform: translateY(0.1rem);
+  }
+  ul.points strong { font-weight: 700; }
+  ul.points .note { color: var(--muted); }
+
+  pre {
+    font-family: var(--mono);
+    font-size: clamp(0.72rem, 1.05vw, 0.92rem);
+    line-height: 1.6;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--brass);
+    padding: 1rem 1.15rem;
+    margin: 0;
+    overflow-x: auto;
+    color: var(--text);
+  }
+  pre .c { color: var(--muted); }
+  pre .a { color: var(--signal); }
+
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    font-family: var(--mono);
+    font-size: clamp(0.7rem, 1vw, 0.88rem);
+    letter-spacing: 0.04em;
+  }
+  .flow .step {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.4rem 0.7rem;
+    white-space: nowrap;
+  }
+  .flow .step.hot { border-color: var(--signal); color: var(--signal); }
+  .flow .sep { color: var(--muted); }
+
+  .stat { display: flex; flex-direction: column; gap: 0.2rem; }
+  .stat .n {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(2rem, 4vw, 3rem);
+    letter-spacing: -0.03em;
+    color: var(--signal);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat .l {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .demo-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--ground);
+    background: var(--signal);
+    padding: 0.5rem 0.9rem;
+    align-self: flex-start;
+  }
+
+  ol.script {
+    margin: 0;
+    padding-left: 1.4rem;
+    display: grid;
+    gap: 0.55rem;
+    font-size: clamp(0.95rem, 1.3vw, 1.1rem);
+  }
+  ol.script li::marker { font-family: var(--mono); color: var(--muted); font-size: 0.85em; }
+  ol.script code {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.05rem 0.35rem;
+  }
+  ol.script .beat { color: var(--signal); font-style: italic; }
+
+  /* ---- title slide ---- */
+
+  .title-slide { justify-content: center; gap: 2rem; }
+  .title-slide .rule {
+    height: 6px;
+    width: 140px;
+    background: repeating-linear-gradient(
+      -45deg, var(--signal) 0 10px, transparent 10px 20px
+    );
+  }
+  .title-slide .authors {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .title-slide .stack {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ---- chrome ---- */
+
+  .chrome {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem clamp(1.5rem, 6vw, 6rem);
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    backdrop-filter: blur(6px);
+  }
+  .chrome .bar {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    position: relative;
+  }
+  .chrome .bar span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--signal);
+    transition: width 180ms ease;
+  }
+  .chrome .count { font-variant-numeric: tabular-nums; }
+  .chrome button {
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+  }
+  .chrome button:hover { color: var(--signal); border-color: var(--signal); }
+  .chrome button:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+  .chrome button[aria-pressed="true"] { color: var(--ground); background: var(--signal); border-color: var(--signal); }
+
+  /* ---- presenter notes ---- */
+
+  .notes {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    max-height: 46vh;
+    overflow-y: auto;
+    padding: 1.25rem clamp(1.5rem, 6vw, 6rem) 4rem;
+    background: var(--surface);
+    border-top: 3px solid var(--signal);
+    display: none;
+  }
+  .notes.is-open { display: block; }
+  .notes h3 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.6rem;
+  }
+  .notes p {
+    margin: 0 0 0.7rem;
+    max-width: 78ch;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+  .notes p:last-child { margin-bottom: 0; }
+  .notes em { color: var(--signal); font-style: normal; font-weight: 600; }
+
+  body.notes-open .slide { padding-bottom: 50vh; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1 -->
+  <section class="slide title-slide" data-notes="Boa tarde. Somos o Danilo e o Guilherme, e este é o Tech Challenge da Fase 2: a API de gestão de uma oficina mecânica de médio porte.|Na Fase 1 entregamos o MVP em Clean Architecture. A Fase 2 pediu duas coisas: evoluir as regras de negócio e entregar a cadeia de infraestrutura inteira — container, Kubernetes, Terraform e CI/CD. É isso que vamos mostrar, e vamos mostrar <em>rodando</em>.">
+    <div class="rule"></div>
+    <h1>Oficina Mecânica API</h1>
+    <p class="lede">Gestão de ordens de serviço para uma oficina de médio porte. Da regra de negócio ao cluster, com a esteira inteira no meio.</p>
+    <div class="authors">
+      <span>Danilo Canato</span>
+      <span>Guilherme Fumagali</span>
+    </div>
+    <div class="stack">Tech Challenge · Fase 2 · PosTech FIAP — Arquitetura de Software</div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide" data-notes="Cinco entregas. Três regras novas de domínio; a aplicação containerizada; um cluster Kubernetes com escalabilidade automática; a infraestrutura descrita em Terraform; e uma esteira de CI/CD que vai do commit ao deploy.|Eu cubro a aplicação, o Guilherme cobre a infraestrutura. Cada um com <em>uma demo ao vivo</em>.">
+    <div class="eyebrow"><span class="who">Danilo</span><span>Escopo</span><span class="clock">0:40 → 1:20</span></div>
+    <h2>O que a Fase 2 pediu</h2>
+    <div class="grid cols-3">
+      <div class="card">
+        <span class="k">Aplicação</span>
+        <span class="t">Novas regras de negócio</span>
+        <p class="d">Priorização, exclusão lógica e aprovação externa.</p>
+      </div>
+      <div class="card">
+        <span class="k">Container</span>
+        <span class="t">Imagem enxuta e segura</span>
+        <p class="d">Multi-stage, sem build tooling, sem root.</p>
+      </div>
+      <div class="card">
+        <span class="k">Kubernetes</span>
+        <span class="t">Escalabilidade automática</span>
+        <p class="d">Probes, requests/limits e HPA.</p>
+      </div>
+      <div class="card">
+        <span class="k">Terraform</span>
+        <span class="t">Infra como código</span>
+        <p class="d">Dois cenários — local e nuvem.</p>
+      </div>
+      <div class="card">
+        <span class="k">CI/CD</span>
+        <span class="t">Do commit ao cluster</span>
+        <p class="d">Testes, segurança, imagem e deploy.</p>
+      </div>
+      <div class="card quiet">
+        <span class="k">Divisão</span>
+        <span class="t">Duas frentes, duas demos</span>
+        <p class="d">Danilo na aplicação, Guilherme na infraestrutura.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide" data-notes="A primeira regra: a listagem de OS é ordenada por <em>prioridade de negócio</em>, não por data. Dentro do mesmo status, as mais antigas primeiro — quem esperou mais aparece antes.|Segunda: OS Finalizada e Entregue somem da listagem. Exclusão <em>lógica</em> — o registro fica no banco para o relatório de tempo médio, só não polui a fila de quem está no balcão.|Terceira, a mais interessante: aprovação externa por token. Ao gerar o orçamento, a OS ganha um token único, de uso único e com expiração, e o cliente recebe <em>um e-mail de verdade</em>. Ele aprova sem ter login — o endpoint é público, mas só aceita aquele token, para aquela OS, uma vez só.|E reprovar não é só mudar status: <em>estorna o estoque</em> das peças já baixadas.">
+    <div class="eyebrow"><span class="who">Danilo</span><span>Domínio</span><span class="clock">1:20 → 2:40</span></div>
+    <h2>Três regras novas</h2>
+    <ul class="points">
+      <li><span><strong>Fila por prioridade de negócio, não por data.</strong> <span class="note">Em Execução → Aguardando Aprovação → Em Diagnóstico → Recebida. No mesmo status, quem esperou mais vem antes.</span></span></li>
+      <li><span><strong>Exclusão lógica de Finalizada e Entregue.</strong> <span class="note">Somem da fila de trabalho, permanecem no banco para o relatório de tempo médio. Nada é apagado.</span></span></li>
+      <li><span><strong>Aprovação externa por token, sem login.</strong> <span class="note">Token único por OS, de uso único e com expiração, entregue por e-mail. Endpoint público — mas só aceita aquele token, para aquela OS, uma vez.</span></span></li>
+      <li><span><strong>Reprovar estorna o estoque.</strong> <span class="note">As peças já baixadas voltam. Não é só uma troca de status.</span></span></li>
+    </ul>
+    <div class="flow">
+      <span class="step">Recebida</span><span class="sep">→</span>
+      <span class="step">Em Diagnóstico</span><span class="sep">→</span>
+      <span class="step hot">Aguardando Aprovação</span><span class="sep">→</span>
+      <span class="step">Em Execução</span><span class="sep">→</span>
+      <span class="step">Finalizada</span><span class="sep">→</span>
+      <span class="step">Entregue</span>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide" data-notes="A arquitetura não mudou — e esse é o ponto: as três regras novas entraram <em>sem tocar em infraestrutura</em>.|O domínio é Java puro, zero Spring. A aplicação orquestra os casos de uso. A infraestrutura tem Spring, JPA, REST, Security.|O e-mail é o exemplo mais claro. No Context Map, a notificação é um sistema externo, e a fronteira é um Anti-Corruption Layer: uma porta de saída escrita na linguagem do negócio. Dois adaptadores a implementam — um que só loga, outro que manda SMTP — e a escolha é uma <em>property</em>, não uma decisão de código.|Na Fase 1 o canal ficou como Hot Spot em aberto porque o negócio não tinha decidido. Na Fase 2 plugamos o SMTP: <em>nenhuma regra de negócio mudou</em>, só apareceu um adaptador novo. É o ACL fazendo o trabalho dele.">
+    <div class="eyebrow"><span class="who">Danilo</span><span>Arquitetura</span><span class="clock">2:40 → 3:50</span></div>
+    <h2>A arquitetura aguentou</h2>
+    <p class="lede">As três regras novas entraram sem que uma linha de infraestrutura mudasse. É o teste que uma Clean Architecture precisa passar.</p>
+    <div class="grid cols-2">
+      <pre><span class="c">// Application — a fronteira do ACL,
+// escrita na linguagem do negócio</span>
+public interface <span class="a">NotificacaoService</span> {
+    void notificarOrcamentoPendente(
+        UUID osId, UUID clienteId,
+        BigDecimal valorTotal,
+        String tokenAprovacao);
+}
+
+<span class="c">// Infrastructure — dois adaptadores,
+// escolhidos por property</span>
+LogNotificacaoService   <span class="c">// canal=log</span>
+<span class="a">SmtpNotificacaoService</span>  <span class="c">// canal=smtp</span></pre>
+      <div class="grid">
+        <div class="card">
+          <span class="k">Fase 1</span>
+          <span class="t">Canal de notificação: Hot Spot</span>
+          <p class="d">O negócio ainda não tinha decidido entre e-mail, SMS ou push. Fixar um canal em código seria dívida técnica no dia zero — então só o ACL foi construído.</p>
+        </div>
+        <div class="card">
+          <span class="k">Fase 2</span>
+          <span class="t">SMTP plugado, domínio intacto</span>
+          <p class="d">Apareceu um adaptador novo. Nenhum caso de uso, nenhuma entidade e nenhuma regra foram alterados.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide" data-notes="DEMO 1 — 2:30. É o trecho mais fácil de estourar: ensaie.|Cliente e veículo já criados <em>antes</em> de gravar. Repare no estoque caindo ao adicionar a peça — decremento atômico, ACID.|No MailHog: “isto é o que o cliente recebe”. No aprovar-externo: “sem login, só o token”. Repita o POST para mostrar que o token <em>já queimou</em>.">
+    <div class="eyebrow"><span class="who">Danilo</span><span>Ao vivo</span><span class="clock">3:50 → 6:20</span></div>
+    <span class="demo-banner">Demo 1 — a API rodando</span>
+    <h2>Do orçamento ao e-mail, e do e-mail à aprovação</h2>
+    <ol class="script">
+      <li>Login → <code>JWT</code>. As rotas administrativas exigem token.</li>
+      <li>Abrir a OS, iniciar diagnóstico, adicionar serviço e peça. <span class="beat">O estoque cai na hora — decremento atômico.</span></li>
+      <li><code>POST /gerar-orcamento</code> → status <strong>Aguardando Aprovação</strong>.</li>
+      <li>Abrir o <strong>MailHog</strong>: o e-mail chegou, com o token. <span class="beat">É isto que o cliente recebe.</span></li>
+      <li><code>POST /aprovar-externo</code> — <strong>sem header Authorization</strong>. <span class="beat">Sem login. Só o token.</span></li>
+      <li>Repetir o mesmo POST → <strong>falha</strong>. <span class="beat">Uso único: o token já queimou.</span></li>
+      <li><code>GET /api/ordens</code> → a fila, ordenada por prioridade.</li>
+    </ol>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide" data-notes="A imagem é um Dockerfile multi-stage: o primeiro estágio compila com Maven, o segundo carrega só o JRE e o JAR.|O que vai pra produção <em>não tem Maven, não tem código-fonte, não tem cache de build</em> — e roda como usuário não-root, com healthcheck.|Para o dia a dia, um docker compose up sobe API, Postgres e MailHog.">
+    <div class="eyebrow"><span class="who">Guilherme</span><span>Container</span><span class="clock">6:20 → 7:00</span></div>
+    <h2>A imagem carrega só o que roda</h2>
+    <div class="grid cols-2">
+      <pre><span class="c"># estágio 1 — compila</span>
+FROM maven:3.9-eclipse-temurin-21 AS builder
+RUN mvn package -DskipTests
+
+<span class="c"># estágio 2 — o que vai pra produção</span>
+FROM <span class="a">eclipse-temurin:21-jre-alpine</span>
+RUN adduser -S spring
+COPY --from=builder /app/target/*.jar app.jar
+USER <span class="a">spring</span>
+HEALTHCHECK CMD wget -qO- /actuator/health</pre>
+      <ul class="points">
+        <li><span><strong>Sem Maven, sem fonte, sem cache</strong> <span class="note">na imagem final — só JRE e JAR.</span></span></li>
+        <li><span><strong>Usuário não-root</strong> <span class="note">e healthcheck declarado no próprio container.</span></span></li>
+        <li><span><strong>Inner-loop separado</strong> <span class="note">— <code>docker compose up</code> sobe API, Postgres e MailHog.</span></span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide" data-notes="Um namespace só: Postgres, MailHog e a API.|A API tem readiness e liveness <em>separadas</em> — a readiness segura o tráfego até o Spring subir, a liveness reinicia o pod travado.|Requests e limits de CPU e memória, e é por isso que o autoscaling funciona: <em>sem requests o HPA não tem denominador</em> e não calcula porcentagem nenhuma.|HPA de 2 a 8 réplicas, mirando 70% de CPU e 80% de memória. Os secret.yaml versionados têm só REPLACE_ME — os valores reais são renderizados pelo Terraform. Nunca há segredo commitado.|O metrics-server precisou ser adicionado à mão: nem o kind nem o EKS o trazem, e sem ele o HPA lê &lt;unknown&gt; pra sempre.">
+    <div class="eyebrow"><span class="who">Guilherme</span><span>Kubernetes</span><span class="clock">7:00 → 8:10</span></div>
+    <h2>O que faz o autoscaling funcionar</h2>
+    <div class="grid cols-3">
+      <div class="card">
+        <div class="stat"><span class="n">2 → 8</span><span class="l">Réplicas (HPA)</span></div>
+        <p class="d">Alvo de 70% de CPU e 80% de memória.</p>
+      </div>
+      <div class="card">
+        <div class="stat"><span class="n">requests</span><span class="l">A peça obrigatória</span></div>
+        <p class="d">Sem <code>requests</code> o HPA não tem denominador — e não calcula porcentagem nenhuma.</p>
+      </div>
+      <div class="card">
+        <div class="stat"><span class="n">2 probes</span><span class="l">Readiness · Liveness</span></div>
+        <p class="d">Uma segura o tráfego até o Spring subir; a outra reinicia o pod travado.</p>
+      </div>
+    </div>
+    <ul class="points">
+      <li><span><strong>metrics-server é responsabilidade nossa.</strong> <span class="note">Nem o kind nem o EKS o trazem. Sem ele o HPA lê <code>&lt;unknown&gt;</code> para sempre e nunca escala.</span></span></li>
+      <li><span><strong>Nenhum segredo commitado.</strong> <span class="note">Os <code>secret.yaml</code> do repositório contêm só <code>REPLACE_ME</code>; os valores reais são renderizados pelo Terraform no apply.</span></span></li>
+    </ul>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide" data-notes="Dois cenários, os <em>mesmos manifestos</em>.|O local sobe um cluster kind com Postgres dentro do cluster. Custo zero — é o que vou mostrar daqui a pouco.|O AWS provisiona tudo do zero: VPC, subnets, Internet Gateway, IAM, o cluster EKS e um PostgreSQL gerenciado no RDS.|A diferença entre os dois é só <em>onde está o banco</em> e <em>de onde vem a imagem</em>. O resto é o mesmo YAML.|Escolhas de custo mínimo no cenário AWS: sem NAT Gateway, instâncias pequenas, single-AZ. Ambiente efêmero — subir, gravar, destruir.">
+    <div class="eyebrow"><span class="who">Guilherme</span><span>Terraform</span><span class="clock">8:10 → 9:00</span></div>
+    <h2>Dois ambientes, os mesmos manifestos</h2>
+    <div class="grid cols-2">
+      <div class="card">
+        <span class="k">environments/local</span>
+        <span class="t">kind — custo zero</span>
+        <p class="d">Cria o cluster, constrói a imagem, injeta no nó e aplica tudo num único <code>apply</code>. Postgres roda dentro do cluster.</p>
+      </div>
+      <div class="card">
+        <span class="k">environments/aws</span>
+        <span class="t">EKS + RDS — do zero</span>
+        <p class="d">VPC, subnets, Internet Gateway, IAM, cluster EKS e PostgreSQL gerenciado. Sem NAT Gateway, instâncias pequenas, single-AZ: ambiente efêmero por decisão de custo.</p>
+      </div>
+    </div>
+    <ul class="points">
+      <li><span><strong>A diferença é só o banco e a origem da imagem.</strong> <span class="note">Todo o resto — namespace, probes, HPA, metrics-server — é exatamente o mesmo YAML nos dois clusters.</span></span></li>
+    </ul>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide" data-notes="Uma armadilha clássica que vale contar.|O state do Terraform mora num bucket S3, com lock no DynamoDB. A pergunta é: <em>quem cria o bucket?</em>|Se for o próprio Terraform, o primeiro apply — o que cria o bucket — ainda não tem bucket onde guardar o state. Ele ficaria em disco. E state em disco <em>morre junto com o runner do CI</em>: na execução seguinte o Terraform esqueceria que o bucket existe e tentaria criá-lo de novo.|A causa é tratar um pré-requisito como se fosse um recurso. Então o bucket e a tabela são criados por um script de AWS CLI <em>idempotente</em>, que não tem state nenhum: pode rodar dez vezes, converge sempre no mesmo lugar. E aí roda tranquilo num runner efêmero.|O Terraform continua dono de tudo que o desafio pede. Só a prateleira onde ele guarda o próprio state é que fica de fora.">
+    <div class="eyebrow"><span class="who">Guilherme</span><span>Decisão</span><span class="clock">9:00 → 9:50</span></div>
+    <h2>Quem cria o bucket do state?</h2>
+    <p class="lede">O state do Terraform mora no S3, com lock no DynamoDB. Mas se o próprio Terraform criasse esse bucket, o primeiro <code>apply</code> não teria onde guardar o state do apply que cria o bucket.</p>
+    <div class="grid cols-2">
+      <div class="card">
+        <span class="k">O sintoma</span>
+        <span class="t">State em disco morre com o runner</span>
+        <p class="d">O runner do CI é efêmero. Na execução seguinte o Terraform esqueceria que o bucket existe — e tentaria criá-lo de novo.</p>
+      </div>
+      <div class="card">
+        <span class="k">A causa</span>
+        <span class="t">Um pré-requisito tratado como recurso</span>
+        <p class="d">Backend não é aplicação. Bucket e tabela são criados por um script de AWS CLI <strong>idempotente</strong> — sem state, converge sempre no mesmo lugar, roda dez vezes sem susto.</p>
+      </div>
+    </div>
+    <div class="flow">
+      <span class="step hot">bootstrap.sh</span>
+      <span class="sep">cria a prateleira →</span>
+      <span class="step">S3 + DynamoDB</span>
+      <span class="sep">onde o →</span>
+      <span class="step">terraform apply</span>
+      <span class="sep">guarda o state</span>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide" data-notes="A cada push: build, testes unitários e de integração com Testcontainers, cobertura no JaCoCo, OWASP Dependency-Check e o quality gate do SonarCloud. Passando, a imagem vai pro GHCR e o deploy vai pro cluster.|Duas decisões que valem a menção. Primeira: o Actions autentica na AWS via <em>OIDC</em> — não existe access key estática guardada em secret. O GitHub troca um token de curta duração por uma role que <em>só este repositório</em> consegue assumir.|Segunda: tudo que cobra dinheiro — apply, destroy — passa por um GitHub Environment com <em>aprovação manual obrigatória</em>. A pipeline para e espera um humano.|Depois de um único passo local — criar essa primeira credencial, impossível de automatizar porque para criar a primeira credencial você já precisaria de uma — <em>todo o resto é um clique no Actions</em>.">
+    <div class="eyebrow"><span class="who">Guilherme</span><span>CI/CD</span><span class="clock">9:50 → 11:00</span></div>
+    <h2>Do commit ao cluster</h2>
+    <div class="flow">
+      <span class="step">push</span><span class="sep">→</span>
+      <span class="step">build + testes</span><span class="sep">→</span>
+      <span class="step">JaCoCo</span><span class="sep">→</span>
+      <span class="step">OWASP</span><span class="sep">→</span>
+      <span class="step">SonarCloud</span><span class="sep">→</span>
+      <span class="step">imagem no GHCR</span><span class="sep">→</span>
+      <span class="step hot">aprovação humana</span><span class="sep">→</span>
+      <span class="step">deploy</span>
+    </div>
+    <div class="grid cols-2">
+      <div class="card">
+        <span class="k">Autenticação</span>
+        <span class="t">OIDC — nenhuma chave estática</span>
+        <p class="d">Não há access key guardada em secret. O GitHub troca um token de curta duração por uma role que <strong>só este repositório</strong> consegue assumir.</p>
+      </div>
+      <div class="card">
+        <span class="k">Gate</span>
+        <span class="t">Tudo que cobra, para e espera</span>
+        <p class="d"><code>apply</code> e <code>destroy</code> passam por um GitHub Environment com aprovação manual obrigatória. Nenhum recurso pago sobe sem um humano dizer sim.</p>
+      </div>
+    </div>
+    <ul class="points">
+      <li><span><strong>Um único passo local, e é irredutível.</strong> <span class="note">Criar a primeira credencial não dá para automatizar: para criá-la, o pipeline já precisaria de uma. Feito isso, todo o ciclo — bootstrap, plan, apply, deploy, destroy — é um clique no Actions.</span></span></li>
+    </ul>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide" data-notes="DEMO 2 — 2:30. O HPA é a estrela: reserve tempo pra ele.|Se o cluster já estiver criado, mostre o apply retornando sem mudanças e comente que a criação do zero leva ~4 min por causa do docker build.|Tela dividida: kubectl get hpa -w de um lado, k6 do outro. Narre o HPA <em>acordando</em>: &lt;unknown&gt; → percentual real → passa de 70% → réplicas sobem.|Feche: “oito réplicas, o teto que definimos. Quando a carga cair, ele volta a duas sozinho — com um atraso proposital, pra não ficar batendo pra cima e pra baixo.”">
+    <div class="eyebrow"><span class="who">Guilherme</span><span>Ao vivo</span><span class="clock">11:00 → 13:30</span></div>
+    <span class="demo-banner">Demo 2 — cluster e autoscaling</span>
+    <h2>O HPA reagindo à carga, ao vivo</h2>
+    <ol class="script">
+      <li><code>terraform apply</code> → cria o cluster, constrói a imagem, injeta no nó, aplica os manifestos.</li>
+      <li><code>kubectl get pods -n oficina</code> → API, Postgres e MailHog de pé. <strong>Duas réplicas.</strong></li>
+      <li><code>port-forward</code> + <code>curl /actuator/health</code> → <code>UP</code>. <span class="beat">É a mesma API da primeira demo, agora num cluster.</span></li>
+      <li>Tela dividida: <code>kubectl get hpa -w</code> de um lado, <code>k6 run</code> do outro.</li>
+      <li>Subir a carga. <span class="beat">O HPA acorda: &lt;unknown&gt; → percentual real → passa de 70% → 2, 4, 6, 8 réplicas.</span></li>
+      <li>Carga cai → volta a duas sozinho, com atraso proposital, para não oscilar.</li>
+    </ol>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide" data-notes="<em>Guilherme:</em> Na esteira: quality gate do SonarCloud, cobertura pelo JaCoCo e OWASP Dependency-Check a cada push. Quatro CVEs seguem suprimidas com justificativa — são de Tomcat e Spring Security, e <em>ainda não existe patch publicado</em>. Estão documentadas, com data, e reavaliadas a cada fase.|<em>Danilo:</em> Três débitos da Fase 1 foram quitados: o MapStruct que estava declarado e nunca foi usado saiu do projeto; o construtor de nove parâmetros virou um record; e o stub de notificação virou SMTP de verdade.">
+    <div class="eyebrow"><span class="who">Ambos</span><span>Qualidade</span><span class="clock">13:30 → 14:10</span></div>
+    <h2>O que a esteira cobra da gente</h2>
+    <div class="grid cols-2">
+      <div class="card">
+        <span class="k">A cada push</span>
+        <span class="t">Sonar · JaCoCo · OWASP</span>
+        <p class="d">Quality gate, cobertura e varredura de dependências. Quatro CVEs seguem suprimidas <strong>com justificativa</strong>: são de Tomcat e Spring Security, e ainda não existe patch publicado. Documentadas, datadas, reavaliadas a cada fase.</p>
+      </div>
+      <div class="card">
+        <span class="k">Débitos da Fase 1</span>
+        <span class="t">Três quitados</span>
+        <p class="d">O MapStruct declarado e nunca usado saiu do projeto. O construtor de nove parâmetros virou um <code>record</code>. E o stub de notificação virou SMTP de verdade.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide title-slide" data-notes="Regras novas sem tocar em infraestrutura, porque a arquitetura aguentou. Infraestrutura declarada, versionada e destruível com um clique. E a esteira inteira, do commit ao cluster.|Obrigado.">
+    <div class="rule"></div>
+    <h1>Obrigado</h1>
+    <ul class="points">
+      <li><span><strong>Regras novas sem tocar em infraestrutura</strong> <span class="note">— a arquitetura aguentou.</span></span></li>
+      <li><span><strong>Infraestrutura declarada e versionada</strong> <span class="note">— e destruível com um clique.</span></span></li>
+      <li><span><strong>A esteira inteira</strong> <span class="note">— do commit ao cluster.</span></span></li>
+    </ul>
+    <div class="authors">
+      <span>Danilo Canato</span>
+      <span>Guilherme Fumagali</span>
+    </div>
+  </section>
+
+</div>
+
+<div class="notes" id="notes" aria-live="polite">
+  <h3>Notas do apresentador</h3>
+  <div id="notes-body"></div>
+</div>
+
+<nav class="chrome">
+  <span class="count"><span id="cur">1</span> / <span id="total">13</span></span>
+  <div class="bar"><span id="progress"></span></div>
+  <button id="btn-notes" type="button" aria-pressed="false">Notas · N</button>
+  <button id="btn-theme" type="button">Tema · T</button>
+</nav>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var cur = document.getElementById('cur');
+    var total = document.getElementById('total');
+    var progress = document.getElementById('progress');
+    var notes = document.getElementById('notes');
+    var notesBody = document.getElementById('notes-body');
+    var btnNotes = document.getElementById('btn-notes');
+    var btnTheme = document.getElementById('btn-theme');
+    var i = 0;
+
+    total.textContent = slides.length;
+
+    function renderNotes() {
+      var raw = slides[i].getAttribute('data-notes') || '';
+      notesBody.innerHTML = raw
+        .split('|')
+        .map(function (p) { return '<p>' + p + '</p>'; })
+        .join('');
+    }
+
+    function show(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach(function (s, k) { s.classList.toggle('is-active', k === i); });
+      cur.textContent = i + 1;
+      progress.style.width = ((i + 1) / slides.length * 100) + '%';
+      renderNotes();
+      window.scrollTo(0, 0);
+      if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+    }
+
+    function toggleNotes() {
+      var open = notes.classList.toggle('is-open');
+      document.body.classList.toggle('notes-open', open);
+      btnNotes.setAttribute('aria-pressed', String(open));
+    }
+
+    function toggleTheme() {
+      var root = document.documentElement;
+      var isDark = root.getAttribute('data-theme') === 'dark'
+        || (!root.getAttribute('data-theme')
+            && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); show(0); }
+      else if (e.key === 'End') { e.preventDefault(); show(slides.length - 1); }
+      else if (e.key === 'n' || e.key === 'N') { toggleNotes(); }
+      else if (e.key === 't' || e.key === 'T') { toggleTheme(); }
+    });
+
+    btnNotes.addEventListener('click', toggleNotes);
+    btnTheme.addEventListener('click', toggleTheme);
+
+    var start = parseInt((location.hash || '').slice(1), 10);
+    show(isNaN(start) ? 0 : start - 1);
+  })();
+</script>
