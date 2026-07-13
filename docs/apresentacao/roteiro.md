@@ -4,8 +4,13 @@ Dois apresentadores. Tempo alvo **14:30**, teto rígido **15:00** — sobra ~30s
 
 Os nomes abaixo são placeholders: **P1 = Danilo**, **P2 = Guilherme**. Troque se a divisão for outra.
 
-Slides: [`slides.html`](slides.html) — abra no navegador, setas/espaço para navegar, tecla `N` mostra
-estas falas na própria tela.
+Slides: [`Tech-Challenge-Fase2.pptx`](Tech-Challenge-Fase2.pptx). As falas abaixo já estão dentro do
+arquivo, nas **notas do apresentador** — use o Modo de Apresentador do PowerPoint e cada um lê a sua
+parte na tela do próprio notebook.
+
+O deck é gerado por [`gerar-slides.js`](gerar-slides.js). Para editar o conteúdo, o caminho honesto é
+mexer no script e regerar (`npm i pptxgenjs && node gerar-slides.js Tech-Challenge-Fase2.pptx`) —
+mas editar direto no PowerPoint também funciona, contanto que ninguém rode o script depois.
 
 ## Antes de gravar (checklist)
 
