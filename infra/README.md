@@ -1,8 +1,13 @@
 # Infraestrutura — Terraform
 
-Um ambiente: **AWS** (EKS + RDS), provisionado do zero. O inner-loop de desenvolvimento local
-é o `docker compose up` na raiz do repo (Postgres + MailHog + API) — não há cluster Kubernetes
-local; Kubernetes só na nuvem.
+Dois ambientes, o mesmo conjunto de manifests em [`k8s/`](../k8s):
+
+- **`local`** — cluster **kind** (Kubernetes em Docker), Postgres in-cluster, HPA. Custo zero.
+  É o ambiente usado na demo.
+- **`aws`** — **EKS + RDS**, provisionado do zero. Cobra dinheiro real.
+
+O inner-loop do dia a dia continua sendo `docker compose up` na raiz do repo (Postgres +
+MailHog + API, sem Kubernetes).
 
 ```
 infra/
@@ -10,7 +15,59 @@ infra/
 │   ├── github-oidc.sh    #   dá ao GitHub Actions acesso à conta AWS (único passo local, roda 1x)
 │   └── bootstrap.sh      #   cria/remove o backend de state S3+DynamoDB (roda via Actions)
 └── environments/
-    └── aws/               # EKS + RDS — ver seção "Ambiente AWS" abaixo (custo real)
+    ├── local/            # kind + Postgres + HPA — custo zero, roda na sua máquina
+    └── aws/              # EKS + RDS — ver seção "Ambiente AWS" abaixo (custo real)
+```
+
+## Ambiente local (kind)
+
+Sobe o cluster, constrói a imagem, carrega no nó e implanta tudo num único `apply`.
+
+### Pré-requisitos
+
+`docker` (Docker Desktop **ligado**), `kind`, `kubectl` e `terraform` no PATH.
+
+### Subir
+
+```bash
+cd infra/environments/local
+cp terraform.tfvars.example terraform.tfvars   # preencher as 3 senhas
+terraform init
+terraform apply
+```
+
+O que o apply faz, em ordem: cria o cluster kind → `docker build` da API → `kind load` da imagem
+no nó → aplica namespace, metrics-server, Postgres, MailHog e a API (Deployment + Service + HPA).
+
+### Por que build local em vez de pull do GHCR
+
+O pacote publicado pelo CI no GHCR é **privado**. Puxá-lo de dentro do cluster exigiria um
+`imagePullSecret` com um PAT do GitHub guardado no cluster — credencial de longa duração só
+para uma demo. `kind load docker-image` injeta a imagem direto no nó: sem registry, sem
+credencial, e funciona offline.
+
+Para usar a imagem do CI (depois de tornar o pacote público em *Settings → Packages*):
+
+```hcl
+build_local_image = false
+app_image         = "ghcr.io/<owner>/oficina-api:latest"
+```
+
+### Acessar e ver o HPA escalando
+
+```bash
+kubectl --kubeconfig=./kubeconfig get pods -n oficina -w      # aguardar Ready
+kubectl --kubeconfig=./kubeconfig port-forward svc/oficina-api 8080:80 -n oficina
+curl http://localhost:8080/actuator/health
+
+kubectl --kubeconfig=./kubeconfig get hpa -n oficina -w       # em outro terminal
+k6 run -e BASE_URL=http://localhost:8080 ../../../k8s/loadtest/k6-script.js
+```
+
+### Derrubar
+
+```bash
+terraform destroy
 ```
 
 ## Ambiente AWS (EKS + RDS)

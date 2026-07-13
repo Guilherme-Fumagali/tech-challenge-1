@@ -54,8 +54,13 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
 | Cenário | Como | Guia |
 |---|---|---|
 | Dev rápido (inner-loop) | `docker compose up --build` | acima, seção "Execução local" |
+| **Kubernetes local (kind) — custo zero** | `cd infra/environments/local && terraform apply` | [`infra/README.md`](infra/README.md) |
 | Kubernetes "cru" (manifests, cluster próprio) | `kubectl apply -f k8s/...` | [`k8s/README.md`](k8s/README.md) |
 | AWS (EKS + RDS) — **custo real** | `cd infra/environments/aws && terraform apply` | [`infra/README.md`](infra/README.md) — ⚠️ ler o aviso de custo antes |
+
+Os mesmos manifests de [`k8s/`](k8s/) servem os dois clusters. A diferença entre os ambientes está
+no banco (Postgres in-cluster no kind, RDS gerenciado na AWS) e na origem da imagem (`kind load` de
+um build local vs. pull do GHCR).
 
 ### CI/CD
 
@@ -440,6 +445,7 @@ oficina-api/
 ├── infra/
 │   ├── bootstrap/                # Scripts de pré-requisito AWS (OIDC + backend de state)
 │   └── environments/
+│       ├── local/                  # Terraform — cluster kind + Postgres in-cluster
 │       └── aws/                    # Terraform — EKS + RDS
 ├── .github/workflows/            # ci-cd.yml, terraform.yml, bootstrap-aws.yml, destroy-aws.yml
 ├── observability/                # Config do stretch de OpenTelemetry (Tempo + Grafana)
