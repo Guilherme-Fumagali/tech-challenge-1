@@ -315,7 +315,6 @@ class OrdemServicoIntegrationTest {
         var tokenAprovacao = osJpaRepository.findById(java.util.UUID.fromString(osId))
             .orElseThrow().getTokenAprovacaoExterna();
 
-        // Botão "Aprovar" do e-mail: GET público, sem header de autenticação
         mvc.perform(get("/api/ordens/{id}/aprovar-externo", osId).param("token", tokenAprovacao))
             .andExpect(status().isOk())
             .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
@@ -339,7 +338,6 @@ class OrdemServicoIntegrationTest {
         var tokenAprovacao = osJpaRepository.findById(java.util.UUID.fromString(osId))
             .orElseThrow().getTokenAprovacaoExterna();
 
-        // Botão "Reprovar" do e-mail: GET público, sem header de autenticação
         mvc.perform(get("/api/ordens/{id}/reprovar-externo", osId).param("token", tokenAprovacao))
             .andExpect(status().isOk())
             .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));

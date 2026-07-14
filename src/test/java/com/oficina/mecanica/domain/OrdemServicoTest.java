@@ -47,7 +47,7 @@ class OrdemServicoTest {
 
         @Test
         void deveAvancarStatusNaOrdemCorreta() {
-            var os = criarOsComItem(); // já em EM_DIAGNOSTICO com um item
+            var os = criarOsComItem();
 
             os.gerarOrcamento();
             assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
@@ -69,7 +69,7 @@ class OrdemServicoTest {
 
         @Test
         void deveCancelarAoReprovarOrcamento() {
-            var os = criarOsComItem(); // já em EM_DIAGNOSTICO
+            var os = criarOsComItem();
             os.gerarOrcamento();
             os.reprovar();
             assertThat(os.getStatus()).isEqualTo(StatusOS.CANCELADA);
@@ -85,7 +85,7 @@ class OrdemServicoTest {
 
         @Test
         void naoDevePermitirRetroagirStatus() {
-            var os = criarOsComItem(); // já em EM_DIAGNOSTICO
+            var os = criarOsComItem();
             os.gerarOrcamento();
             os.aprovar();
             // EM_EXECUCAO não pode voltar para EM_DIAGNOSTICO
@@ -95,7 +95,7 @@ class OrdemServicoTest {
 
         @Test
         void estadoFinalNaoPermiteNenhumaTransicao() {
-            var os = criarOsComItem(); // já em EM_DIAGNOSTICO
+            var os = criarOsComItem();
             os.gerarOrcamento();
             os.reprovar();
             // CANCELADA é estado final
@@ -135,7 +135,6 @@ class OrdemServicoTest {
         @Test
         void deveRejeitarAdicionarItemForaDosDiagnostico() {
             var os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId);
-            // Status é RECEBIDA — não permitido adicionar serviço
 
             var item = new ItemServico(UUID.randomUUID(), UUID.randomUUID(),
                 "Troca de óleo", new BigDecimal("80.00"), 1);

@@ -44,8 +44,7 @@ public class OrdemServicoAprovacaoExternaController {
         return ResponseEntity.ok(OrdemServicoResponse.from(os));
     }
 
-    // Endpoints GET abaixo existem para os BOTÕES do e-mail (um link só pode ser GET).
-    // Executam a decisão e devolvem uma página HTML amigável para o cliente.
+    // Endpoints GET abaixo existem para os botões do e-mail — um link só pode fazer GET.
 
     @GetMapping(value = "/{id}/aprovar-externo", produces = MediaType.TEXT_HTML_VALUE)
     @Operation(summary = "Aprovar orçamento pelo link do e-mail (público)")
