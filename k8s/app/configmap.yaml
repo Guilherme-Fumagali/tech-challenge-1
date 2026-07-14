@@ -10,3 +10,4 @@ data:
   SMTP_HOST: "oficina-mailhog"
   SMTP_PORT: "1025"
   MAIL_FROM: "oficina@example.com"
+  MANAGEMENT_TRACING_ENABLED: "false"
