@@ -1,0 +1,307 @@
+### Demo — Tech Challenge Fase 2 (oficina-api rodando em AWS EKS)
+###
+### 🆕 NOVIDADES DA FASE 2 (destacadas com "FASE 2" abaixo):
+###   • Autenticação JWT (login/refresh/logout) com ROTAÇÃO de refresh token e detecção de reuso
+###   • Notificação por e-mail (SMTP/MailHog) ao gerar orçamento
+###   • Aprovação/reprovação EXTERNA via token do e-mail — endpoint PÚBLICO, sem JWT
+###   • Consulta pública de status — sem JWT
+###   • Deploy em AWS: EKS + RDS Postgres + Service LoadBalancer (ELB)
+###
+### Host = ELB público do cluster. Troque se o service for recriado (o hostname muda):
+###   kubectl get svc oficina-api -n oficina -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+@base = http://ae7af295c4243467986eaddd2e0cfc33-554908221.us-east-1.elb.amazonaws.com/api
+
+
+### ═════════════════════════════════════════════
+### 🆕 FASE 2 — 1. LOGIN (JWT)
+### Emite par accessToken (15 min) + refreshToken (7 dias)
+### ═════════════════════════════════════════════
+
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+> {%
+client.global.set("token", response.body.accessToken);
+client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+
+### ─────────────────────────────────────────────
+### 2. CADASTRAR CLIENTE  (CPF com dígitos verificadores reais)
+### ─────────────────────────────────────────────
+
+POST {{base}}/clientes
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "cpfCnpj": "529.982.247-25",
+  "nome": "João da Silva",
+  "email": "joao@email.com",
+  "telefone": "11999998888"
+}
+
+> {%
+client.global.set("clienteId", response.body.id);
+%}
+
+
+### ─────────────────────────────────────────────
+### 3. CADASTRAR VEÍCULO  (placa Mercosul)
+### ─────────────────────────────────────────────
+
+POST {{base}}/veiculos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "placa": "ABC1D23",
+  "marca": "Toyota",
+  "modelo": "Corolla",
+  "anoFabricacao": 2022,
+  "clienteId": "{{clienteId}}"
+}
+
+> {%
+client.global.set("veiculoId", response.body.id);
+%}
+
+
+### ─────────────────────────────────────────────
+### SETUP — SERVIÇO NO CATÁLOGO
+### ─────────────────────────────────────────────
+
+POST {{base}}/servicos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nome": "Troca de Óleo",
+  "descricao": "Troca de óleo e filtro",
+  "precoUnitario": 150.00,
+  "tempoEstimadoHoras": 1
+}
+
+> {%
+client.global.set("servicoId", response.body.id);
+%}
+
+
+### ─────────────────────────────────────────────
+### SETUP — PEÇA NO CATÁLOGO
+### ─────────────────────────────────────────────
+
+POST {{base}}/pecas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nome": "Filtro de Óleo",
+  "descricao": "Filtro de óleo Mann W712",
+  "precoUnitario": 35.00,
+  "quantidadeEstoque": 10,
+  "estoqueMinimo": 2
+}
+
+> {%
+client.global.set("pecaId", response.body.id);
+%}
+
+
+### ─────────────────────────────────────────────
+### 4. ABRIR OS
+### ─────────────────────────────────────────────
+
+POST {{base}}/ordens
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clienteId": "{{clienteId}}",
+  "veiculoId": "{{veiculoId}}"
+}
+
+> {%
+client.global.set("osId", response.body.id);
+%}
+
+
+### ─────────────────────────────────────────────
+### 5. INICIAR DIAGNÓSTICO
+### ─────────────────────────────────────────────
+
+POST {{base}}/ordens/{{osId}}/iniciar-diagnostico
+Authorization: Bearer {{token}}
+
+
+### ─────────────────────────────────────────────
+### 6a. ADICIONAR SERVIÇO  (snapshot de preço)
+### ─────────────────────────────────────────────
+
+POST {{base}}/ordens/{{osId}}/servicos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "itemId": "{{servicoId}}",
+  "quantidade": 1
+}
+
+
+### ─────────────────────────────────────────────
+### 6b. ADICIONAR PEÇA  (decrementa estoque)
+### ─────────────────────────────────────────────
+
+POST {{base}}/ordens/{{osId}}/pecas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "itemId": "{{pecaId}}",
+  "quantidade": 1
+}
+
+
+### ═════════════════════════════════════════════
+### 🆕 FASE 2 — 7. GERAR ORÇAMENTO  (dispara e-mail!)
+### Total = soma dos snapshots (imune a reajuste futuro).
+### Ao gerar, a API envia um E-MAIL ao cliente (SMTP/MailHog)
+### com um TOKEN de aprovação externa.
+### ═════════════════════════════════════════════
+
+POST {{base}}/ordens/{{osId}}/gerar-orcamento
+Authorization: Bearer {{token}}
+
+
+### ═════════════════════════════════════════════
+### 🆕 FASE 2 — PEGAR O TOKEN NO E-MAIL (MailHog)
+### MailHog é interno (ClusterIP). Abra a caixa de entrada:
+###   kubectl port-forward -n oficina svc/oficina-mailhog 8025:8025
+###   → navegador em http://localhost:8025
+### Copie o token do e-mail "Orçamento pendente" e cole abaixo.
+### ═════════════════════════════════════════════
+
+@tokenAprovacao = COLE_O_TOKEN_DO_EMAIL_AQUI
+
+
+### ═════════════════════════════════════════════
+### 🆕 FASE 2 — 8. APROVAR VIA TOKEN EXTERNO  (PÚBLICO, sem JWT!)
+### É o cliente aprovando pelo link do e-mail — não precisa de login.
+### decisao: APROVAR | REPROVAR
+### ═════════════════════════════════════════════
+
+POST {{base}}/ordens/{{osId}}/aprovar-externo
+Content-Type: application/json
+
+{
+  "token": "{{tokenAprovacao}}",
+  "decisao": "APROVAR"
+}
+
+
+### ─────────────────────────────────────────────
+### 9. CONCLUIR  (requer JWT)
+### ─────────────────────────────────────────────
+
+POST {{base}}/ordens/{{osId}}/concluir
+Authorization: Bearer {{token}}
+
+
+### ─────────────────────────────────────────────
+### 10. ENTREGAR  (requer JWT)
+### ─────────────────────────────────────────────
+
+POST {{base}}/ordens/{{osId}}/entregar
+Authorization: Bearer {{token}}
+
+
+### ═════════════════════════════════════════════
+### 🆕 FASE 2 — 11. REPROVAÇÃO EXTERNA + ESTORNO ATÔMICO
+### Nova OS, adiciona 2 peças, gera orçamento (novo e-mail/token),
+### e o cliente REPROVA pelo token → estorna as 2 unidades ao estoque.
+### ═════════════════════════════════════════════
+
+POST {{base}}/ordens
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clienteId": "{{clienteId}}",
+  "veiculoId": "{{veiculoId}}"
+}
+
+> {%
+client.global.set("os2Id", response.body.id);
+%}
+
+### 11b. Iniciar diagnóstico OS2
+POST {{base}}/ordens/{{os2Id}}/iniciar-diagnostico
+Authorization: Bearer {{token}}
+
+### 11c. Adicionar peça OS2 (2 unidades)
+POST {{base}}/ordens/{{os2Id}}/pecas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "itemId": "{{pecaId}}",
+  "quantidade": 2
+}
+
+### 11d. Gerar orçamento OS2  (novo e-mail com novo token)
+POST {{base}}/ordens/{{os2Id}}/gerar-orcamento
+Authorization: Bearer {{token}}
+
+### 11e. REPROVAR via token externo (pegue o token do novo e-mail no MailHog)
+@tokenAprovacao2 = COLE_O_TOKEN_DO_SEGUNDO_EMAIL_AQUI
+
+POST {{base}}/ordens/{{os2Id}}/aprovar-externo
+Content-Type: application/json
+
+{
+  "token": "{{tokenAprovacao2}}",
+  "decisao": "REPROVAR"
+}
+
+
+### ═════════════════════════════════════════════
+### 🆕 FASE 2 — 12. CONSULTA PÚBLICA DE STATUS  (sem JWT)
+### ═════════════════════════════════════════════
+
+GET {{base}}/ordens/{{osId}}/status
+
+
+### ═════════════════════════════════════════════
+### 🆕 FASE 2 — 13. RENOVAR TOKEN (ROTAÇÃO)
+### O refresh anterior é REVOGADO e um novo par é emitido.
+### Reusar um refresh já rotacionado revoga toda a família (detecção de roubo).
+### ═════════════════════════════════════════════
+
+POST {{base}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+client.global.set("token", response.body.accessToken);
+client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+
+### ═════════════════════════════════════════════
+### 🆕 FASE 2 — 14. LOGOUT  (revoga o refresh token)
+### ═════════════════════════════════════════════
+
+POST {{base}}/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
