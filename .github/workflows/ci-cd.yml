@@ -81,8 +81,10 @@ jobs:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
 
+      - name: Aguardar cluster ACTIVE
+        run: aws eks wait cluster-active --name oficina-api-aws --region us-east-1
+
       - name: Configurar kubeconfig
-        # Exige infra/environments/aws já aplicado antes. Ver infra/README.md.
         run: aws eks update-kubeconfig --name oficina-api-aws --region us-east-1
 
       - run: kubectl apply -f k8s/namespace.yaml -f k8s/app/
