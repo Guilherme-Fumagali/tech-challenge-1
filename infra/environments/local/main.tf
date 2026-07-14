@@ -26,9 +26,6 @@ resource "kind_cluster" "oficina" {
 }
 
 # ── Imagem da aplicação ────────────────────────────────────────────────────────
-# Build local + kind load, em vez de pull de registry: o pacote no GHCR é privado, e um
-# imagePullSecret exigiria guardar um PAT no cluster só pra demo. Carregar a imagem direto
-# no nó do kind dispensa registry e credencial — o cluster já nasce com ela.
 
 resource "null_resource" "build_and_load_image" {
   count      = var.build_local_image ? 1 : 0
@@ -47,8 +44,6 @@ resource "null_resource" "build_and_load_image" {
 }
 
 # ── Segredos ───────────────────────────────────────────────────────────────────
-# Os secret.yaml versionados em k8s/ têm só placeholders (REPLACE_ME) e nunca são aplicados.
-# Aqui eles são renderizados com os valores reais vindos do tfvars — mesmo padrão do ambiente AWS.
 
 resource "local_file" "db_secret" {
   content = templatefile("${path.module}/templates/db-secret.yaml.tftpl", {
@@ -69,8 +64,6 @@ resource "local_file" "app_secret" {
 }
 
 # ── Deploy ─────────────────────────────────────────────────────────────────────
-# Manifests aplicados via kubectl (local-exec) e não pelo provider kubernetes: o provider
-# precisaria de um cluster alcançável já no plan, mas o cluster só passa a existir neste apply.
 
 resource "null_resource" "deploy_app" {
   depends_on = [
@@ -87,12 +80,6 @@ resource "null_resource" "deploy_app" {
     manifests_hash = sha1(join("", [for f in fileset(var.k8s_manifests_path, "**/*.yaml") : filesha1("${var.k8s_manifests_path}/${f}")]))
   }
 
-  # Comando em uma linha só (encadeado com &&) para rodar igual no cmd.exe e no sh.
-  #
-  # O patch no metrics-server é específico do kind: o kubelet aqui serve certificado
-  # autoassinado, então sem --kubelet-insecure-tls o metrics-server não coleta métrica
-  # nenhuma e o HPA fica preso em <unknown>. No EKS o certificado é assinado pela CA do
-  # cluster, por isso o manifesto vendorizado em k8s/metrics-server/ fica sem essa flag.
   provisioner "local-exec" {
     command = join(" && ", [
       "kubectl --kubeconfig=${kind_cluster.oficina.kubeconfig_path} apply -f ${var.k8s_manifests_path}/namespace.yaml",

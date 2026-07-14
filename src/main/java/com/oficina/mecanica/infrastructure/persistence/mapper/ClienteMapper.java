@@ -13,9 +13,6 @@ public interface ClienteMapper {
 
     Cliente toDomain(ClienteJpaEntity entity);
 
-    // O banco guarda o CPF/CNPJ como String; o domínio só aceita o value object, que valida
-    // dígito verificador no construtor. A travessia da fronteira é aqui, e é de propósito:
-    // uma linha corrompida no banco estoura na leitura, não lá na frente numa regra de negócio.
     default CpfCnpj toCpfCnpj(String valor) {
         return valor == null ? null : new CpfCnpj(valor);
     }

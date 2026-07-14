@@ -21,14 +21,6 @@ provider "aws" {
 }
 
 # ── Rede ──────────────────────────────────────────────────────────────────
-# Conta pessoal (não sandbox de curso) — provisiona VPC/subnets/IAM do zero,
-# diferente de um cenário AWS Academy que já viria com role/VPC prontos.
-#
-# Sem NAT Gateway (custo permanente de ~US$0,045/h só de existir, fora tráfego):
-# os nós do EKS ficam em subnets PÚBLICAS com Security Group restritivo (só as
-# portas necessárias, sem SSH aberto). Trade-off aceitável porque o cluster é
-# efêmero — sobe pra gravar a demo, cai logo depois (ver infra/README.md).
-
 resource "aws_vpc" "oficina" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
@@ -196,7 +188,6 @@ resource "aws_db_subnet_group" "oficina" {
   subnet_ids = [for s in aws_subnet.public : s.id]
 }
 
-# Só permite tráfego 5432 vindo do Security Group dos nós do EKS — nunca 0.0.0.0/0.
 resource "aws_security_group" "rds" {
   name        = "oficina-api-rds-sg"
   description = "Permite Postgres apenas a partir dos nos do EKS"
@@ -240,9 +231,7 @@ resource "aws_db_instance" "oficina" {
   deletion_protection  = false
 }
 
-# ── Deploy da aplicação (renderiza configmap/secret com o endpoint do RDS) ──
-# Não aplica k8s/database/* aqui — o banco é o RDS acima, não in-cluster.
-
+# ── Deploy da aplicação ───────────────────────────────────────────────────────
 resource "local_file" "app_configmap" {
   content = templatefile("${path.module}/templates/app-configmap.yaml.tftpl", {
     db_endpoint = aws_db_instance.oficina.endpoint
@@ -275,9 +264,6 @@ resource "null_resource" "deploy_app" {
     metrics_server_hash = filesha1("${var.k8s_manifests_path}/metrics-server/components.yaml")
   }
 
-  # metrics-server entra antes do app: o HPA (app/hpa.yaml) depende dele pra ler CPU/memória.
-  # Mesmo manifesto vendorizado do ambiente local (k8s/metrics-server/) — EKS também não o
-  # traz por padrão. Não aplica k8s/database/* (o banco é o RDS, não in-cluster).
   provisioner "local-exec" {
     command = "aws eks update-kubeconfig --name ${aws_eks_cluster.oficina.name} --region ${var.aws_region} && kubectl apply -f ${var.k8s_manifests_path}/namespace.yaml && kubectl apply -f ${var.k8s_manifests_path}/metrics-server/ && kubectl apply -f ${path.module}/rendered/app-configmap.yaml && kubectl apply -f ${path.module}/rendered/app-secret.yaml && kubectl apply -f ${var.k8s_manifests_path}/mailhog/ && kubectl apply -f ${var.k8s_manifests_path}/app/deployment.yaml -f ${var.k8s_manifests_path}/app/service.yaml -f ${var.k8s_manifests_path}/app/hpa.yaml"
   }

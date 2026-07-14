@@ -18,9 +18,6 @@ public interface OrdemServicoMapper {
 
     OrdemServicoJpaEntity toEntity(OrdemServico os);
 
-    // O dono do relacionamento no JPA é o item (@ManyToOne / ordem_servico_id), não a OS.
-    // O MapStruct constrói cada item isoladamente e não tem como saber quem é o pai, então a
-    // referência de volta é fechada aqui. Sem isto o insert quebra com ordem_servico_id nulo.
     @AfterMapping
     default void vincularItensAoPai(@MappingTarget OrdemServicoJpaEntity entity) {
         entity.getItensServico().forEach(item -> item.setOrdemServico(entity));
@@ -33,9 +30,6 @@ public interface OrdemServicoMapper {
     @Mapping(target = "ordemServico", ignore = true)
     ItemPecaJpaEntity toEntity(ItemPeca item);
 
-    // OrdemServico é Aggregate Root e não expõe construtor completo: quem remonta uma OS a
-    // partir do banco é a própria factory do domínio. O MapStruct monta o DadosOrdemServico e
-    // para por aí — a decisão de como reconstituir continua dentro do domínio, não no mapper.
     default OrdemServico toDomain(OrdemServicoJpaEntity entity) {
         return entity == null ? null : OrdemServico.reconstituir(toDados(entity));
     }

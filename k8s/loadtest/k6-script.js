@@ -2,8 +2,6 @@ import http from "k6/http";
 import { sleep } from "k6";
 
 // Gera carga crescente para demonstrar o scale-up/scale-down do HPA.
-// Uso: k6 run -e BASE_URL=http://localhost:8080 k6-script.js
-// (com `kubectl port-forward svc/oficina-api 8080:80 -n oficina` rodando em outro terminal)
 export const options = {
   stages: [
     { duration: "1m", target: 50 },

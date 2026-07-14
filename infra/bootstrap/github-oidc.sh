@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-#
-# Dá ao GitHub Actions acesso à conta AWS via OIDC (sem access key estática em secret): cria o
-# Identity Provider OIDC + uma IAM role assumível só por este repo, e imprime o ARN da role.
-# Rode uma vez, com credenciais de admin (o pipeline não pode criar a própria credencial).
-#
 # Pré-requisitos: AWS CLI autenticado (`aws configure` ou `aws sso login`).
 #
 # Uso:
@@ -32,7 +27,6 @@ if aws iam get-open-id-connect-provider --open-id-connect-provider-arn "$PROVIDE
   log "Identity Provider OIDC já existe."
 else
   log "Criando Identity Provider OIDC do GitHub..."
-  # Thumbprint vestigial (AWS valida pela CA raiz), mas a API ainda exige o campo.
   aws iam create-open-id-connect-provider \
     --url "https://${PROVIDER_HOST}" \
     --client-id-list "sts.amazonaws.com" \
@@ -40,7 +34,6 @@ else
 fi
 
 # ── 2. IAM role assumível só por este repo ───────────────────────────────────
-# JSON inline em vez de file://: o aws.exe no git-bash não entende path POSIX.
 TRUST_POLICY=$(cat <<EOF
 {
   "Version": "2012-10-17",
@@ -68,13 +61,11 @@ else
     --assume-role-policy-document "$TRUST_POLICY" >/dev/null
 fi
 
-# AdministratorAccess deliberado: o Terraform cria VPC/IAM/EKS/RDS e uma policy mínima
-# faltando qualquer action quebra o apply no meio. Em produção seria policy dedicada.
 log "Anexando AdministratorAccess..."
 aws iam attach-role-policy --role-name "$ROLE_NAME" \
   --policy-arn "arn:aws:iam::aws:policy/AdministratorAccess"
 
-ROLE_ARN="$(aws iam get-role --role-name "$ROLE_NAME" --query 'Role.Arn' --output text)"
+ROLE_ARN="$(aws iam get-role --role-name "$ROLE_NAMEn" --query 'Role.Arn' --output text)"
 
 cat <<EOF
 

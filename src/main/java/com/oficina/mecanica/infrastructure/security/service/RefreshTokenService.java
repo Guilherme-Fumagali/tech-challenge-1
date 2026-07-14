@@ -41,7 +41,6 @@ public class RefreshTokenService {
             .orElseThrow(() -> new BadCredentialsException("Refresh token inválido."));
 
         if (entity.isRevogado()) {
-            // Possível reutilização de token roubado — revoga toda a família por segurança
             repository.revogarTodosPorUsername(entity.getUsername());
             throw new BadCredentialsException(
                 "Refresh token já utilizado. Todos os tokens deste usuário foram revogados.");

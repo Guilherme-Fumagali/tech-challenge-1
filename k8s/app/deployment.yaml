@@ -4,7 +4,6 @@ metadata:
   name: oficina-api
   namespace: oficina
 spec:
-  # Sem replicas: o HPA (hpa.yaml) gerencia a contagem.
   selector:
     matchLabels:
       app: oficina-api
@@ -16,11 +15,6 @@ spec:
       containers:
         - name: oficina-api
           image: ghcr.io/guilherme-fumagali/oficina-api:latest
-          # Explícito de propósito. Sem isto, o Kubernetes deriva a política da tag: como a
-          # imagem acima é ":latest", ele grava Always — e Always continua valendo mesmo depois
-          # que o Terraform ou o CD trocam a imagem por outra tag. No kind isso quebra o deploy
-          # (a imagem está no nó, mas o kubelet tenta puxar do registry assim mesmo). O CD faz
-          # deploy por tag imutável (o SHA do commit), então IfNotPresent puxa quando é nova.
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

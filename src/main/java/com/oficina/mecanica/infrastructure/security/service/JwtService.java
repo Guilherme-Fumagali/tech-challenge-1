@@ -3,6 +3,7 @@ package com.oficina.mecanica.infrastructure.security.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,8 @@ import java.util.Date;
 public class JwtService {
 
     private final SecretKey key;
+
+    @Getter
     private final long accessExpirationMs;
 
     public JwtService(
@@ -46,10 +49,6 @@ public class JwtService {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    public long getAccessExpirationMs() {
-        return accessExpirationMs;
     }
 
     private Claims parsearClaims(String token) {
