@@ -300,6 +300,54 @@ class OrdemServicoIntegrationTest {
             .andExpect(status().isUnauthorized());
     }
 
+    @Test
+    void aprovacaoExterna_linkDoEmailDeveAprovarSemAutenticacao() throws Exception {
+        var token = obterToken();
+        var clienteId = criarCliente(token, "55.666.777/0001-81");
+        var veiculoId = criarVeiculo(token, clienteId, "EXT0003");
+        var pecaId = criarPeca(token, 10);
+        var osId = criarOS(token, clienteId, veiculoId);
+
+        avancarParaDiagnostico(token, osId, pecaId);
+        mvc.perform(post("/api/ordens/{id}/gerar-orcamento", osId)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+
+        var tokenAprovacao = osJpaRepository.findById(java.util.UUID.fromString(osId))
+            .orElseThrow().getTokenAprovacaoExterna();
+
+        // Botão "Aprovar" do e-mail: GET público, sem header de autenticação
+        mvc.perform(get("/api/ordens/{id}/aprovar-externo", osId).param("token", tokenAprovacao))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+
+        mvc.perform(get("/api/ordens/{id}/status", osId))
+            .andExpect(jsonPath("$.status").value("EM_EXECUCAO"));
+    }
+
+    @Test
+    void aprovacaoExterna_linkDoEmailDeveReprovarSemAutenticacao() throws Exception {
+        var token = obterToken();
+        var clienteId = criarCliente(token, "66.777.888/0001-81");
+        var veiculoId = criarVeiculo(token, clienteId, "EXT0004");
+        var pecaId = criarPeca(token, 10);
+        var osId = criarOS(token, clienteId, veiculoId);
+
+        avancarParaDiagnostico(token, osId, pecaId);
+        mvc.perform(post("/api/ordens/{id}/gerar-orcamento", osId)
+                .header("Authorization", "Bearer " + token)).andExpect(status().isOk());
+
+        var tokenAprovacao = osJpaRepository.findById(java.util.UUID.fromString(osId))
+            .orElseThrow().getTokenAprovacaoExterna();
+
+        // Botão "Reprovar" do e-mail: GET público, sem header de autenticação
+        mvc.perform(get("/api/ordens/{id}/reprovar-externo", osId).param("token", tokenAprovacao))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+
+        mvc.perform(get("/api/ordens/{id}/status", osId))
+            .andExpect(jsonPath("$.status").value("CANCELADA"));
+    }
+
     // ── Helpers ────────────────────────────────────────────
 
     private void avancarParaDiagnostico(String token, String osId, String pecaId) throws Exception {
