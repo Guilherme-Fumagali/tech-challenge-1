@@ -2,7 +2,7 @@ package com.oficina.mecanica.infrastructure.persistence.adapter;
 
 import com.oficina.mecanica.domain.entity.Peca;
 import com.oficina.mecanica.domain.repository.PecaRepository;
-import com.oficina.mecanica.infrastructure.persistence.entity.PecaJpaEntity;
+import com.oficina.mecanica.infrastructure.persistence.mapper.PecaMapper;
 import com.oficina.mecanica.infrastructure.persistence.repository.PecaJpaRepository;
 import org.springframework.stereotype.Component;
 
@@ -14,44 +14,36 @@ import java.util.UUID;
 public class PecaRepositoryAdapter implements PecaRepository {
 
     private final PecaJpaRepository jpa;
+    private final PecaMapper mapper;
 
-    public PecaRepositoryAdapter(PecaJpaRepository jpa) {
+    public PecaRepositoryAdapter(PecaJpaRepository jpa, PecaMapper mapper) {
         this.jpa = jpa;
+        this.mapper = mapper;
     }
 
     @Override
     public Peca salvar(Peca p) {
-        jpa.save(toEntity(p));
+        jpa.save(mapper.toEntity(p));
         return p;
     }
 
     @Override
     public Optional<Peca> buscarPorId(UUID id) {
-        return jpa.findById(id).map(this::toDomain);
+        return jpa.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public List<Peca> listarTodos() {
-        return jpa.findAll().stream().map(this::toDomain).toList();
+        return jpa.findAll().stream().map(mapper::toDomain).toList();
     }
 
     @Override
     public List<Peca> listarAbaixoDoEstoqueMinimo() {
-        return jpa.findAbaixoDoEstoqueMinimo().stream().map(this::toDomain).toList();
+        return jpa.findAbaixoDoEstoqueMinimo().stream().map(mapper::toDomain).toList();
     }
 
     @Override
     public void deletar(UUID id) {
         jpa.deleteById(id);
-    }
-
-    private PecaJpaEntity toEntity(Peca p) {
-        return new PecaJpaEntity(p.getId(), p.getNome(), p.getDescricao(),
-            p.getPrecoUnitario(), p.getQuantidadeEstoque(), p.getEstoqueMinimo());
-    }
-
-    private Peca toDomain(PecaJpaEntity e) {
-        return new Peca(e.getId(), e.getNome(), e.getDescricao(),
-            e.getPrecoUnitario(), e.getQuantidadeEstoque(), e.getEstoqueMinimo());
     }
 }

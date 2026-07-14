@@ -27,8 +27,9 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
   recebido por e-mail — sem precisar de login.
 - **Notificação por e-mail real** (`SmtpNotificacaoService`, via MailHog em dev/demo) — o cliente
   recebe o link/token de aprovação por e-mail assim que o orçamento é gerado.
-- Débitos técnicos da Fase 1 quitados: MapStruct órfão removido, `fromPersistencia` reduzido a 1
-  parâmetro (`DadosOrdemServico`), Domain Storytelling referenciado no README, CVEs reverificadas.
+- Débitos técnicos da Fase 1 quitados: MapStruct adotado nos adapters de persistência,
+  `fromPersistencia` reduzido a 1 parâmetro (`DadosOrdemServico`), Domain Storytelling
+  referenciado no README, CVEs reverificadas.
 
 ### Arquitetura de infraestrutura
 
@@ -407,7 +408,7 @@ Gerado via OWASP Dependency Check:
 
 | # | Débito | Status |
 |---|--------|--------|
-| 1 | ~~Mappers manuais nos adapters de persistência~~ | **Resolvido (Fase 2)** — a dependência MapStruct estava declarada no `pom.xml` mas nunca chegou a ser usada (zero `@Mapper` no código); removida em vez de adotada, para não carregar um processador de anotação sem uso real nesse tamanho de base de código |
+| 1 | ~~Mappers manuais nos adapters de persistência~~ | **Resolvido (Fase 2)** — a dependência MapStruct estava declarada no `pom.xml` desde a Fase 1 mas nunca chegou a ser usada (zero `@Mapper` no código). Os cinco adapters agora delegam a mappers gerados (`infrastructure/persistence/mapper/`), com `unmappedTargetPolicy = ERROR`: se alguém adicionar um campo na entidade e esquecer do outro lado, o build quebra em vez de gravar `null` calado |
 | 2 | ~~Serviço de notificação stub~~ | **Resolvido (Fase 2)** — `SmtpNotificacaoService` envia e-mail real via SMTP (MailHog em dev/demo), ativado por `NOTIFICACAO_CANAL=smtp`. `LogNotificacaoService` continua disponível como fallback (`NOTIFICACAO_CANAL=log`, default) |
 | 3 | ~~`fromPersistencia` com 9 parâmetros (Sonar S107)~~ | **Resolvido (Fase 2)** — extraído para o record `DadosOrdemServico` (`domain/entity/DadosOrdemServico.java`); `OrdemServico.reconstituir(DadosOrdemServico)` agora recebe 1 parâmetro |
 | 4 | **CVEs sem patch disponível** — ver detalhamento abaixo | Reverificado na Fase 2 — ver resultado abaixo |

@@ -23,6 +23,8 @@
         <springdoc.version>2.6.0</springdoc.version>
         <testcontainers.version>1.20.3</testcontainers.version>
         <lombok.version>1.18.34</lombok.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <jacoco.version>0.8.12</jacoco.version>
         <owasp.version>10.0.4</owasp.version>
         <!-- SonarCloud -->
@@ -125,6 +127,13 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <optional>true</optional>
+        </dependency>
+
+        <!-- MapStruct: mapeamento domínio <-> entidade JPA nos adapters de persistência -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
         </dependency>
 
         <!-- Test -->
@@ -235,11 +244,26 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <!-- A ordem aqui não é estética: o Lombok precisa rodar antes do MapStruct.
+                         As entidades expõem getters/construtores gerados pelo Lombok — se o
+                         processador do MapStruct rodar primeiro, ele não enxerga nada disso e
+                         gera mapper vazio. O lombok-mapstruct-binding é o que faz um esperar
+                         o outro (necessário a partir do Lombok 1.18.16). -->
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>${lombok-mapstruct-binding.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

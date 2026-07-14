@@ -2,7 +2,7 @@ package com.oficina.mecanica.infrastructure.persistence.adapter;
 
 import com.oficina.mecanica.domain.entity.Servico;
 import com.oficina.mecanica.domain.repository.ServicoRepository;
-import com.oficina.mecanica.infrastructure.persistence.entity.ServicoJpaEntity;
+import com.oficina.mecanica.infrastructure.persistence.mapper.ServicoMapper;
 import com.oficina.mecanica.infrastructure.persistence.repository.ServicoJpaRepository;
 import org.springframework.stereotype.Component;
 
@@ -14,39 +14,31 @@ import java.util.UUID;
 public class ServicoRepositoryAdapter implements ServicoRepository {
 
     private final ServicoJpaRepository jpa;
+    private final ServicoMapper mapper;
 
-    public ServicoRepositoryAdapter(ServicoJpaRepository jpa) {
+    public ServicoRepositoryAdapter(ServicoJpaRepository jpa, ServicoMapper mapper) {
         this.jpa = jpa;
+        this.mapper = mapper;
     }
 
     @Override
     public Servico salvar(Servico s) {
-        jpa.save(toEntity(s));
+        jpa.save(mapper.toEntity(s));
         return s;
     }
 
     @Override
     public Optional<Servico> buscarPorId(UUID id) {
-        return jpa.findById(id).map(this::toDomain);
+        return jpa.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public List<Servico> listarTodos() {
-        return jpa.findAll().stream().map(this::toDomain).toList();
+        return jpa.findAll().stream().map(mapper::toDomain).toList();
     }
 
     @Override
     public void deletar(UUID id) {
         jpa.deleteById(id);
-    }
-
-    private ServicoJpaEntity toEntity(Servico s) {
-        return new ServicoJpaEntity(s.getId(), s.getNome(), s.getDescricao(),
-            s.getPrecoUnitario(), s.getTempoEstimadoHoras());
-    }
-
-    private Servico toDomain(ServicoJpaEntity e) {
-        return new Servico(e.getId(), e.getNome(), e.getDescricao(),
-            e.getPrecoUnitario(), e.getTempoEstimadoHoras());
     }
 }

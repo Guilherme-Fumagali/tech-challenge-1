@@ -3,7 +3,7 @@ package com.oficina.mecanica.infrastructure.persistence.adapter;
 import com.oficina.mecanica.domain.entity.Cliente;
 import com.oficina.mecanica.domain.repository.ClienteRepository;
 import com.oficina.mecanica.domain.valueobject.CpfCnpj;
-import com.oficina.mecanica.infrastructure.persistence.entity.ClienteJpaEntity;
+import com.oficina.mecanica.infrastructure.persistence.mapper.ClienteMapper;
 import com.oficina.mecanica.infrastructure.persistence.repository.ClienteJpaRepository;
 import org.springframework.stereotype.Component;
 
@@ -15,31 +15,32 @@ import java.util.UUID;
 public class ClienteRepositoryAdapter implements ClienteRepository {
 
     private final ClienteJpaRepository jpa;
+    private final ClienteMapper mapper;
 
-    public ClienteRepositoryAdapter(ClienteJpaRepository jpa) {
+    public ClienteRepositoryAdapter(ClienteJpaRepository jpa, ClienteMapper mapper) {
         this.jpa = jpa;
+        this.mapper = mapper;
     }
 
     @Override
     public Cliente salvar(Cliente cliente) {
-        var entity = toEntity(cliente);
-        jpa.save(entity);
+        jpa.save(mapper.toEntity(cliente));
         return cliente;
     }
 
     @Override
     public Optional<Cliente> buscarPorId(UUID id) {
-        return jpa.findById(id).map(this::toDomain);
+        return jpa.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public Optional<Cliente> buscarPorCpfCnpj(CpfCnpj cpfCnpj) {
-        return jpa.findByCpfCnpj(cpfCnpj.getValor()).map(this::toDomain);
+        return jpa.findByCpfCnpj(cpfCnpj.getValor()).map(mapper::toDomain);
     }
 
     @Override
     public List<Cliente> listarTodos() {
-        return jpa.findAll().stream().map(this::toDomain).toList();
+        return jpa.findAll().stream().map(mapper::toDomain).toList();
     }
 
     @Override
@@ -50,15 +51,5 @@ public class ClienteRepositoryAdapter implements ClienteRepository {
     @Override
     public boolean existePorCpfCnpj(CpfCnpj cpfCnpj) {
         return jpa.existsByCpfCnpj(cpfCnpj.getValor());
-    }
-
-    private ClienteJpaEntity toEntity(Cliente c) {
-        return new ClienteJpaEntity(c.getId(), c.getCpfCnpj().getValor(),
-            c.getNome(), c.getEmail(), c.getTelefone());
-    }
-
-    private Cliente toDomain(ClienteJpaEntity e) {
-        return new Cliente(e.getId(), new CpfCnpj(e.getCpfCnpj()),
-            e.getNome(), e.getEmail(), e.getTelefone());
     }
 }
