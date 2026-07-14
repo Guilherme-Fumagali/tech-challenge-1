@@ -1,27 +1,10 @@
 #!/usr/bin/env bash
 #
-# Cria (ou remove) o backend remoto de state usado por ../environments/aws/backend.tf:
-# um bucket S3 versionado + uma tabela DynamoDB de lock.
-#
-# POR QUE ISTO É UM SCRIPT E NÃO TERRAFORM
-# ----------------------------------------
-# O backend remoto não pode ser gerenciado pelo Terraform que o usa: no primeiro apply o
-# bucket ainda não existe, então o state desse apply teria que ficar em disco — e um state
-# local morre junto com o runner efêmero do CI (ou com a máquina de quem rodou). Na execução
-# seguinte o Terraform "esqueceria" que o bucket existe, tentaria recriá-lo e falharia.
-#
-# A saída é não tratar o backend como recurso Terraform: ele vira um pré-requisito de
-# infraestrutura, criado por este script idempotente. Script não tem state — pode rodar N
-# vezes, converge sempre pro mesmo lugar, e não há nada pra perder. É o padrão usado na
-# prática pra resolver esse ovo-e-galinha.
+# Backend de state do Terraform: bucket S3 + tabela DynamoDB de lock. Idempotente.
 #
 # Uso:
-#   ./bootstrap.sh create    # cria o bucket + tabela (idempotente)
-#   ./bootstrap.sh destroy   # remove os dois (só depois de destruir o ambiente aws!)
-#
-# O create roda na fase `bootstrap` de .github/workflows/terraform.yml (antes do plan) e o
-# destroy no fim de .github/workflows/destroy-aws.yml — ou localmente, com credenciais AWS já
-# configuradas.
+#   ./bootstrap.sh create    # cria bucket + tabela
+#   ./bootstrap.sh destroy   # remove os dois (rode DEPOIS de destruir o ambiente aws)
 
 set -euo pipefail
 
@@ -34,12 +17,7 @@ die() { printf '\033[1;31mERRO:\033[0m %s\n' "$*" >&2; exit 1; }
 
 command -v aws >/dev/null || die "AWS CLI não encontrado no PATH."
 
-# O bucket vive no "account regional namespace": o nome termina em -<conta>-<região>-an e é
-# reservado só pra esta conta AWS. Duas vantagens sobre o namespace global (default histórico):
-# ninguém mais pode tomar o nome, e — mais importante — quando este bucket for deletado no fim
-# do projeto, o nome NÃO volta pro pool global (onde outra conta poderia recriá-lo e passar a
-# receber requisições destinadas ao bucket antigo). O nome é derivado, não fixo, pra o script
-# continuar funcionando em qualquer conta/região.
+# Nome derivado da conta: sufixo -an usa o account regional namespace (nome reservado à conta).
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)" \
   || die "AWS CLI não está autenticado."
 BUCKET="${TFSTATE_BUCKET:-oficina-api-tfstate-${ACCOUNT_ID}-${AWS_REGION}-an}"
@@ -52,14 +30,12 @@ create() {
     log "Bucket s3://$BUCKET já existe — nada a criar."
   else
     log "Criando bucket s3://$BUCKET em $AWS_REGION..."
-    # --bucket-namespace só é exigido no CreateBucket. Leitura/escrita (tudo que o backend do
-    # Terraform faz depois) é idêntica à de um bucket global — nenhum ajuste necessário lá.
     local ns_flag=()
     case "$BUCKET" in
       *-an) ns_flag=(--bucket-namespace account-regional) ;;
     esac
 
-    # us-east-1 é a única região que rejeita LocationConstraint (é o default da API).
+    # us-east-1 rejeita LocationConstraint (é o default da API).
     if [ "$AWS_REGION" = "us-east-1" ]; then
       aws s3api create-bucket --bucket "$BUCKET" --region "$AWS_REGION" "${ns_flag[@]}"
     else
@@ -69,8 +45,7 @@ create() {
     aws s3api wait bucket-exists --bucket "$BUCKET"
   fi
 
-  # Os três abaixo são idempotentes por natureza (PUT sobrescreve), então rodam sempre —
-  # isso também conserta um bucket que tenha sido criado à mão sem essas proteções.
+  # PUTs idempotentes: rodam sempre, também corrigem bucket criado à mão sem proteções.
   log "Habilitando versionamento (permite recuperar um state corrompido)..."
   aws s3api put-bucket-versioning --bucket "$BUCKET" \
     --versioning-configuration Status=Enabled
@@ -101,9 +76,7 @@ create() {
   log "Backend pronto. environments/aws/backend.tf já aponta pra bucket=$BUCKET, table=$LOCK_TABLE."
 }
 
-# Aborta se o state ainda tiver recursos: destruir o bucket agora deixaria EKS/RDS órfãos
-# na conta (cobrando, e sem Terraform pra removê-los). A ordem correta é sempre:
-# workflow "Destroy AWS" primeiro, este script depois.
+# Aborta se o state ainda tem recursos: apagar o bucket agora orfanaria EKS/RDS (cobrando).
 assert_state_vazio() {
   if ! aws s3api head-object --bucket "$BUCKET" --key "$STATE_KEY" >/dev/null 2>&1; then
     log "Nenhum state em s3://$BUCKET/$STATE_KEY — nada de infra pra ficar órfão."
@@ -125,8 +98,6 @@ assert_state_vazio() {
 }
 
 destroy() {
-  # Só o destroy depende de jq (ler o state, varrer as versões do bucket) — o create não usa.
-  # Exigir jq lá em cima quebraria o create numa máquina que só tem o AWS CLI, sem motivo.
   command -v jq >/dev/null || die "jq não encontrado no PATH (necessário só para o destroy)."
 
   if [ "${FORCE_DESTROY:-0}" = "1" ]; then
@@ -137,7 +108,7 @@ destroy() {
 
   if bucket_exists; then
     log "Esvaziando s3://$BUCKET (todas as versões e delete markers)..."
-    # Bucket versionado só é deletável se TODAS as versões forem removidas — não basta `rm`.
+    # Bucket versionado só é deletável com TODAS as versões removidas — não basta `rm`.
     while :; do
       local objetos qtd payload
       objetos="$(aws s3api list-object-versions --bucket "$BUCKET" --output json \
