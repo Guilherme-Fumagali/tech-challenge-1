@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -109,7 +110,7 @@ class OrdemServicoUseCasesTest {
         var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.AGUARDANDO_APROVACAO).dataAbertura(LocalDateTime.now())
-            .tokenAprovacaoExterna("token-123").tokenExpiracao(LocalDateTime.now().plusHours(1))
+            .tokenAprovacaoExterna("token-123").tokenExpiracao(LocalDateTime.now(ZoneOffset.UTC).plusHours(1))
             .build());
 
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
@@ -126,15 +127,19 @@ class OrdemServicoUseCasesTest {
         var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.AGUARDANDO_APROVACAO).dataAbertura(LocalDateTime.now())
-            .tokenAprovacaoExterna("token-123").tokenExpiracao(LocalDateTime.now().plusHours(1))
+            .tokenAprovacaoExterna("token-123").tokenExpiracao(LocalDateTime.now(ZoneOffset.UTC).plusHours(1))
             .build());
 
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
 
         var uc = new AprovarOrcamentoExternoUseCase(osRepository);
         var osId = os.getId();
+        // A mensagem faz parte da asserção de propósito: "expirado" lança esta mesma exceção.
+        // Checar só o tipo deixaria o teste passar por token vencido, sem provar nada sobre a
+        // verificação do token — que é o que ele diz estar testando.
         assertThatThrownBy(() -> uc.executar(osId, "token-errado"))
-            .isInstanceOf(TokenAprovacaoInvalidoException.class);
+            .isInstanceOf(TokenAprovacaoInvalidoException.class)
+            .hasMessageContaining("inválido");
     }
 
     // ── ConcluirServicosUseCase ───────────────────────────────────────────

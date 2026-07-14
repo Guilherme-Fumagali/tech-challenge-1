@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -73,7 +74,7 @@ class ReprovarOrcamentoUseCaseTest {
         var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.AGUARDANDO_APROVACAO).itensServico(new ArrayList<>()).itensPeca(List.of(item))
-            .tokenAprovacaoExterna("token-valido").tokenExpiracao(LocalDateTime.now().plusHours(1))
+            .tokenAprovacaoExterna("token-valido").tokenExpiracao(LocalDateTime.now(ZoneOffset.UTC).plusHours(1))
             .build());
 
         var peca = new Peca(pecaId, "Filtro", "", new BigDecimal("50.00"), 5, 2);
@@ -98,15 +99,19 @@ class ReprovarOrcamentoUseCaseTest {
         var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
             .id(UUID.randomUUID()).clienteId(UUID.randomUUID()).veiculoId(UUID.randomUUID())
             .status(StatusOS.AGUARDANDO_APROVACAO).itensServico(new ArrayList<>()).itensPeca(List.of(item))
-            .tokenAprovacaoExterna("token-valido").tokenExpiracao(LocalDateTime.now().plusHours(1))
+            .tokenAprovacaoExterna("token-valido").tokenExpiracao(LocalDateTime.now(ZoneOffset.UTC).plusHours(1))
             .build());
 
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
 
         var uc = new ReprovarOrcamentoExternoUseCase(osRepository, pecaRepository);
         var osId = os.getId();
+        // A mensagem faz parte da asserção de propósito: "expirado" lança esta mesma exceção.
+        // Checar só o tipo deixaria o teste passar por token vencido, sem provar nada sobre a
+        // verificação do token — que é o que ele diz estar testando.
         assertThatThrownBy(() -> uc.executar(osId, "token-errado"))
-            .isInstanceOf(TokenAprovacaoInvalidoException.class);
+            .isInstanceOf(TokenAprovacaoInvalidoException.class)
+            .hasMessageContaining("inválido");
 
         verifyNoInteractions(pecaRepository);
     }
