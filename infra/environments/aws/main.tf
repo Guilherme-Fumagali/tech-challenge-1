@@ -161,6 +161,26 @@ resource "aws_eks_access_policy_association" "admin" {
   depends_on = [aws_eks_access_entry.admin]
 }
 
+# Acesso admin do role assumido pela pipeline CI/CD (kubectl no deploy).
+resource "aws_eks_access_entry" "ci" {
+  count         = var.ci_role_principal_arn == "" ? 0 : 1
+  cluster_name  = aws_eks_cluster.oficina.name
+  principal_arn = var.ci_role_principal_arn
+}
+
+resource "aws_eks_access_policy_association" "ci" {
+  count         = var.ci_role_principal_arn == "" ? 0 : 1
+  cluster_name  = aws_eks_cluster.oficina.name
+  principal_arn = var.ci_role_principal_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.ci]
+}
+
 resource "aws_eks_node_group" "oficina" {
   cluster_name    = aws_eks_cluster.oficina.name
   node_group_name = "oficina-api-nodes"
@@ -255,6 +275,8 @@ resource "null_resource" "deploy_app" {
     aws_eks_node_group.oficina,
     local_file.app_configmap,
     local_file.app_secret,
+    aws_eks_access_policy_association.ci,
+    aws_eks_access_policy_association.admin,
   ]
 
   triggers = {

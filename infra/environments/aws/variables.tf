@@ -28,6 +28,12 @@ variable "cluster_admin_principal_arn" {
   default     = "arn:aws:iam::002754693932:user/gfumagali-admin"
 }
 
+variable "ci_role_principal_arn" {
+  description = "ARN do role IAM assumido pela pipeline CI/CD que recebe admin do cluster via access entry. Vazio desliga."
+  type        = string
+  default     = ""
+}
+
 variable "public_subnet_cidrs" {
   description = "CIDRs das subnets públicas por AZ. Acoplado à região default (us-east-1) — ajuste as chaves de AZ se trocar aws_region."
   type        = map(string)
