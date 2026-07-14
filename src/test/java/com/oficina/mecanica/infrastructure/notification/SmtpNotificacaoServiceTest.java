@@ -4,13 +4,13 @@ import com.oficina.mecanica.domain.entity.Cliente;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
 import com.oficina.mecanica.domain.repository.ClienteRepository;
 import com.oficina.mecanica.domain.valueobject.CpfCnpj;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
 import java.math.BigDecimal;
@@ -32,26 +32,34 @@ class SmtpNotificacaoServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SmtpNotificacaoService(mailSender, clienteRepository, "oficina@example.com");
+        service = new SmtpNotificacaoService(
+            mailSender, clienteRepository, "oficina@example.com", "http://oficina.example");
     }
 
     @Test
-    void deveEnviarEmailComTokenParaClienteExistente() {
+    void deveEnviarEmailComBotoesParaClienteExistente() throws Exception {
         var clienteId = UUID.randomUUID();
         var osId = UUID.randomUUID();
         var cliente = new Cliente(clienteId, new CpfCnpj("529.982.247-25"), "João", "joao@e.com", "11999");
 
         when(clienteRepository.buscarPorId(clienteId)).thenReturn(Optional.of(cliente));
+        var mime = new MimeMessage((Session) null);
+        when(mailSender.createMimeMessage()).thenReturn(mime);
 
         service.notificarOrcamentoPendente(osId, clienteId, new BigDecimal("150.00"), "token-abc");
 
-        var captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(captor.capture());
+        verify(mailSender).send(mime);
+        assertThat(mime.getAllRecipients()[0].toString()).isEqualTo("joao@e.com");
+        assertThat(mime.getFrom()[0].toString()).isEqualTo("oficina@example.com");
 
-        var mensagem = captor.getValue();
-        assertThat(mensagem.getTo()).containsExactly("joao@e.com");
-        assertThat(mensagem.getFrom()).isEqualTo("oficina@example.com");
-        assertThat(mensagem.getText()).contains("token-abc").contains(osId.toString());
+        var html = (String) mime.getContent();
+        assertThat(html)
+            .contains("token-abc")
+            .contains(osId.toString())
+            .contains("/aprovar-externo?token=token-abc")
+            .contains("/reprovar-externo?token=token-abc")
+            .contains("Aprovar")
+            .contains("Reprovar");
     }
 
     @Test

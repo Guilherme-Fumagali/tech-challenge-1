@@ -52,6 +52,7 @@ app:
     canal: ${NOTIFICACAO_CANAL:log}
   mail:
     from: ${MAIL_FROM:oficina@example.com}
+    base-url: ${MAIL_BASE_URL:http://localhost:8080}
 
 management:
   endpoints:
