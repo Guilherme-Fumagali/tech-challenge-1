@@ -29,6 +29,15 @@ jobs:
 
       - run: terraform init
 
+      - name: Remover Service LoadBalancer (o finalizer aguarda o ELB sumir antes de seguir)
+        working-directory: ${{ github.workspace }}
+        run: |
+          if aws eks update-kubeconfig --name oficina-api-aws --region us-east-1 2>/dev/null; then
+            kubectl delete svc oficina-api -n oficina --ignore-not-found --wait=true --timeout=180s
+          else
+            echo "Cluster nao existe — nada a remover."
+          fi
+
       - name: Destroy
         env:
           TF_VAR_db_password: ${{ secrets.TF_VAR_DB_PASSWORD }}
