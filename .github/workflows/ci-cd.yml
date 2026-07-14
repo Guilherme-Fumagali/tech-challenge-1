@@ -94,4 +94,17 @@ jobs:
         run: |
           OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
           kubectl set image deployment/oficina-api oficina-api=ghcr.io/${OWNER_LC}/oficina-api:${{ needs.build-and-push-image.outputs.image_tag }} -n oficina
-          kubectl rollout status deployment/oficina-api -n oficina --timeout=180s
+          kubectl rollout status deployment/oficina-api -n oficina --timeout=300s
+
+      - name: Diagnóstico em caso de falha
+        if: failure()
+        run: |
+          kubectl get pods -n oficina -o wide
+          kubectl describe deployment/oficina-api -n oficina
+          kubectl get events -n oficina --sort-by=.lastTimestamp | tail -30
+          for p in $(kubectl get pods -n oficina -l app=oficina-api -o name); do
+            echo "=== describe $p ==="; kubectl describe -n oficina "$p"
+            echo "=== logs $p ==="
+            kubectl logs -n oficina "$p" --tail=100 --all-containers --previous 2>/dev/null \
+              || kubectl logs -n oficina "$p" --tail=100 --all-containers
+          done
