@@ -67,11 +67,12 @@ um build local vs. pull do GHCR).
 - `.github/workflows/ci-cd.yml` — pipeline único: build, testes, JaCoCo, OWASP dependency-check e
   SonarCloud a todo push/PR em `main`; só em push segue automático pro build + push da imagem no
   GHCR e deploy no EKS (mesma **aprovação manual obrigatória**, `aws-production`).
-- `.github/workflows/terraform.yml` — `plan` automático (só leitura, sem custo) a toda mudança em
-  `infra/**`/`k8s/**`; `apply` no ambiente `aws` com **aprovação manual obrigatória** antes de tocar
-  em qualquer recurso cobrado (GitHub Environment `aws-production`).
-- `.github/workflows/bootstrap-aws.yml` — cria/remove o backend de state (S3 + DynamoDB) com um clique.
-- `.github/workflows/destroy-aws.yml` — desliga o ambiente AWS com um clique (mesmo gate de aprovação).
+- `.github/workflows/terraform.yml` — `bootstrap` cria o backend de state (S3 + DynamoDB, idempotente)
+  e `plan` roda automático (só leitura, sem custo) a toda mudança em `infra/**`/`k8s/**`; `apply` no
+  ambiente `aws` com **aprovação manual obrigatória** antes de tocar em qualquer recurso cobrado
+  (GitHub Environment `aws-production`).
+- `.github/workflows/destroy-aws.yml` — desliga o ambiente AWS e remove o backend de state com um
+  clique (mesmo gate de aprovação).
 
 Depois de um único passo local (`infra/bootstrap/github-oidc.sh`, que dá ao GitHub Actions acesso
 via OIDC à conta AWS — impossível automatizar, já que criar a primeira credencial exigiria já ter
@@ -447,7 +448,7 @@ oficina-api/
 │   └── environments/
 │       ├── local/                  # Terraform — cluster kind + Postgres in-cluster
 │       └── aws/                    # Terraform — EKS + RDS
-├── .github/workflows/            # ci-cd.yml, terraform.yml, bootstrap-aws.yml, destroy-aws.yml
+├── .github/workflows/            # ci-cd.yml, terraform.yml, destroy-aws.yml
 ├── observability/                # Config do stretch de OpenTelemetry (Tempo + Grafana)
 ├── Dockerfile
 ├── docker-compose.yml

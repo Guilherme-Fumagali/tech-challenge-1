@@ -19,8 +19,9 @@
 #   ./bootstrap.sh create    # cria o bucket + tabela (idempotente)
 #   ./bootstrap.sh destroy   # remove os dois (só depois de destruir o ambiente aws!)
 #
-# Roda via .github/workflows/bootstrap-aws.yml (um clique no Actions) ou localmente com
-# credenciais AWS já configuradas.
+# O create roda na fase `bootstrap` de .github/workflows/terraform.yml (antes do plan) e o
+# destroy no fim de .github/workflows/destroy-aws.yml — ou localmente, com credenciais AWS já
+# configuradas.
 
 set -euo pipefail
 

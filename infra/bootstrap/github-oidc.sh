@@ -102,6 +102,6 @@ cat <<EOF
 │ E crie também os secrets: TF_VAR_DB_PASSWORD, TF_VAR_JWT_SECRET (>=32 chars),
 │ TF_VAR_ADMIN_PASSWORD.
 │
-│ Depois disso, tudo roda pelo Actions — começando por "Bootstrap AWS" (action: create).
+│ Depois disso, tudo roda pelo Actions — um push em main dispara o workflow "Terraform".
 └──────────────────────────────────────────────────────────────────────────────
 EOF

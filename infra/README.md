@@ -107,7 +107,7 @@ gerencia — ambos consertam o sintoma, não a causa.
 A causa é tratar um pré-requisito de infraestrutura como recurso de aplicação. Um script
 idempotente (`bootstrap/bootstrap.sh`, AWS CLI puro) **não tem state**: pode rodar N vezes,
 converge sempre pro mesmo lugar, e não há nada pra perder entre execuções. Por isso ele roda
-tranquilo num runner efêmero — e é por isso que existe o workflow `bootstrap-aws.yml`.
+tranquilo num runner efêmero — é a fase `bootstrap` do workflow `terraform.yml`, antes do plan.
 
 O Terraform continua sendo dono de tudo que o Tech Challenge pede (VPC, EKS, RDS); só o
 backend que hospeda o próprio state dele é que fica de fora, que é a prática usual.
@@ -143,14 +143,13 @@ access key estática guardada em secret (que vaza e nunca é rotacionada).
 
 | # | Quando | Actions → workflow | O que faz |
 |---|---|---|---|
-| 1 | Uma vez, antes de tudo | **Bootstrap AWS** (`action: create`) | Cria bucket S3 + DynamoDB de lock. Idempotente. |
-| 2 | A cada mudança em `infra/**` | **Terraform** → `plan-aws` | Automático, só leitura, sem custo. |
-| 3 | Push em `main` | **Terraform** → `apply-aws` | **Pausa aguardando aprovação.** Aplica exatamente o plano revisado. Cria VPC/EKS/RDS — **começa a cobrar aqui.** |
-| 4 | A cada push em `main` | **CD** | Builda a imagem, publica no GHCR, faz rollout no EKS. Só funciona depois do passo 3. |
-| 5 | **Assim que terminar a demo** | **Destroy AWS** | Destrói EKS + RDS. **Para a cobrança.** |
-| 6 | No fim do projeto | **Bootstrap AWS** (`action: destroy`) | Remove o bucket + tabela. Zera a pegada na conta. |
+| 1 | A cada mudança em `infra/**` | **Terraform** → `bootstrap` → `plan-aws` | Automático. `bootstrap` cria bucket S3 + DynamoDB (idempotente); `plan-aws` é só leitura, sem custo. |
+| 2 | Push em `main` | **Terraform** → `apply-aws` | **Pausa aguardando aprovação.** Aplica exatamente o plano revisado. Cria VPC/EKS/RDS — **começa a cobrar aqui.** |
+| 3 | A cada push em `main` | **CI/CD** → `deploy-app` | Builda a imagem, publica no GHCR, faz rollout no EKS. Só funciona depois do passo 2. |
+| 4 | **Assim que terminar a demo** | **Destroy AWS** | Destrói EKS + RDS e, no fim, remove o bucket + DynamoDB. **Para a cobrança e zera a pegada.** |
 
-> A ordem de 5 → 6 importa: o state vive dentro do bucket. Apagar o bucket antes de destruir
+> No `Destroy AWS` a ordem importa e já vem embutida: primeiro `terraform destroy` (esvazia o
+> state), depois `bootstrap.sh destroy` (remove o backend). Apagar o bucket antes de destruir
 > o EKS/RDS deixaria esses recursos órfãos na conta — de pé, cobrando, e sem Terraform pra
 > removê-los. O `bootstrap.sh destroy` **se recusa a rodar** se detectar que o state ainda tem
 > recursos, exatamente pra impedir esse acidente.
