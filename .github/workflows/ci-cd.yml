@@ -88,13 +88,13 @@ jobs:
       - name: Configurar kubeconfig
         run: aws eks update-kubeconfig --name oficina-api-aws --region us-east-1
 
-      - run: kubectl apply -f k8s/namespace.yaml -f k8s/app/
+      - run: kubectl apply -f k8s/namespace.yaml -f k8s/app/deployment.yaml -f k8s/app/service.yaml -f k8s/app/hpa.yaml
 
       - name: Atualizar imagem e aguardar rollout
         run: |
           OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
           kubectl set image deployment/oficina-api oficina-api=ghcr.io/${OWNER_LC}/oficina-api:${{ needs.build-and-push-image.outputs.image_tag }} -n oficina
-          kubectl rollout status deployment/oficina-api -n oficina --timeout=300s
+          kubectl rollout status deployment/oficina-api -n oficina --timeout=150s
 
       - name: Diagnóstico em caso de falha
         if: failure()
