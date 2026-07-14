@@ -18,6 +18,7 @@ target/
 tfplan
 **/kubeconfig
 infra/environments/aws/rendered/
+infra/environments/local/rendered/
 
 # Kubernetes — segredos locais reais (nunca os placeholders versionados)
 k8s/**/secret.local.yaml

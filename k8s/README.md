@@ -4,11 +4,16 @@ Manifests para rodar a aplicação completa (API + Postgres + MailHog) em qualqu
 
 ## Pré-requisitos
 
-- Um cluster Kubernetes acessível via `kubectl` (AWS EKS — ver `../infra/environments/aws` — ou qualquer outro).
+- Um cluster Kubernetes acessível via `kubectl` — kind (`../infra/environments/local`), AWS EKS
+  (`../infra/environments/aws`) ou qualquer outro.
 - **metrics-server** — necessário para o HPA ler CPU/memória (sem ele o HPA fica `<unknown>` e não
   escala). Vendorizado como manifesto em [`metrics-server/`](metrics-server/) (upstream v0.7.2, sem
-  modificações — no EKS o kubelet serve cert assinado pela CA do cluster, então não precisa de
-  `--kubelet-insecure-tls`). O fluxo de apply abaixo — e o Terraform do ambiente AWS — já o incluem.
+  modificações). Os dois ambientes Terraform já o aplicam.
+
+  > **No kind** o kubelet serve certificado autoassinado, então o metrics-server precisa de
+  > `--kubelet-insecure-tls` — o Terraform local aplica esse patch por cima do manifesto. No EKS
+  > o certificado é assinado pela CA do cluster e o manifesto vale como está; por isso a flag
+  > não entra no arquivo vendorizado.
 
 ## Segredos
 
@@ -40,8 +45,9 @@ kubectl apply -f mailhog/
 kubectl apply -f app/
 ```
 
-> Em ambiente AWS (`../infra/environments/aws`), o Terraform substitui `app/configmap.yaml` e `app/secret.yaml`
-> por versões renderizadas com o endpoint do RDS e não aplica `database/` (o banco é o RDS gerenciado, não in-cluster).
+> Os dois ambientes Terraform renderizam os `secret.yaml` a partir do tfvars, em vez de aplicar os
+> placeholders versionados. No ambiente AWS o Terraform também substitui `app/configmap.yaml` pelo
+> endpoint do RDS e pula `database/` (o banco é o RDS gerenciado, não in-cluster).
 
 ## Smoke test
 
