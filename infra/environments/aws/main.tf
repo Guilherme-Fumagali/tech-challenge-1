@@ -136,6 +136,10 @@ resource "aws_eks_cluster" "oficina" {
   role_arn = aws_iam_role.eks_cluster.arn
   version  = var.kubernetes_version
 
+  access_config {
+    authentication_mode = "API_AND_CONFIG_MAP"
+  }
+
   vpc_config {
     subnet_ids              = [for s in aws_subnet.public : s.id]
     endpoint_public_access   = true
@@ -143,6 +147,26 @@ resource "aws_eks_cluster" "oficina" {
   }
 
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
+}
+
+# Acesso admin de um principal IAM ao cluster (kubectl/console) via access entry.
+resource "aws_eks_access_entry" "admin" {
+  count         = var.cluster_admin_principal_arn == "" ? 0 : 1
+  cluster_name  = aws_eks_cluster.oficina.name
+  principal_arn = var.cluster_admin_principal_arn
+}
+
+resource "aws_eks_access_policy_association" "admin" {
+  count         = var.cluster_admin_principal_arn == "" ? 0 : 1
+  cluster_name  = aws_eks_cluster.oficina.name
+  principal_arn = var.cluster_admin_principal_arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.admin]
 }
 
 resource "aws_eks_node_group" "oficina" {

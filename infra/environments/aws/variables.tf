@@ -22,6 +22,12 @@ variable "node_instance_types" {
   default     = ["t3.small"]
 }
 
+variable "cluster_admin_principal_arn" {
+  description = "ARN do principal IAM que recebe admin do cluster via access entry (kubectl/console). Vazio desliga."
+  type        = string
+  default     = "arn:aws:iam::002754693932:user/gfumagali-admin"
+}
+
 variable "public_subnet_cidrs" {
   description = "CIDRs das subnets públicas por AZ. Acoplado à região default (us-east-1) — ajuste as chaves de AZ se trocar aws_region."
   type        = map(string)
