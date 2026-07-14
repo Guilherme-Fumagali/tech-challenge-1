@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   destroy-aws:
-    name: Destroy (aws) — requer aprovação
+    name: Destroy (aws)
     runs-on: ubuntu-latest
     environment: aws-production
     defaults:

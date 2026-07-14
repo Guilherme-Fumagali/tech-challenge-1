@@ -14,7 +14,7 @@ on:
 
 jobs:
   bootstrap:
-    name: Bootstrap (backend de state)
+    name: Bootstrap
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -69,7 +69,7 @@ jobs:
           retention-days: 1
 
   apply-aws:
-    name: Apply (aws) — requer aprovação
+    name: Apply (aws)
     needs: plan-aws
     runs-on: ubuntu-latest
     environment: aws-production
