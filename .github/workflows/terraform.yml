@@ -13,8 +13,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  bootstrap:
+    name: Bootstrap (backend de state)
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - run: |
+          chmod +x infra/bootstrap/bootstrap.sh
+          infra/bootstrap/bootstrap.sh create
+
   plan-aws:
     name: Plan (aws)
+    needs: bootstrap
     runs-on: ubuntu-latest
     permissions:
       id-token: write
