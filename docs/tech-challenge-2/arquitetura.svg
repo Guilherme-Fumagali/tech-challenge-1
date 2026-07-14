@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 950" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrowMail" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#9333ea"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1500" height="950" fill="#ffffff"/>
+  <text x="470" y="28" font-size="18" font-weight="bold" fill="#0f172a">Oficina Mecânica API — Arquitetura da Fase 2</text>
+
+  <!-- ══════════ Atores ══════════ -->
+  <rect x="60" y="40" width="240" height="50" rx="8" fill="#f1f5f9" stroke="#475569" stroke-width="1.5"/>
+  <text x="180" y="70" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">Equipe de desenvolvimento</text>
+
+  <rect x="985" y="40" width="260" height="50" rx="8" fill="#f1f5f9" stroke="#475569" stroke-width="1.5"/>
+  <text x="1115" y="70" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">Cliente / Integrações externas</text>
+
+  <!-- ══════════ Zona GitHub ══════════ -->
+  <rect x="30" y="150" width="440" height="710" rx="10" fill="#f6f8fa" stroke="#24292f" stroke-width="1.5"/>
+  <text x="50" y="178" font-size="15" font-weight="bold" fill="#24292f">GitHub</text>
+
+  <rect x="60" y="190" width="380" height="64" rx="6" fill="#ffffff" stroke="#57606a" stroke-width="1.2"/>
+  <text x="250" y="214" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">Repositório git</text>
+  <text x="250" y="236" font-size="11" fill="#475569" text-anchor="middle">código + k8s/ + infra/ + .github/workflows/</text>
+
+  <line x1="180" y1="90" x2="180" y2="188" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="192" y="140" font-size="11" fill="#334155">git push (main)</text>
+
+  <rect x="60" y="290" width="380" height="540" rx="8" fill="#ffffff" stroke="#57606a" stroke-width="1.2"/>
+  <text x="80" y="316" font-size="13" font-weight="bold" fill="#24292f">GitHub Actions</text>
+
+  <line x1="250" y1="254" x2="250" y2="288" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="85" y="330" width="330" height="100" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.2"/>
+  <text x="250" y="352" font-size="12.5" font-weight="bold" fill="#1e3a8a" text-anchor="middle">CI — a cada push / PR</text>
+  <text x="250" y="374" font-size="11" fill="#334155" text-anchor="middle">build + testes (JaCoCo ≥ 80% no domínio)</text>
+  <text x="250" y="392" font-size="11" fill="#334155" text-anchor="middle">SonarCloud (quality gate) + OWASP</text>
+  <text x="250" y="410" font-size="11" fill="#334155" text-anchor="middle">Testcontainers (PostgreSQL real)</text>
+
+  <line x1="250" y1="430" x2="250" y2="453" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="85" y="455" width="330" height="70" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.2"/>
+  <text x="250" y="479" font-size="12.5" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Build &amp; push da imagem Docker</text>
+  <text x="250" y="501" font-size="11" fill="#334155" text-anchor="middle">tag imutável = SHA do commit</text>
+
+  <line x1="250" y1="525" x2="250" y2="548" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="85" y="550" width="330" height="80" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="1.2"/>
+  <text x="250" y="572" font-size="12.5" font-weight="bold" fill="#1e3a8a" text-anchor="middle">Deploy no EKS</text>
+  <text x="250" y="592" font-size="11" fill="#334155" text-anchor="middle">kubectl apply + set image + rollout status</text>
+  <rect x="150" y="602" width="200" height="20" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+  <text x="250" y="616" font-size="10.5" fill="#92400e" text-anchor="middle">aprovação manual</text>
+
+  <rect x="85" y="655" width="330" height="90" rx="6" fill="#ecfdf5" stroke="#059669" stroke-width="1.2"/>
+  <text x="250" y="677" font-size="12.5" font-weight="bold" fill="#065f46" text-anchor="middle">Terraform (mudanças em infra/ e k8s/)</text>
+  <text x="250" y="697" font-size="11" fill="#334155" text-anchor="middle">bootstrap (state S3 + DynamoDB) → plan → apply</text>
+  <rect x="150" y="709" width="200" height="20" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+  <text x="250" y="723" font-size="10.5" fill="#92400e" text-anchor="middle">aprovação manual no apply</text>
+
+  <rect x="85" y="770" width="330" height="44" rx="6" fill="#fef2f2" stroke="#dc2626" stroke-width="1.2"/>
+  <text x="250" y="789" font-size="12" font-weight="bold" fill="#991b1b" text-anchor="middle">Destroy AWS — desliga tudo com um clique</text>
+  <text x="250" y="806" font-size="10.5" fill="#334155" text-anchor="middle">(mesmo gate de aprovação — para a cobrança)</text>
+
+  <!-- ══════════ GHCR ══════════ -->
+  <rect x="540" y="455" width="170" height="70" rx="8" fill="#f3e8ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="625" y="483" font-size="13" font-weight="bold" fill="#5b21b6" text-anchor="middle">GHCR</text>
+  <text x="625" y="503" font-size="11" fill="#334155" text-anchor="middle">registry de imagens</text>
+
+  <line x1="415" y1="490" x2="538" y2="490" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="476" y="480" font-size="11" fill="#334155" text-anchor="middle">push</text>
+
+  <!-- ══════════ Zona AWS ══════════ -->
+  <rect x="760" y="150" width="710" height="710" rx="10" fill="#fff8ec" stroke="#ff9900" stroke-width="2"/>
+  <rect x="778" y="158" width="36" height="36" rx="6" fill="#232F3E"/>
+  <text x="796" y="182" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">aws</text>
+  <text x="824" y="181" font-size="15" font-weight="bold" fill="#78350f">us-east-1 (provisionado por Terraform)</text>
+
+  <rect x="785" y="195" width="660" height="640" rx="8" fill="#ffffff" stroke="#8C4FFF" stroke-width="1.5" stroke-dasharray="7 4"/>
+  <rect x="800" y="204" width="26" height="26" rx="5" fill="#8C4FFF"/>
+  <text x="813" y="221" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle">VPC</text>
+  <text x="834" y="221" font-size="12" font-weight="bold" fill="#6d28d9">VPC 10.0.0.0/16 — subnets públicas (2 AZs) + Internet Gateway (sem NAT: custo)</text>
+
+  <rect x="960" y="235" width="310" height="56" rx="6" fill="#f5f0ff" stroke="#8C4FFF" stroke-width="1.3"/>
+  <rect x="968" y="245" width="36" height="36" rx="6" fill="#8C4FFF"/>
+  <text x="986" y="268" font-size="10.5" font-weight="bold" fill="#ffffff" text-anchor="middle">ELB</text>
+  <text x="1140" y="258" font-size="12.5" font-weight="bold" fill="#5b21b6" text-anchor="middle">Elastic Load Balancing</text>
+  <text x="1140" y="278" font-size="11" fill="#334155" text-anchor="middle">Service type=LoadBalancer — front door da API</text>
+
+  <line x1="1115" y1="90" x2="1115" y2="233" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1127" y="140" font-size="11" fill="#334155">HTTP (API + páginas de confirmação)</text>
+
+  <!-- EKS -->
+  <rect x="810" y="330" width="610" height="290" rx="8" fill="#fff7f0" stroke="#ED7100" stroke-width="1.5"/>
+  <rect x="822" y="338" width="34" height="34" rx="6" fill="#ED7100"/>
+  <text x="839" y="360" font-size="10.5" font-weight="bold" fill="#ffffff" text-anchor="middle">EKS</text>
+  <text x="866" y="360" font-size="12.5" font-weight="bold" fill="#9a3412">Cluster EKS 1.33 — node group 2–3 × t3.small (EC2) — namespace oficina</text>
+
+  <rect x="856" y="406" width="260" height="110" rx="6" fill="#bfdbfe" stroke="#1d4ed8" stroke-width="1"/>
+  <rect x="848" y="398" width="260" height="110" rx="6" fill="#cfe3fd" stroke="#1d4ed8" stroke-width="1"/>
+  <rect x="840" y="390" width="260" height="110" rx="6" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.3"/>
+  <text x="970" y="415" font-size="12.5" font-weight="bold" fill="#1e3a8a" text-anchor="middle">oficina-api</text>
+  <text x="970" y="437" font-size="11" fill="#334155" text-anchor="middle">Deployment — 2 a 8 réplicas</text>
+  <text x="970" y="455" font-size="11" fill="#334155" text-anchor="middle">HPA: CPU 70% · memória 80%</text>
+  <text x="970" y="473" font-size="11" fill="#334155" text-anchor="middle">probes: startup / readiness / liveness</text>
+
+  <rect x="1150" y="390" width="240" height="64" rx="6" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.3"/>
+  <text x="1270" y="415" font-size="12" font-weight="bold" fill="#1e3a8a" text-anchor="middle">MailHog</text>
+  <text x="1270" y="435" font-size="11" fill="#334155" text-anchor="middle">SMTP de demonstração</text>
+
+  <rect x="1150" y="480" width="240" height="56" rx="6" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.3"/>
+  <text x="1270" y="503" font-size="12" font-weight="bold" fill="#1e3a8a" text-anchor="middle">metrics-server</text>
+  <text x="1270" y="521" font-size="11" fill="#334155" text-anchor="middle">alimenta o HPA (vendorizado)</text>
+
+  <line x1="1108" y1="422" x2="1148" y2="422" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1128" y="412" font-size="10.5" fill="#334155" text-anchor="middle">SMTP</text>
+
+  <line x1="1148" y1="508" x2="1108" y2="480" stroke="#334155" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+  <text x="1132" y="530" font-size="10.5" fill="#334155" text-anchor="middle">métricas p/ HPA</text>
+
+  <line x1="1115" y1="291" x2="975" y2="388" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- RDS -->
+  <rect x="840" y="680" width="580" height="120" rx="8" fill="#fdf4ff" stroke="#C925D1" stroke-width="1.5"/>
+  <rect x="852" y="692" width="40" height="40" rx="6" fill="#C925D1"/>
+  <text x="872" y="717" font-size="11" font-weight="bold" fill="#ffffff" text-anchor="middle">RDS</text>
+  <text x="1150" y="706" font-size="12.5" font-weight="bold" fill="#86198f" text-anchor="middle">RDS PostgreSQL 16 — db.t4g.micro (gp3 20 GB, single-AZ)</text>
+  <text x="1130" y="730" font-size="11" fill="#334155" text-anchor="middle">publicly_accessible = false</text>
+  <text x="1130" y="750" font-size="11" fill="#334155" text-anchor="middle">Security Group: porta 5432 somente a partir dos nós do EKS</text>
+  <text x="1130" y="778" font-size="10.5" fill="#64748b" text-anchor="middle">(no ambiente local, substituído por PostgreSQL in-cluster — mesmos manifests)</text>
+
+  <line x1="970" y1="500" x2="970" y2="678" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="982" y="652" font-size="11" fill="#334155">JDBC 5432</text>
+
+  <!-- E-mail: MailHog -> Cliente -->
+  <path d="M 1390 420 H 1447 V 65 H 1249" fill="none" stroke="#9333ea" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrowMail)"/>
+  <text x="1345" y="115" font-size="10.5" fill="#7e22ce" text-anchor="middle">e-mail: botões Aprovar / Reprovar</text>
+  <text x="1345" y="131" font-size="10.5" fill="#7e22ce" text-anchor="middle">(token de uso único, expira em 7 dias)</text>
+
+  <!-- Fluxos GitHub -> AWS -->
+  <line x1="710" y1="490" x2="838" y2="490" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="770" y="478" font-size="11" fill="#334155" text-anchor="middle">pull da imagem</text>
+
+  <line x1="415" y1="590" x2="808" y2="590" stroke="#334155" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="590" y="578" font-size="11" fill="#334155">kubectl set image + rollout</text>
+
+  <line x1="415" y1="700" x2="783" y2="700" stroke="#059669" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="588" y="688" font-size="11" fill="#065f46">provisiona VPC · EKS · RDS + aplica manifests</text>
+
+  <!-- Ambiente local -->
+  <rect x="30" y="880" width="680" height="50" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+  <text x="50" y="900" font-size="11.5" font-weight="bold" fill="#334155">Ambiente local (custo zero):</text>
+  <text x="50" y="918" font-size="11" fill="#475569">terraform apply em infra/environments/local — cluster kind + Postgres in-cluster + MailHog, mesmos manifests de k8s/</text>
+
+  <!-- Legenda -->
+  <rect x="760" y="880" width="710" height="50" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.2"/>
+  <rect x="780" y="895" width="130" height="20" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1"/>
+  <text x="845" y="909" font-size="10.5" fill="#92400e" text-anchor="middle">aprovação manual</text>
+  <text x="920" y="909" font-size="11" fill="#475569">= gate humano (GitHub Environment aws-production)</text>
+  <line x1="1280" y1="905" x2="1330" y2="905" stroke="#9333ea" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="1340" y="909" font-size="11" fill="#475569">= fluxo de e-mail</text>
+</svg>
