@@ -42,7 +42,7 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
                      │  Kubernetes (AWS EKS)                 ▼                     │
                      │   ┌───────────────┐   ┌────────────────────┐               │
                      │   │ oficina-api   │──▶│ RDS PostgreSQL      │               │
-                     │   │ (2-8 réplicas,│   │ (gerenciado)        │               │
+                     │   │ (2-4 réplicas,│   │ (gerenciado)        │               │
                      │   │ HPA CPU/mem)  │   └────────────────────┘               │
                      │   └───────┬───────┘                                        │
                      │           ▼                                                │

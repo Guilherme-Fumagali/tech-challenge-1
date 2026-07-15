@@ -23,6 +23,9 @@ spec:
                 name: oficina-api-config
             - secretRef:
                 name: oficina-api-secret
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=70.0"
           startupProbe:
             httpGet:
               path: /actuator/health/liveness
@@ -42,7 +45,7 @@ spec:
           resources:
             requests:
               cpu: 250m
-              memory: 384Mi
+              memory: 512Mi
             limits:
               cpu: 750m
-              memory: 768Mi
+              memory: 1Gi
