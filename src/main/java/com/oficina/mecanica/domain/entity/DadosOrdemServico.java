@@ -16,6 +16,7 @@ public record DadosOrdemServico(
     List<ItemServico> itensServico,
     List<ItemPeca> itensPeca,
     LocalDateTime dataAbertura,
+    LocalDateTime dataAprovacao,
     LocalDateTime dataInicio,
     LocalDateTime dataConclusao,
     boolean excluidaLogicamente,

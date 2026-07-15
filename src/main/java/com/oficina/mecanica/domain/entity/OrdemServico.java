@@ -28,6 +28,7 @@ public class OrdemServico {
     @Getter(AccessLevel.NONE) private List<ItemServico> itensServico;
     @Getter(AccessLevel.NONE) private List<ItemPeca> itensPeca;
     private LocalDateTime dataAbertura;
+    private LocalDateTime dataAprovacao;
     private LocalDateTime dataInicio;
     private LocalDateTime dataConclusao;
     private boolean excluidaLogicamente;
@@ -51,6 +52,7 @@ public class OrdemServico {
         os.itensServico = dados.itensServico() != null ? new ArrayList<>(dados.itensServico()) : new ArrayList<>();
         os.itensPeca = dados.itensPeca() != null ? new ArrayList<>(dados.itensPeca()) : new ArrayList<>();
         os.dataAbertura = dados.dataAbertura();
+        os.dataAprovacao = dados.dataAprovacao();
         os.dataInicio = dados.dataInicio();
         os.dataConclusao = dados.dataConclusao();
         os.excluidaLogicamente = dados.excluidaLogicamente();
@@ -93,6 +95,7 @@ public class OrdemServico {
     public void aprovar() {
         status.validarTransicaoPara(StatusOS.EM_EXECUCAO);
         this.status = StatusOS.EM_EXECUCAO;
+        this.dataAprovacao = LocalDateTime.now(ZoneOffset.UTC);
         this.dataInicio = LocalDateTime.now(ZoneOffset.UTC);
     }
 
@@ -131,8 +134,6 @@ public class OrdemServico {
         status.validarTransicaoPara(StatusOS.FINALIZADA);
         this.status = StatusOS.FINALIZADA;
         this.dataConclusao = LocalDateTime.now(ZoneOffset.UTC);
-        this.excluidaLogicamente = true;
-        this.dataExclusaoLogica = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public void entregar() {

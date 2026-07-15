@@ -34,6 +34,9 @@ public class OrdemServicoJpaEntity {
     @Column(name = "data_abertura", nullable = false)
     private LocalDateTime dataAbertura;
 
+    @Column(name = "data_aprovacao")
+    private LocalDateTime dataAprovacao;
+
     @Column(name = "data_inicio")
     private LocalDateTime dataInicio;
 

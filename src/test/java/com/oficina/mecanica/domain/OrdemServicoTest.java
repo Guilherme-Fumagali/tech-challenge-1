@@ -59,12 +59,12 @@ class OrdemServicoTest {
             os.concluir();
             assertThat(os.getStatus()).isEqualTo(StatusOS.FINALIZADA);
             assertThat(os.getDataConclusao()).isNotNull();
-            assertThat(os.isExcluidaLogicamente()).isTrue();
-            assertThat(os.getDataExclusaoLogica()).isNotNull();
+            assertThat(os.isExcluidaLogicamente()).isFalse();
+            assertThat(os.getDataExclusaoLogica()).isNull();
 
             os.entregar();
             assertThat(os.getStatus()).isEqualTo(StatusOS.ENTREGUE);
-            assertThat(os.isExcluidaLogicamente()).isTrue();
+            assertThat(os.isExcluidaLogicamente()).isFalse();
         }
 
         @Test
