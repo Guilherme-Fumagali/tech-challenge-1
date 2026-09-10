@@ -1,9 +1,6 @@
 name: CI/CD
 
 on:
-  # push em qualquer branch: o check aparece no head SHA do PR e satisfaz o
-  # status check exigido pelo ruleset, mesmo com o evento pull_request bloqueado
-  # pela política de Actions da conta.
   push:
     branches: ['**']
   pull_request:
@@ -14,8 +11,33 @@ permissions:
   contents: read
 
 jobs:
-  build-and-analyze:
-    name: Build, Test & SonarCloud
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B verify
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 5
+
+  sonar:
+    name: SonarCloud
+    needs: build-and-test
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(fromJSON('["main", "develop"]'), github.ref_name))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +51,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build, test and analyze
+      - name: Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -37,7 +59,7 @@ jobs:
 
   build-and-push-image:
     name: Build & push no ECR
-    needs: build-and-analyze
+    needs: [build-and-test, sonar]
     if: github.event_name == 'push' && contains(fromJSON('["main", "develop"]'), github.ref_name)
     runs-on: ubuntu-latest
     permissions:
