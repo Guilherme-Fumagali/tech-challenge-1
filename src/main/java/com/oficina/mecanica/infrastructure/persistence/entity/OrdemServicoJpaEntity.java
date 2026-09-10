@@ -55,6 +55,9 @@ public class OrdemServicoJpaEntity {
     @Column(name = "token_expiracao")
     private LocalDateTime tokenExpiracao;
 
+    @Column(name = "data_ultima_transicao", nullable = false)
+    private LocalDateTime dataUltimaTransicao;
+
     @OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemServicoJpaEntity> itensServico = new ArrayList<>();
 
