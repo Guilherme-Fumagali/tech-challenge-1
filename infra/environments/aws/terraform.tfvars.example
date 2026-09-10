@@ -1,6 +1,0 @@
-# Copie para terraform.tfvars (gitignorado) e ajuste. NUNCA commitar terraform.tfvars real.
-aws_region     = "us-east-1"
-cluster_name   = "oficina-api-aws"
-db_password    = "CHANGE_ME_min_8_chars"
-jwt_secret     = "CHANGE_ME_min_32_characters_long_secret_key"
-admin_password = "CHANGE_ME"
