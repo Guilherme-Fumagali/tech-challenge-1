@@ -3,52 +3,39 @@ package com.oficina.mecanica.infrastructure.security.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
 
 @Service
 public class JwtService {
 
+    private static final String ISSUER_ESPERADO = "oficina-auth";
+
     private final SecretKey key;
 
-    @Getter
-    private final long accessExpirationMs;
-
-    public JwtService(
-            @Value("${jwt.secret}") String secret,
-            @Value("${jwt.access-expiration-ms:900000}") long accessExpirationMs) {
+    public JwtService(@Value("${jwt.secret}") String secret) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.accessExpirationMs = accessExpirationMs;
-    }
-
-    public String gerarAccessToken(String username) {
-        Instant agora = Instant.now();
-        return Jwts.builder()
-            .subject(username)
-            .claim("typ", "access")
-            .issuedAt(Date.from(agora))
-            .expiration(Date.from(agora.plusMillis(accessExpirationMs)))
-            .signWith(key)
-            .compact();
-    }
-
-    public String extrairUsername(String token) {
-        return parsearClaims(token).getSubject();
     }
 
     public boolean isTokenValido(String token) {
         try {
-            parsearClaims(token);
-            return true;
+            var claims = parsearClaims(token);
+            return ISSUER_ESPERADO.equals(claims.getIssuer());
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public String extrairClienteId(String token) {
+        return parsearClaims(token).getSubject();
+    }
+
+    public String extrairRole(String token) {
+        var role = parsearClaims(token).get("role", String.class);
+        return role == null ? "CLIENTE" : role;
     }
 
     private Claims parsearClaims(String token) {
