@@ -1,5 +1,6 @@
 package com.oficina.mecanica.infrastructure.persistence.adapter;
 
+import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.entity.OrdemServico;
 import com.oficina.mecanica.domain.repository.OrdemServicoRepository;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
@@ -17,15 +18,24 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
 
     private final OrdemServicoJpaRepository jpa;
     private final OrdemServicoMapper mapper;
+    private final MetricasOrdemServico metricas;
 
-    public OrdemServicoRepositoryAdapter(OrdemServicoJpaRepository jpa, OrdemServicoMapper mapper) {
+    public OrdemServicoRepositoryAdapter(OrdemServicoJpaRepository jpa,
+                                         OrdemServicoMapper mapper,
+                                         MetricasOrdemServico metricas) {
         this.jpa = jpa;
         this.mapper = mapper;
+        this.metricas = metricas;
     }
 
     @Override
     public OrdemServico salvar(OrdemServico os) {
         jpa.save(mapper.toEntity(os));
+
+        if (os.consumirMarcaDeNovaOrdem()) {
+            metricas.registrarAbertura();
+        }
+        os.drenarTransicoes().forEach(metricas::registrarTransicao);
         return os;
     }
 

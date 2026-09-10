@@ -2,6 +2,7 @@ package com.oficina.mecanica.infrastructure.notification;
 
 import com.oficina.mecanica.application.port.NotificacaoService;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
+import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.repository.ClienteRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -25,15 +26,18 @@ public class SmtpNotificacaoService implements NotificacaoService {
 
     private final JavaMailSender mailSender;
     private final ClienteRepository clienteRepository;
+    private final MetricasOrdemServico metricas;
     private final String remetente;
     private final String baseUrl;
 
     public SmtpNotificacaoService(JavaMailSender mailSender,
                                    ClienteRepository clienteRepository,
+                                   MetricasOrdemServico metricas,
                                    @Value("${app.mail.from}") String remetente,
                                    @Value("${app.mail.base-url:http://localhost:8080}") String baseUrl) {
         this.mailSender = mailSender;
         this.clienteRepository = clienteRepository;
+        this.metricas = metricas;
         this.remetente = remetente;
         this.baseUrl = baseUrl;
     }
@@ -55,6 +59,7 @@ public class SmtpNotificacaoService implements NotificacaoService {
             helper.setText(corpoHtml(cliente.getNome(), osId, valorTotal, linkAprovar, linkReprovar), true);
             mailSender.send(mensagem);
         } catch (MessagingException e) {
+            metricas.registrarFalhaIntegracao("email", "montagem_mensagem");
             throw new IllegalStateException("Falha ao montar o e-mail de orçamento.", e);
         }
     }

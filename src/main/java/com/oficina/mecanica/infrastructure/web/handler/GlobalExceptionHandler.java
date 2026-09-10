@@ -4,6 +4,7 @@ import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.EstoqueInsuficienteException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
 import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
+import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -17,6 +18,12 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private final MetricasOrdemServico metricas;
+
+    public GlobalExceptionHandler(MetricasOrdemServico metricas) {
+        this.metricas = metricas;
+    }
+
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<ProblemDetail> handleNotFound(RecursoNaoEncontradoException ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -24,6 +31,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(TransicaoInvalidaException.class)
     public ResponseEntity<ProblemDetail> handleTransicao(TransicaoInvalidaException ex) {
+        metricas.registrarFalhaTransicao(ex.getClass().getSimpleName());
         return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
     }
 
