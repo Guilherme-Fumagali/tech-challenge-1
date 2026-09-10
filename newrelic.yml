@@ -1,0 +1,40 @@
+# Configuração do agente Java do New Relic.
+common: &default_settings
+  license_key: ${NEW_RELIC_LICENSE_KEY}
+  app_name: ${NEW_RELIC_APP_NAME:oficina-api}
+  distributed_tracing:
+    enabled: true
+
+  apdex_t: 0.5
+
+  application_logging:
+    enabled: true
+    forwarding:
+      # DESLIGADO de propósito. Quem envia log é o Fluent Bit da integração
+      # Kubernetes. Deixar os dois ligados envia cada linha duas vezes e queima
+      # o free tier pela metade (SPEC-03 §4).
+      enabled: false
+    local_decorating:
+      enabled: false
+    metrics:
+      enabled: true
+
+  transaction_tracer:
+    enabled: true
+    transaction_threshold: apdex_f
+    record_sql: obfuscated
+
+  error_collector:
+    enabled: true
+    # Recusa de autenticação e validação são fluxo esperado, não erro de aplicação.
+    ignore_status_codes: 401,403,404,422
+
+  labels:
+    fase: tech-challenge-3
+
+production:
+  <<: *default_settings
+
+test:
+  <<: *default_settings
+  agent_enabled: false
