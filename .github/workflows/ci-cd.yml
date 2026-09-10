@@ -1,8 +1,11 @@
 name: CI/CD
 
 on:
+  # push em qualquer branch: o check aparece no head SHA do PR e satisfaz o
+  # status check exigido pelo ruleset, mesmo com o evento pull_request bloqueado
+  # pela política de Actions da conta.
   push:
-    branches: [main, develop]
+    branches: ['**']
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
@@ -35,7 +38,7 @@ jobs:
   build-and-push-image:
     name: Build & push no ECR
     needs: build-and-analyze
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' && contains(fromJSON('["main", "develop"]'), github.ref_name)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
