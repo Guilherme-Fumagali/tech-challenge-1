@@ -43,19 +43,6 @@ class ClienteUseCaseTest {
     }
 
     @Test
-    void alterarStatus_deveBloquearClienteExistente() {
-        var id = UUID.randomUUID();
-        var cliente = new Cliente(id, CPF, "João", "joao@email.com", "11999999999");
-        when(repository.buscarPorId(id)).thenReturn(Optional.of(cliente));
-        when(repository.salvar(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        var resultado = useCase.alterarStatus(id, StatusCliente.BLOQUEADO);
-
-        assertThat(resultado.getStatus()).isEqualTo(StatusCliente.BLOQUEADO);
-        verify(repository).salvar(cliente);
-    }
-
-    @Test
     void cadastrar_deveSalvarQuandoCpfNaoExiste() {
         var cliente = new Cliente(UUID.randomUUID(), CPF, "João", "joao@email.com", "11999999999");
         when(repository.existePorCpfCnpj(CPF)).thenReturn(false);

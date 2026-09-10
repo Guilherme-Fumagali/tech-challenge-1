@@ -47,31 +47,39 @@ todos. É o principal passivo de segurança da arquitetura atual.
 
 ## DT-03 · Revogação de token não é imediata
 
-**Status:** aberto · **Prioridade:** baixa · **Risco:** baixo
+**Status:** aberto · **Prioridade:** média · **Risco:** médio
 
 ### Situação atual
 
-O Lambda authorizer usa cache de 300 segundos por token. Um token que devesse ser
-recusado continua aceito pelo gateway por até 5 minutos.
+Nem o Lambda authorizer nem a aplicação consultam `clientes.status` a cada requisição —
+os dois apenas verificam a assinatura do token. Quando o cache de 300 s do authorizer
+expira, ele revalida a assinatura, que continua íntegra.
+
+Portanto a exposição não é o cache: é **o tempo de vida inteiro do token, 15 minutos**.
 
 ### Causa raiz
 
-Sem o cache, o authorizer seria invocado a cada requisição — custo e latência
-desnecessários num sistema cujo token já vive apenas 15 minutos.
+A aplicação virou validadora pura (ADR-003): confia na assinatura e não vai ao banco
+para autorizar. O authorizer segue a mesma premissa. Nenhuma das duas camadas foi
+desenhada para revogação, e não há mecanismo de revogação no fluxo novo — o refresh
+token saiu junto com o `AuthController`.
 
 ### Melhoria planejada
 
-Lista de revogação em cache distribuído consultada pelo authorizer, ou redução do TTL
-para 60 s se o custo permitir.
+Consultar o status na autorização — no authorizer, com cache curto, ou na aplicação a
+cada requisição. Alternativa mais barata: reduzir o TTL do token de 900 s para 300 s,
+o que corta a janela para um terço sem consulta extra ao banco.
 
 ### Justificativa de escopo
 
-Não existe mecanismo de revogação no fluxo novo — o refresh token foi removido junto com
-o `AuthController`. Revogar um token de 15 minutos tem valor limitado.
+Consultar o banco a cada requisição contraria o desenho da ADR-003 e adiciona uma query
+por chamada. Aceito para ambiente de estudo, onde bloquear cliente não é operação
+frequente nem sensível a tempo.
 
 ### Impacto do débito
 
-Cliente bloqueado durante uma sessão ativa continua acessando por até 5 minutos.
+Cliente bloqueado durante uma sessão ativa continua acessando por **até 15 minutos**,
+com todas as permissões que tinha. Bloquear alguém não tem efeito imediato.
 
 ---
 

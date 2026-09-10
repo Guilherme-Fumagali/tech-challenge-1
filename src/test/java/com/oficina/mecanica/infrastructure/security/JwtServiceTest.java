@@ -48,6 +48,23 @@ class JwtServiceTest {
     }
 
     @Test
+    void deveRecusarRoleDesconhecida() {
+        // A role vira authority no SecurityContext. Claim forjada com valor arbitrário
+        // não pode virar ROLE_<lixo> silencioso.
+        var agora = Instant.now();
+        var token = Jwts.builder()
+            .subject(UUID.randomUUID().toString())
+            .issuer("oficina-auth")
+            .claim("role", "ADMIN")
+            .issuedAt(Date.from(agora))
+            .expiration(Date.from(agora.plusSeconds(900)))
+            .signWith(Keys.hmacShaKeyFor(SEGREDO.getBytes(StandardCharsets.UTF_8)))
+            .compact();
+
+        assertThat(service.isTokenValido(token)).isFalse();
+    }
+
+    @Test
     void deveRecusarTokenMalformado() {
         assertThat(service.isTokenValido("nao-e-um-jwt")).isFalse();
     }

@@ -5,7 +5,6 @@ import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
 import com.oficina.mecanica.domain.repository.ClienteRepository;
 import com.oficina.mecanica.domain.valueobject.CpfCnpj;
-import com.oficina.mecanica.domain.valueobject.StatusCliente;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,12 +42,6 @@ public class ClienteUseCase {
     public Cliente atualizar(UUID id, String nome, String email, String telefone) {
         var cliente = buscarPorId(id);
         cliente.atualizar(nome, email, telefone);
-        return repository.salvar(cliente);
-    }
-
-    public Cliente alterarStatus(UUID id, StatusCliente novoStatus) {
-        var cliente = buscarPorId(id);
-        cliente.setStatus(novoStatus);
         return repository.salvar(cliente);
     }
 

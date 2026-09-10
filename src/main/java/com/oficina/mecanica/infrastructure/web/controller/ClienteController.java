@@ -2,7 +2,6 @@ package com.oficina.mecanica.infrastructure.web.controller;
 
 import com.oficina.mecanica.application.usecase.cliente.ClienteUseCase;
 import com.oficina.mecanica.domain.valueobject.CpfCnpj;
-import com.oficina.mecanica.infrastructure.web.dto.request.AlterarStatusClienteRequest;
 import com.oficina.mecanica.infrastructure.web.dto.request.AtualizarClienteRequest;
 import com.oficina.mecanica.infrastructure.web.dto.request.CriarClienteRequest;
 import com.oficina.mecanica.infrastructure.web.dto.response.ClienteResponse;
@@ -54,14 +53,6 @@ public class ClienteController {
                                                      @Valid @RequestBody AtualizarClienteRequest req) {
         var cliente = useCase.atualizar(id, req.nome(), req.email(), req.telefone());
         return ResponseEntity.ok(ClienteResponse.from(cliente));
-    }
-
-    @PatchMapping("/{id}/status")
-    @Operation(summary = "Alterar situação cadastral do cliente",
-               description = "Cliente fora de ATIVO deixa de obter token na Lambda de autenticação por CPF.")
-    public ResponseEntity<ClienteResponse> alterarStatus(@PathVariable UUID id,
-                                                         @Valid @RequestBody AlterarStatusClienteRequest req) {
-        return ResponseEntity.ok(ClienteResponse.from(useCase.alterarStatus(id, req.status())));
     }
 
     @DeleteMapping("/{id}")

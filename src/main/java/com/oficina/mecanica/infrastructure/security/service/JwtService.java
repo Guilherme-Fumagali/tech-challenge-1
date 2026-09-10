@@ -8,11 +8,22 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 @Service
 public class JwtService {
 
     private static final String ISSUER_ESPERADO = "oficina-auth";
+
+    /**
+     * Papéis aceitos. O valor vira authority no SecurityContext, então não pode sair
+     * direto da claim sem conferência: um valor desconhecido produziria um
+     * {@code ROLE_<lixo>} silencioso, que passaria a valer alguma coisa no dia em que
+     * uma regra {@code hasRole} for adicionada ao SecurityConfig.
+     */
+    private static final Set<String> ROLES_CONHECIDOS = Set.of("CLIENTE");
+
+    private static final String ROLE_PADRAO = "CLIENTE";
 
     private final SecretKey key;
 
@@ -23,7 +34,8 @@ public class JwtService {
     public boolean isTokenValido(String token) {
         try {
             var claims = parsearClaims(token);
-            return ISSUER_ESPERADO.equals(claims.getIssuer());
+            return ISSUER_ESPERADO.equals(claims.getIssuer())
+                && ROLES_CONHECIDOS.contains(lerRole(claims));
         } catch (Exception e) {
             return false;
         }
@@ -34,8 +46,12 @@ public class JwtService {
     }
 
     public String extrairRole(String token) {
-        var role = parsearClaims(token).get("role", String.class);
-        return role == null ? "CLIENTE" : role;
+        return lerRole(parsearClaims(token));
+    }
+
+    private String lerRole(Claims claims) {
+        var role = claims.get("role", String.class);
+        return role == null ? ROLE_PADRAO : role;
     }
 
     private Claims parsearClaims(String token) {
