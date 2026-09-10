@@ -52,33 +52,35 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
 
 ### Como rodar
 
-| Cenário | Como | Guia |
+| Cenário | Como | Onde |
 |---|---|---|
-| Dev rápido (inner-loop) | `docker compose up --build` | acima, seção "Execução local" |
-| **Kubernetes local (kind) — custo zero** | `cd infra/environments/local && terraform apply` | [`infra/README.md`](infra/README.md) |
-| Kubernetes "cru" (manifests, cluster próprio) | `kubectl apply -f k8s/...` | [`k8s/README.md`](k8s/README.md) |
-| AWS (EKS + RDS) — **custo real** | `cd infra/environments/aws && terraform apply` | [`infra/README.md`](infra/README.md) — ⚠️ ler o aviso de custo antes |
+| Dev rápido (inner-loop) | `docker compose up --build` | aqui, seção "Execução local" |
+| **Kubernetes local (kind) — custo zero** | `cd local && terraform apply` | repo `oficina-infra-k8s` |
+| Kubernetes "cru" (manifests, cluster próprio) | `kubectl apply -f k8s/...` | repo `oficina-infra-k8s` |
+| AWS (EKS + RDS) — **custo real** | `terraform apply` | repos `oficina-infra-k8s` e `oficina-infra-db` |
 
-Os mesmos manifests de [`k8s/`](k8s/) servem os dois clusters. A diferença entre os ambientes está
-no banco (Postgres in-cluster no kind, RDS gerenciado na AWS) e na origem da imagem (`kind load` de
-um build local vs. pull do GHCR).
+> **A partir da Fase 3 este repositório contém apenas a aplicação.** Manifests Kubernetes e
+> Terraform foram movidos para repositórios próprios, conforme o enunciado exige — quatro
+> repositórios separados, cada um com CI/CD. O histórico dessas pastas permanece aqui, até o
+> commit de remoção. Ver [ADR-001](docs/tech-challenge-3/adrs/ADR-001-quatro-repositorios.md).
 
 ### CI/CD
 
-- `.github/workflows/ci-cd.yml` — pipeline único: build, testes, JaCoCo, OWASP dependency-check e
-  SonarCloud a todo push/PR em `main`; só em push segue automático pro build + push da imagem no
-  GHCR e deploy no EKS (mesma **aprovação manual obrigatória**, `aws-production`).
-- `.github/workflows/terraform.yml` — `bootstrap` cria o backend de state (S3 + DynamoDB, idempotente)
-  e `plan` roda automático (só leitura, sem custo) a toda mudança em `infra/**`/`k8s/**`; `apply` no
-  ambiente `aws` com **aprovação manual obrigatória** antes de tocar em qualquer recurso cobrado
-  (GitHub Environment `aws-production`).
-- `.github/workflows/destroy-aws.yml` — desliga o ambiente AWS e remove o backend de state com um
-  clique (mesmo gate de aprovação).
+`.github/workflows/ci-cd.yml` — build, testes, JaCoCo, OWASP dependency-check e SonarCloud a todo
+push e PR; em push, segue para build da imagem, push no **ECR** e deploy no EKS.
 
-Depois de um único passo local (`infra/bootstrap/github-oidc.sh`, que dá ao GitHub Actions acesso
-via OIDC à conta AWS — impossível automatizar, já que criar a primeira credencial exigiria já ter
-uma), **todo o ciclo de vida da infraestrutura roda pelo Actions**: bootstrap → plan → apply →
-deploy → destroy. Ver [`infra/README.md`](infra/README.md).
+- `develop` → ambiente **staging** (namespace `oficina-staging`), automático.
+- `main` → ambiente **produção** (namespace `oficina`), com **aprovação humana** no GitHub Environment.
+- `main` protegida: sem push direto, merge só por Pull Request com status checks verdes.
+- Autenticação com a AWS por **OIDC** — nenhum secret de chave de acesso de longa duração.
+
+O nome do cluster e a URL do repositório de imagens vêm do **SSM Parameter Store**, não hardcoded:
+é o contrato entre os quatro repositórios. Os workflows de Terraform e de destroy vivem agora nos
+repositórios de infraestrutura.
+
+O registry migrou do GHCR para o **ECR** ([ADR-008](docs/tech-challenge-3/adrs/ADR-008-registry-ecr.md)):
+com os nós em subnet privada, todo pull passaria pela NAT instance, que é burstable. Com ECR mais o
+gateway endpoint de S3, as camadas vêm pelo backbone da AWS sem tocar a NAT.
 
 ### Links
 
@@ -261,8 +263,8 @@ A API estará disponível em: `http://localhost:8080`
 Swagger UI: `http://localhost:8080/swagger-ui.html`
 MailHog (e-mails capturados, incluindo o token de aprovação externa): `http://localhost:8025`
 
-Para rodar em Kubernetes, ver `k8s/README.md` (aplicar os manifests num cluster próprio) ou
-`infra/environments/aws` (provisionar EKS + RDS via Terraform).
+Para rodar em Kubernetes ou provisionar a nuvem, ver os repositórios `oficina-infra-k8s`
+(rede, EKS, ECR, API Gateway) e `oficina-infra-db` (RDS).
 
 ---
 
@@ -292,28 +294,50 @@ export JAVA_HOME=<caminho-do-seu-jdk-21>
 | `DB_USER` | `oficina` | Usuário do banco |
 | `DB_PASS` | `oficina` | Senha do banco |
 | `JWT_SECRET` | `minha-chave-...` | Chave HMAC — algoritmo auto-selecionado pelo JJWT pelo tamanho (≥32 chars→HS256, ≥48→HS384, ≥64→HS512) |
-| `JWT_ACCESS_EXPIRATION_MS` | `900000` (15 min) | Expiração do access token em ms |
-| `JWT_REFRESH_EXPIRATION_MS` | `604800000` (7 dias) | Expiração do refresh token em ms |
 | `PORT` | `8080` | Porta da aplicação |
+| `ENV` | `local` | Ambiente lógico, vira tag nas métricas |
+| `SPRING_PROFILES_ACTIVE` | — | `k8s` ativa o log estruturado JSON |
+| `NEW_RELIC_LICENSE_KEY` | — | Sem ela, o agente APM não é ativado |
+| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | `http://localhost:4318/v1/metrics` | Destino das métricas de negócio |
+
+> A partir da Fase 3 a aplicação **não emite tokens** — quem assina é a Lambda de autenticação por
+> CPF. `JWT_SECRET` continua sendo lido, mas apenas para **validar** a assinatura, e precisa ser o
+> mesmo valor que a Lambda usa. As variáveis de expiração saíram: quem decide a validade é quem
+> assina.
 
 ---
 
 ## Autenticação
 
-Todas as rotas administrativas exigem JWT. A consulta de status da OS é pública.
+A partir da Fase 3 **a aplicação não emite tokens** — quem autentica é uma função Lambda, atrás do
+API Gateway, a partir do **CPF do cliente**. Aqui só se valida a assinatura
+([ADR-003](docs/tech-challenge-3/adrs/ADR-003-autenticacao-cpf-lambda.md)).
 
 ```bash
-# 1. Obter token
-curl -X POST http://localhost:8080/api/auth/login \
+# 1. Obter token — no API Gateway, atendido pela Lambda
+curl -X POST "$API_URL/auth" \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+  -d '{"cpf":"529.982.247-25"}'
 
-# Resposta: {"accessToken":"eyJ...","refreshToken":"uuid-opaco","tipo":"Bearer","expiresIn":900}
+# 200 → {"accessToken":"eyJ...","tokenType":"Bearer","expiresIn":900}
+# 400 → CPF_INVALIDO            (sem tocar no banco)
+# 404 → CLIENTE_NAO_ENCONTRADO  ─┐ mesma mensagem: impede
+# 403 → CLIENTE_INATIVO         ─┘ enumeração de CPFs válidos
 
-# 2. Usar o token nas requisições
-curl http://localhost:8080/api/clientes \
-  -H "Authorization: Bearer eyJ..."
+# 2. Usar o token — o authorizer valida na borda, a aplicação valida de novo
+curl "$API_URL/api/clientes" -H "Authorization: Bearer eyJ..."
 ```
+
+Claims do token: `sub` é o **UUID** do cliente, nunca o CPF — assim o identificador não se espalha
+pelos logs de todo request. Também vêm `cpf`, `nome`, `role` e `iss = oficina-auth`.
+
+**Para desenvolver localmente sem a Lambda**, forje um token com a mesma chave de `JWT_SECRET`,
+emissor `oficina-auth` — é o que o teste de integração faz em `OrdemServicoIntegrationTest`.
+
+> **Limitação declarada:** CPF é identificador público, não segredo. É o que o enunciado especifica
+> e é o que está implementado, com as mitigações que couberam — respostas indistinguíveis, throttle
+> de 10 req/s na rota, token de 15 minutos sem refresh, e CPF nunca em log. Ver
+> [DT-06](docs/tech-challenge-3/debitos-tecnicos.md).
 
 ---
 
@@ -348,8 +372,8 @@ GET  /api/ordens
 
 | Grupo | Base URL | Autenticação |
 |---|---|---|
-| Auth | `POST /api/auth/login` · `POST /api/auth/refresh` · `POST /api/auth/logout` | Pública |
-| Clientes | `GET/POST/PUT/DELETE /api/clientes` | JWT |
+| **Auth** | `POST /auth` — **no API Gateway**, atendido pela Lambda de autenticação por CPF | Pública |
+| Clientes | `GET/POST/PUT/DELETE /api/clientes` · `PATCH /api/clientes/{id}/status` | JWT |
 | Veículos | `GET/POST/PUT/DELETE /api/veiculos` | JWT |
 | Serviços | `GET/POST/PUT/DELETE /api/servicos` | JWT |
 | Peças/Estoque | `GET/POST/PUT/DELETE /api/pecas` | JWT |
@@ -442,17 +466,19 @@ oficina-api/
 │   │       └── db/migration/    # Flyway SQL
 │   └── test/
 ├── docs/
-│   └── ddd/                     # Event Storming, Context Map, Domain Storytelling
-├── k8s/                         # Manifests Kubernetes (app, database, mailhog, metrics-server)
-├── infra/
-│   ├── bootstrap/                # Scripts de pré-requisito AWS (OIDC + backend de state)
-│   └── environments/
-│       ├── local/                  # Terraform — cluster kind + Postgres in-cluster
-│       └── aws/                    # Terraform — EKS + RDS
-├── .github/workflows/            # ci-cd.yml, terraform.yml, destroy-aws.yml
-├── observability/                # Config do stretch de OpenTelemetry (Tempo + Grafana)
-├── Dockerfile
+│   ├── ddd/                     # Event Storming, Context Map, Domain Storytelling
+│   ├── runbooks/                # Um procedimento por alerta (6)
+│   ├── tech-challenge-1/
+│   ├── tech-challenge-2/
+│   └── tech-challenge-3/        # RFCs, ADRs, diagramas C4/sequência/ER, débitos técnicos
+├── .github/workflows/           # ci-cd.yml
+├── observability/               # Tempo + Grafana para o inner-loop local
+├── Dockerfile                   # multi-stage + agente New Relic
+├── newrelic.yml                 # Config do agente APM
 ├── docker-compose.yml
 ├── .env.example
 └── pom.xml
 ```
+
+> Terraform e manifests Kubernetes vivem em `oficina-infra-k8s` e `oficina-infra-db`; a função de
+> autenticação, em `oficina-auth-lambda`.
