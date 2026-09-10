@@ -6,6 +6,7 @@ import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
 import com.oficina.mecanica.domain.repository.ClienteRepository;
 import com.oficina.mecanica.domain.valueobject.CpfCnpj;
+import com.oficina.mecanica.domain.valueobject.StatusCliente;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +33,26 @@ class ClienteUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new ClienteUseCase(repository);
+    }
+
+    @Test
+    void clienteNovoNasceAtivo() {
+        var cliente = new Cliente(UUID.randomUUID(), CPF, "João", "joao@email.com", "11999999999");
+
+        assertThat(cliente.getStatus()).isEqualTo(StatusCliente.ATIVO);
+    }
+
+    @Test
+    void alterarStatus_deveBloquearClienteExistente() {
+        var id = UUID.randomUUID();
+        var cliente = new Cliente(id, CPF, "João", "joao@email.com", "11999999999");
+        when(repository.buscarPorId(id)).thenReturn(Optional.of(cliente));
+        when(repository.salvar(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var resultado = useCase.alterarStatus(id, StatusCliente.BLOQUEADO);
+
+        assertThat(resultado.getStatus()).isEqualTo(StatusCliente.BLOQUEADO);
+        verify(repository).salvar(cliente);
     }
 
     @Test
