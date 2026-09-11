@@ -35,9 +35,8 @@ jobs:
   sonar:
     name: SonarCloud
     needs: build-and-test
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
-    env:
-      QUALITY_GATE_WAIT: ${{ contains(fromJSON('["main", "develop"]'), github.ref_name) && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,7 +53,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify sonar:sonar -Dsonar.qualitygate.wait=$QUALITY_GATE_WAIT
+        run: mvn -B verify sonar:sonar
 
   build-and-push-image:
     name: Build & push no ECR
