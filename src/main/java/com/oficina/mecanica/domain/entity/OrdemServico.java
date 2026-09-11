@@ -35,6 +35,13 @@ public class OrdemServico {
     private LocalDateTime dataExclusaoLogica;
     private String tokenAprovacaoExterna;
     private LocalDateTime tokenExpiracao;
+    private LocalDateTime dataUltimaTransicao;
+
+    @Getter(AccessLevel.NONE)
+    private final List<TransicaoOS> transicoesPendentes = new ArrayList<>();
+
+    @Getter(AccessLevel.NONE)
+    private boolean novaOrdem;
 
     public OrdemServico(UUID id, UUID clienteId, UUID veiculoId) {
         this.id = id;
@@ -44,6 +51,8 @@ public class OrdemServico {
         this.itensServico = new ArrayList<>();
         this.itensPeca = new ArrayList<>();
         this.dataAbertura = LocalDateTime.now(ZoneOffset.UTC);
+        this.dataUltimaTransicao = this.dataAbertura;
+        this.novaOrdem = true;
     }
 
     public static OrdemServico reconstituir(DadosOrdemServico dados) {
@@ -59,12 +68,41 @@ public class OrdemServico {
         os.dataExclusaoLogica = dados.dataExclusaoLogica();
         os.tokenAprovacaoExterna = dados.tokenAprovacaoExterna();
         os.tokenExpiracao = dados.tokenExpiracao();
+        os.dataUltimaTransicao = dados.dataUltimaTransicao() != null
+            ? dados.dataUltimaTransicao()
+            : dados.dataAbertura();
+        os.transicoesPendentes.clear();
+        os.novaOrdem = false;
         return os;
     }
 
     public void iniciarDiagnostico() {
-        status.validarTransicaoPara(StatusOS.EM_DIAGNOSTICO);
-        this.status = StatusOS.EM_DIAGNOSTICO;
+        transicionarPara(StatusOS.EM_DIAGNOSTICO);
+    }
+
+    private void transicionarPara(StatusOS destino) {
+        status.validarTransicaoPara(destino);
+        var agora = LocalDateTime.now(ZoneOffset.UTC);
+        var referencia = dataUltimaTransicao != null ? dataUltimaTransicao : dataAbertura;
+        var permanencia = referencia != null
+            ? Duration.between(referencia, agora)
+            : Duration.ZERO;
+
+        transicoesPendentes.add(new TransicaoOS(id, status, destino, permanencia));
+        this.status = destino;
+        this.dataUltimaTransicao = agora;
+    }
+
+    public List<TransicaoOS> drenarTransicoes() {
+        var copia = List.copyOf(transicoesPendentes);
+        transicoesPendentes.clear();
+        return copia;
+    }
+
+    public boolean consumirMarcaDeNovaOrdem() {
+        var era = novaOrdem;
+        novaOrdem = false;
+        return era;
     }
 
     public void adicionarServico(ItemServico item) {
@@ -86,22 +124,19 @@ public class OrdemServico {
         if (itensServico.isEmpty() && itensPeca.isEmpty()) {
             throw new DomainException("A OS deve ter ao menos um item antes de gerar o orçamento.");
         }
-        status.validarTransicaoPara(StatusOS.AGUARDANDO_APROVACAO);
-        this.status = StatusOS.AGUARDANDO_APROVACAO;
+        transicionarPara(StatusOS.AGUARDANDO_APROVACAO);
         this.tokenAprovacaoExterna = TokenAprovacaoExterna.gerar();
         this.tokenExpiracao = LocalDateTime.now(ZoneOffset.UTC).plus(validadeToken);
     }
 
     public void aprovar() {
-        status.validarTransicaoPara(StatusOS.EM_EXECUCAO);
-        this.status = StatusOS.EM_EXECUCAO;
+        transicionarPara(StatusOS.EM_EXECUCAO);
         this.dataAprovacao = LocalDateTime.now(ZoneOffset.UTC);
         this.dataInicio = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public void reprovar() {
-        status.validarTransicaoPara(StatusOS.CANCELADA);
-        this.status = StatusOS.CANCELADA;
+        transicionarPara(StatusOS.CANCELADA);
     }
 
     public void aprovarViaTokenExterno(String token) {
@@ -131,14 +166,12 @@ public class OrdemServico {
     }
 
     public void concluir() {
-        status.validarTransicaoPara(StatusOS.FINALIZADA);
-        this.status = StatusOS.FINALIZADA;
+        transicionarPara(StatusOS.FINALIZADA);
         this.dataConclusao = LocalDateTime.now(ZoneOffset.UTC);
     }
 
     public void entregar() {
-        status.validarTransicaoPara(StatusOS.ENTREGUE);
-        this.status = StatusOS.ENTREGUE;
+        transicionarPara(StatusOS.ENTREGUE);
     }
 
     public BigDecimal calcularOrcamento() {

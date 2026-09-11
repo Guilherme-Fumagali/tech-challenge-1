@@ -2,6 +2,7 @@ package com.oficina.mecanica.infrastructure.notification;
 
 import com.oficina.mecanica.domain.entity.Cliente;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
+import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.repository.ClienteRepository;
 import com.oficina.mecanica.domain.valueobject.CpfCnpj;
 import jakarta.mail.Session;
@@ -27,13 +28,14 @@ class SmtpNotificacaoServiceTest {
 
     @Mock JavaMailSender mailSender;
     @Mock ClienteRepository clienteRepository;
+    @Mock MetricasOrdemServico metricas;
 
     SmtpNotificacaoService service;
 
     @BeforeEach
     void setUp() {
         service = new SmtpNotificacaoService(
-            mailSender, clienteRepository, "oficina@example.com", "http://oficina.example");
+            mailSender, clienteRepository, metricas, "oficina@example.com", "http://oficina.example");
     }
 
     @Test

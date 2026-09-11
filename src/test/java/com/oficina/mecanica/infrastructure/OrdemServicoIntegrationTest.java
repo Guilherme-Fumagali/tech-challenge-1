@@ -3,8 +3,11 @@ package com.oficina.mecanica.infrastructure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.oficina.mecanica.infrastructure.persistence.repository.OrdemServicoJpaRepository;
 import com.oficina.mecanica.infrastructure.web.dto.request.*;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -17,6 +20,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -41,6 +48,8 @@ class OrdemServicoIntegrationTest {
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
     }
+
+    @Value("${jwt.secret}") String jwtSecret;
 
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
@@ -359,13 +368,26 @@ class OrdemServicoIntegrationTest {
             .andExpect(status().isOk());
     }
 
-    private String obterToken() throws Exception {
-        var resp = mvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(mapper.writeValueAsString(new LoginRequest("admin", "admin123"))))
-            .andExpect(status().isOk())
-            .andReturn().getResponse().getContentAsString();
-        return mapper.readTree(resp).get("accessToken").asText();
+    /**
+     * Forja um token com a mesma chave da aplicação.
+     *
+     * <p>Desde a Fase 3 quem emite é a Lambda de autenticação por CPF (ADR-003); a aplicação
+     * só valida. O teste de integração da API, portanto, produz o token diretamente em vez
+     * de chamar um endpoint de login que não existe mais.
+     */
+    private String obterToken() {
+        var agora = Instant.now();
+        var chave = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        return Jwts.builder()
+            .subject(UUID.randomUUID().toString())
+            .issuer("oficina-auth")
+            .claim("cpf", "52998224725")
+            .claim("nome", "Cliente de Teste")
+            .claim("role", "CLIENTE")
+            .issuedAt(Date.from(agora))
+            .expiration(Date.from(agora.plusSeconds(900)))
+            .signWith(chave)
+            .compact();
     }
 
     private String criarCliente(String token, String cpfCnpj) throws Exception {

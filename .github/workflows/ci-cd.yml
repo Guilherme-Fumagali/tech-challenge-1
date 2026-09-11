@@ -2,22 +2,43 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: ['**']
   workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  build-and-analyze:
-    name: Build, Test & SonarCloud
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B verify
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 5
+
+  sonar:
+    name: SonarCloud
+    needs: build-and-test
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -28,52 +49,25 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build, test and analyze
+      - name: Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: mvn -B verify sonar:sonar
 
   build-and-push-image:
-    name: Build & push imagem
-    needs: build-and-analyze
-    if: github.event_name != 'pull_request'
+    name: Build & push no ECR
+    needs: [build-and-test, sonar]
+    if: github.event_name == 'push' && contains(fromJSON('["main", "develop"]'), github.ref_name)
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.vars.outputs.image_tag }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Calcular nome de imagem em minúsculas (exigência do GHCR)
-        id: vars
-        run: |
-          echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
-          echo "image_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ steps.vars.outputs.owner }}/oficina-api:${{ steps.vars.outputs.image_tag }}
-            ghcr.io/${{ steps.vars.outputs.owner }}/oficina-api:latest
-
-  deploy-app:
-    name: Deploy no EKS
-    needs: build-and-push-image
-    runs-on: ubuntu-latest
-    environment: aws-production
     permissions:
       id-token: write
       contents: read
+    outputs:
+      image_tag: ${{ steps.vars.outputs.image_tag }}
+      registry: ${{ steps.ecr.outputs.registry }}
+    env:
+      AMBIENTE: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -82,29 +76,78 @@ jobs:
           aws-region: us-east-1
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
 
+      - name: Login no ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Resolver repositório do SSM
+        id: vars
+        run: |
+          REPO=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/ecr-repository-url" \
+                   --query 'Parameter.Value' --output text)
+          echo "repository=${REPO}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.vars.outputs.repository }}:${{ github.sha }}
+            ${{ steps.vars.outputs.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy no EKS (${{ github.ref_name == 'main' && 'prod' || 'staging' }})
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      AMBIENTE: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+      NAMESPACE: ${{ github.ref_name == 'main' && 'oficina' || 'oficina-staging' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Resolver cluster e imagem do SSM
+        run: |
+          echo "CLUSTER=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/eks-cluster-name" \
+            --query 'Parameter.Value' --output text)" >> "$GITHUB_ENV"
+          echo "REPOSITORY=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/ecr-repository-url" \
+            --query 'Parameter.Value' --output text)" >> "$GITHUB_ENV"
+
       - name: Aguardar cluster ACTIVE
-        run: aws eks wait cluster-active --name oficina-api-aws --region us-east-1
+        run: aws eks wait cluster-active --name "$CLUSTER" --region us-east-1
 
       - name: Configurar kubeconfig
-        run: aws eks update-kubeconfig --name oficina-api-aws --region us-east-1
-
-      - run: kubectl apply -f k8s/namespace.yaml -f k8s/app/deployment.yaml -f k8s/app/service.yaml -f k8s/app/hpa.yaml
+        run: aws eks update-kubeconfig --name "$CLUSTER" --region us-east-1
 
       - name: Atualizar imagem e aguardar rollout
         run: |
-          OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
-          kubectl set image deployment/oficina-api oficina-api=ghcr.io/${OWNER_LC}/oficina-api:${{ needs.build-and-push-image.outputs.image_tag }} -n oficina
-          kubectl rollout status deployment/oficina-api -n oficina --timeout=150s
+          kubectl set image deployment/oficina-api \
+            oficina-api=${REPOSITORY}:${{ needs.build-and-push-image.outputs.image_tag }} \
+            -n "$NAMESPACE"
+          kubectl rollout status deployment/oficina-api -n "$NAMESPACE" --timeout=180s
 
       - name: Diagnóstico em caso de falha
         if: failure()
         run: |
-          kubectl get pods -n oficina -o wide
-          kubectl describe deployment/oficina-api -n oficina
-          kubectl get events -n oficina --sort-by=.lastTimestamp | tail -30
-          for p in $(kubectl get pods -n oficina -l app=oficina-api -o name); do
-            echo "=== describe $p ==="; kubectl describe -n oficina "$p"
+          kubectl get pods -n "$NAMESPACE" -o wide
+          kubectl describe deployment/oficina-api -n "$NAMESPACE"
+          kubectl get events -n "$NAMESPACE" --sort-by=.lastTimestamp | tail -30
+          for p in $(kubectl get pods -n "$NAMESPACE" -l app=oficina-api -o name); do
+            echo "=== describe $p ==="; kubectl describe -n "$NAMESPACE" "$p"
             echo "=== logs $p ==="
-            kubectl logs -n oficina "$p" --tail=100 --all-containers --previous 2>/dev/null \
-              || kubectl logs -n oficina "$p" --tail=100 --all-containers
+            kubectl logs -n "$NAMESPACE" "$p" --tail=100 --all-containers --previous 2>/dev/null \
+              || kubectl logs -n "$NAMESPACE" "$p" --tail=100 --all-containers
           done

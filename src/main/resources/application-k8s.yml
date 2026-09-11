@@ -1,0 +1,13 @@
+# Perfil de execução em cluster: log estruturado JSON.
+#
+# Structured logging é nativo do Spring Boot 3.4 — não precisa de logstash-encoder
+# nem de logback-spring.xml. O formato ECS usa `trace.id` e `span.id`, que são
+# exatamente os nomes de campo que o New Relic procura para ligar log a trace
+# (Logs in Context). Ver SPEC-04.
+logging:
+  structured:
+    format:
+      console: ecs
+  level:
+    root: INFO
+    com.oficina: INFO

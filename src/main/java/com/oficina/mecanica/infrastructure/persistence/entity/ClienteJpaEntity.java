@@ -1,5 +1,6 @@
 package com.oficina.mecanica.infrastructure.persistence.entity;
 
+import com.oficina.mecanica.domain.valueobject.StatusCliente;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,4 +29,8 @@ public class ClienteJpaEntity {
 
     @Column
     private String telefone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private StatusCliente status;
 }
