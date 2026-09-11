@@ -85,7 +85,7 @@ public class OrdemServico {
         var agora = LocalDateTime.now(ZoneOffset.UTC);
         var referencia = dataUltimaTransicao != null ? dataUltimaTransicao : dataAbertura;
         var permanencia = referencia != null
-            ? Duration.between(referencia, agora)
+            ? Duration.between(referencia.atOffset(ZoneOffset.UTC), agora.atOffset(ZoneOffset.UTC))
             : Duration.ZERO;
 
         transicoesPendentes.add(new TransicaoOS(id, status, destino, permanencia));
