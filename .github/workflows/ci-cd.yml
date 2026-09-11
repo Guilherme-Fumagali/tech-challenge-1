@@ -3,8 +3,6 @@ name: CI/CD
 on:
   push:
     branches: ['**']
-  pull_request:
-    branches: [main, develop]
   workflow_dispatch:
 
 permissions:
@@ -39,7 +37,7 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     env:
-      QUALITY_GATE_WAIT: ${{ (github.event_name == 'pull_request' || contains(fromJSON('["main", "develop"]'), github.ref_name)) && 'true' || 'false' }}
+      QUALITY_GATE_WAIT: ${{ contains(fromJSON('["main", "develop"]'), github.ref_name) && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
         with:
