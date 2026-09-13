@@ -66,12 +66,14 @@ infraestrutura: containerização revisada, Kubernetes, Terraform (dois cenário
 
 ### CI/CD
 
-`.github/workflows/ci-cd.yml` — build, testes, JaCoCo, OWASP dependency-check e SonarCloud a todo
-push e PR; em push, segue para build da imagem, push no **ECR** e deploy no EKS.
+`.github/workflows/ci-cd.yml` — build, testes e JaCoCo a todo push; SonarCloud na `main`. Em
+`develop` e `main`, segue para build da imagem, push no **ECR** do ambiente e deploy no EKS do ambiente.
 
-- `develop` → ambiente **staging** (namespace `oficina-staging`), automático.
-- `main` → ambiente **produção** (namespace `oficina`), com **aprovação humana** no GitHub Environment.
-- `main` protegida: sem push direto, merge só por Pull Request com status checks verdes.
+- `develop` → **homologação** (cluster `oficina-api-staging`), automático.
+- `main` → **produção** (cluster `oficina-api-prod`), com **aprovação humana** no GitHub Environment.
+- Os ambientes são segregados: cluster, banco, ECR, parâmetros e segredos próprios.
+- Cluster do ambiente desligado: a imagem é publicada e o deploy é pulado, sem pedir aprovação.
+- `develop` e `main` protegidas: sem push direto, merge só por Pull Request com status checks verdes.
 - Autenticação com a AWS por **OIDC** — nenhum secret de chave de acesso de longa duração.
 
 O nome do cluster e a URL do repositório de imagens vêm do **SSM Parameter Store**, não hardcoded:
