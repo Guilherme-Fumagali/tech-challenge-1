@@ -47,6 +47,8 @@ Complementos:
 
 **Manter os nós em subnet pública e privatizar só RDS e Lambda.** Custo zero e resolve o pior risco. Descartada porque o nó do EKS é onde a aplicação roda; deixá-lo com IP público mantém a superfície de ataque que a mudança pretende eliminar.
 
+**Proxy reverso (Cloudflare, CloudFront) no lugar da NAT.** Não é alternativa: resolve tráfego de **entrada** (internet → aplicação), que o API Gateway já cobre. A NAT resolve tráfego de **saída** (aplicação → New Relic, ECR, SMTP), iniciado pelo pod. São direções opostas; um não substitui o outro.
+
 ## Consequências
 
 **Positivas**
