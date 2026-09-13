@@ -121,10 +121,12 @@ jobs:
 
       - name: Resolver cluster e imagem do SSM
         run: |
-          echo "CLUSTER=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/eks-cluster-name" \
-            --query 'Parameter.Value' --output text)" >> "$GITHUB_ENV"
-          echo "REPOSITORY=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/ecr-repository-url" \
-            --query 'Parameter.Value' --output text)" >> "$GITHUB_ENV"
+          CLUSTER=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/eks-cluster-name" \
+            --query 'Parameter.Value' --output text)
+          REPOSITORY=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/ecr-repository-url" \
+            --query 'Parameter.Value' --output text)
+          echo "CLUSTER=${CLUSTER}" >> "$GITHUB_ENV"
+          echo "REPOSITORY=${REPOSITORY}" >> "$GITHUB_ENV"
 
       - name: Aguardar cluster ACTIVE
         run: aws eks wait cluster-active --name "$CLUSTER" --region us-east-1
