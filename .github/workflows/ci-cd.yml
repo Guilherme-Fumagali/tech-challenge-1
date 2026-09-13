@@ -106,6 +106,7 @@ jobs:
   cluster:
     name: Conferir cluster (${{ github.ref_name == 'main' && 'prod' || 'staging' }})
     needs: build-and-push-image
+    if: ${{ !cancelled() && needs.build-and-push-image.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -135,7 +136,7 @@ jobs:
   deploy:
     name: Deploy no EKS (${{ github.ref_name == 'main' && 'prod' || 'staging' }})
     needs: [build-and-push-image, cluster]
-    if: needs.cluster.outputs.existe == 'true'
+    if: ${{ !cancelled() && needs.build-and-push-image.result == 'success' && needs.cluster.outputs.existe == 'true' }}
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
     permissions:
