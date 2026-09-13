@@ -58,7 +58,10 @@ jobs:
   build-and-push-image:
     name: Build & push no ECR
     needs: [build-and-test, sonar]
-    if: github.event_name == 'push' && contains(fromJSON('["main", "develop"]'), github.ref_name)
+    if: >-
+      !cancelled() && needs.build-and-test.result == 'success'
+      && contains(fromJSON('["success", "skipped"]'), needs.sonar.result)
+      && github.event_name == 'push' && contains(fromJSON('["main", "develop"]'), github.ref_name)
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -100,9 +103,39 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  cluster:
+    name: Conferir cluster (${{ github.ref_name == 'main' && 'prod' || 'staging' }})
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      existe: ${{ steps.cluster.outputs.existe }}
+    env:
+      AMBIENTE: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - id: cluster
+        run: |
+          if SAIDA=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/eks-cluster-name" 2>&1); then
+            echo "existe=true" >> "$GITHUB_OUTPUT"
+          elif grep -q ParameterNotFound <<<"$SAIDA"; then
+            echo "::notice::Cluster de ${AMBIENTE} desligado, imagem publicada e deploy pulado."
+            echo "existe=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$SAIDA"
+            exit 1
+          fi
+
   deploy:
     name: Deploy no EKS (${{ github.ref_name == 'main' && 'prod' || 'staging' }})
-    needs: build-and-push-image
+    needs: [build-and-push-image, cluster]
+    if: needs.cluster.outputs.existe == 'true'
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
     permissions:
@@ -110,7 +143,7 @@ jobs:
       contents: read
     env:
       AMBIENTE: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
-      NAMESPACE: ${{ github.ref_name == 'main' && 'oficina' || 'oficina-staging' }}
+      NAMESPACE: oficina
     steps:
       - uses: actions/checkout@v4
 
