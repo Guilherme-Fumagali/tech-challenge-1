@@ -18,7 +18,7 @@ import java.util.UUID;
 /**
  * Envia por e-mail (SMTP/MailHog) o orçamento com botões de Aprovar/Reprovar.
  * Os botões apontam para os endpoints GET públicos /api/ordens/{id}/aprovar-externo
- * e /reprovar-externo, que executam a decisão via token de uso único.
+ * e /reprovar-externo, que exibem a confirmação; a decisão é registrada por POST com o token de uso único.
  */
 @Component
 @ConditionalOnProperty(prefix = "app.notificacao", name = "canal", havingValue = "smtp")
