@@ -89,6 +89,23 @@ class VeiculoUseCaseTest {
     }
 
     @Test
+    void buscarPorIdDoCliente_deveRetornarVeiculoDoProprioCliente() {
+        var id = UUID.randomUUID();
+        when(veiculoRepository.buscarPorId(id)).thenReturn(Optional.of(veiculo(id)));
+
+        assertThat(useCase.buscarPorIdDoCliente(id, CLIENTE_ID).getId()).isEqualTo(id);
+    }
+
+    @Test
+    void buscarPorIdDoCliente_deveTratarVeiculoDeOutroClienteComoInexistente() {
+        var id = UUID.randomUUID();
+        when(veiculoRepository.buscarPorId(id)).thenReturn(Optional.of(veiculo(id)));
+
+        assertThatThrownBy(() -> useCase.buscarPorIdDoCliente(id, UUID.randomUUID()))
+            .isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
+    @Test
     void buscarPorId_deveLancarExcecaoQuandoNaoEncontrado() {
         var id = UUID.randomUUID();
         when(veiculoRepository.buscarPorId(id)).thenReturn(Optional.empty());

@@ -1,6 +1,9 @@
 package com.oficina.mecanica.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.oficina.mecanica.infrastructure.persistence.repository.OrdemServicoJpaRepository;
 import com.oficina.mecanica.infrastructure.web.dto.request.*;
 import io.jsonwebtoken.Jwts;
@@ -11,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -21,6 +25,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
@@ -54,6 +60,7 @@ class OrdemServicoIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
     @Autowired OrdemServicoJpaRepository osJpaRepository;
+    @Autowired JdbcTemplate jdbc;
 
     @Test
     void deveExecutarFluxoCompletoDeUmaOrdemDeServico() throws Exception {
@@ -326,7 +333,18 @@ class OrdemServicoIntegrationTest {
 
         mvc.perform(get("/api/ordens/{id}/aprovar-externo", osId).param("token", tokenAprovacao))
             .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+            .andExpect(content().string(containsString("name=\"decisao\" value=\"APROVAR\"")));
+
+        mvc.perform(get("/api/ordens/{id}/status", osId))
+            .andExpect(jsonPath("$.status").value("AGUARDANDO_APROVACAO"));
+
+        mvc.perform(post("/api/ordens/{id}/aprovar-externo", osId)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("token", tokenAprovacao)
+                .param("decisao", "APROVAR"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Orçamento aprovado!")));
 
         mvc.perform(get("/api/ordens/{id}/status", osId))
             .andExpect(jsonPath("$.status").value("EM_EXECUCAO"));
@@ -349,10 +367,107 @@ class OrdemServicoIntegrationTest {
 
         mvc.perform(get("/api/ordens/{id}/reprovar-externo", osId).param("token", tokenAprovacao))
             .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+            .andExpect(content().string(containsString("name=\"decisao\" value=\"REPROVAR\"")));
+
+        mvc.perform(get("/api/ordens/{id}/status", osId))
+            .andExpect(jsonPath("$.status").value("AGUARDANDO_APROVACAO"));
+
+        mvc.perform(post("/api/ordens/{id}/aprovar-externo", osId)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .param("token", tokenAprovacao)
+                .param("decisao", "REPROVAR"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString("Orçamento reprovado")));
 
         mvc.perform(get("/api/ordens/{id}/status", osId))
             .andExpect(jsonPath("$.status").value("CANCELADA"));
+    }
+
+    @Test
+    void aprovacaoExterna_paginaDeConfirmacaoDeveEscaparOToken() throws Exception {
+        mvc.perform(get("/api/ordens/{id}/aprovar-externo", UUID.randomUUID())
+                .param("token", "\"><script>alert(1)</script>"))
+            .andExpect(status().isOk())
+            .andExpect(content().string(not(containsString("<script>alert(1)</script>"))))
+            .andExpect(content().string(containsString("&quot;&gt;&lt;script&gt;")));
+    }
+
+    @Test
+    void clienteNaoAcessaRotasDeGestao() throws Exception {
+        var tokenCliente = obterTokenCliente(UUID.randomUUID().toString());
+
+        mvc.perform(post("/api/pecas")
+                .header("Authorization", "Bearer " + tokenCliente)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+            .andExpect(status().isForbidden());
+
+        mvc.perform(get("/api/clientes").header("Authorization", "Bearer " + tokenCliente))
+            .andExpect(status().isForbidden());
+
+        mvc.perform(get("/api/ordens/relatorio/tempo-medio").header("Authorization", "Bearer " + tokenCliente))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void clienteVeApenasAsPropriasOrdensEVeiculos() throws Exception {
+        var funcionario = obterToken();
+        var clienteA = criarCliente(funcionario, "77.888.999/0001-81");
+        var clienteB = criarCliente(funcionario, "88.999.000/0001-98");
+        var osA = criarOS(funcionario, clienteA, criarVeiculo(funcionario, clienteA, "CLA0001"));
+        var veiculoB = criarVeiculo(funcionario, clienteB, "CLB0001");
+        var osB = criarOS(funcionario, clienteB, veiculoB);
+        var tokenA = obterTokenCliente(clienteA);
+
+        mvc.perform(get("/api/ordens").header("Authorization", "Bearer " + tokenA))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[*].id", contains(osA)));
+
+        mvc.perform(get("/api/ordens/{id}", osA).header("Authorization", "Bearer " + tokenA))
+            .andExpect(status().isOk());
+
+        mvc.perform(get("/api/ordens/{id}", osB).header("Authorization", "Bearer " + tokenA))
+            .andExpect(status().isNotFound());
+
+        mvc.perform(get("/api/veiculos/{id}", veiculoB).header("Authorization", "Bearer " + tokenA))
+            .andExpect(status().isNotFound());
+
+        mvc.perform(get("/api/veiculos").header("Authorization", "Bearer " + tokenA))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[*].clienteId", everyItem(is(clienteA))));
+    }
+
+    @Test
+    void migrationCadastraFuncionarioDeHomologacaoConfigurado() {
+        var nome = jdbc.queryForObject(
+            "SELECT nome FROM funcionarios WHERE cpf = ? AND status = 'ATIVO'", String.class, "39053344705");
+
+        assertThat(nome).isEqualTo("Funcionária de Teste");
+    }
+
+    @Test
+    void contratoOpenApiVersionadoDeveCorresponderAAplicacao() throws Exception {
+        var resposta = mvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        var ordenado = JsonMapper.builder()
+            .enable(SerializationFeature.INDENT_OUTPUT)
+            .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS)
+            .build();
+        var contrato = (ObjectNode) ordenado.readTree(resposta);
+        contrato.remove("servers");
+        var gerado = ordenado.writeValueAsString(ordenado.convertValue(contrato, Object.class)) + "\n";
+
+        var arquivo = Path.of("docs/openapi.json");
+        if (Boolean.getBoolean("atualizarOpenApi")) {
+            Files.writeString(arquivo, gerado, StandardCharsets.UTF_8);
+        }
+
+        assertThat(arquivo)
+            .as("docs/openapi.json desatualizado: execute ./mvnw test -Dtest=OrdemServicoIntegrationTest -DatualizarOpenApi=true")
+            .exists()
+            .content(StandardCharsets.UTF_8).isEqualTo(gerado);
     }
 
     // ── Helpers ────────────────────────────────────────────
@@ -376,14 +491,22 @@ class OrdemServicoIntegrationTest {
      * de chamar um endpoint de login que não existe mais.
      */
     private String obterToken() {
+        return token(UUID.randomUUID().toString(), "FUNCIONARIO");
+    }
+
+    private String obterTokenCliente(String clienteId) {
+        return token(clienteId, "CLIENTE");
+    }
+
+    private String token(String sub, String role) {
         var agora = Instant.now();
         var chave = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.builder()
-            .subject(UUID.randomUUID().toString())
+            .subject(sub)
             .issuer("oficina-auth")
             .claim("cpf", "52998224725")
-            .claim("nome", "Cliente de Teste")
-            .claim("role", "CLIENTE")
+            .claim("nome", "Usuário de Teste")
+            .claim("role", role)
             .issuedAt(Date.from(agora))
             .expiration(Date.from(agora.plusSeconds(900)))
             .signWith(chave)

@@ -116,7 +116,12 @@ Telemetria para de fluir e deploy novo falha até a NAT voltar.
 
 ## DT-05 · Homologação e produção compartilham cluster e banco
 
-**Status:** aberto · **Prioridade:** média · **Risco:** médio
+**Status:** quitado nesta fase — ver [ADR-012](./adrs/ADR-012-ambientes-segregados.md) · **Prioridade:** média · **Risco:** médio
+
+> **Quitação:** os ambientes passaram a ter cluster, RDS, VPC, state, parâmetros e segredos
+> próprios. O custo não dobrou porque produção fica declarada e protegida, mas não
+> provisionada. O registro abaixo descreve a situação anterior e fica como histórico. O
+> isolamento que ainda falta está em DT-09 e DT-10.
 
 ### Situação atual
 
@@ -151,7 +156,9 @@ migration equivocada alcança a mesma instância. Não há isolamento de falha r
 ### Situação atual
 
 Quem informa um CPF válido de cliente ativo recebe um token em nome dele. Não há senha,
-código por e-mail nem qualquer segundo fator.
+código por e-mail nem qualquer segundo fator. Desde a [ADR-014](./adrs/ADR-014-papeis-cliente-funcionario.md),
+o funcionário também se autentica apenas pelo CPF, na rota `/auth/funcionarios`, e recebe
+acesso de gestão.
 
 ### Causa raiz
 
@@ -161,8 +168,8 @@ como especificado.
 
 ### Melhoria planejada
 
-Segundo fator por e-mail ou SMS — o `SmtpNotificacaoService` já existe e entregaria um
-código de uso único com pouco esforço adicional.
+Segundo fator por e-mail ou SMS para clientes, aproveitando o `SmtpNotificacaoService`, e
+senha com hash para funcionários.
 
 ### Justificativa de escopo
 
@@ -171,9 +178,11 @@ Alterar o fator de autenticação contrariaria o requisito explícito da entrega
 ### Impacto do débito
 
 **CPF é identificador público, não segredo.** Quem souber o CPF de um cliente acessa os
-dados dele. Mitigações dentro do escopo: respostas de 404 e 403 indistinguíveis, para
+dados dele. Mitigações dentro do escopo: resposta 401 idêntica para CPF sem cadastro e cadastro inativo, para
 impedir enumeração de CPFs; throttling de 10 req/s na rota `/auth`; token de 15 minutos
-sem refresh; e CPF nunca gravado em log — apenas os 3 últimos dígitos.
+sem refresh; e CPF nunca gravado em log — apenas os 3 últimos dígitos. No caso do
+funcionário, o impacto é maior, pois o token dá acesso às rotas de gestão; em homologação,
+o CPF do funcionário cadastrado não é versionado.
 
 ---
 
@@ -234,6 +243,67 @@ aplicação — é o que impede os dois validadores de divergirem em silêncio.
 
 Mudança na regra precisa ser aplicada em dois lugares. Divergência não detectada
 produziria CPF aceito num componente e recusado no outro.
+
+---
+
+## DT-09 · Ambientes na mesma conta AWS, com role de pipeline compartilhada
+
+**Status:** aberto · **Prioridade:** média · **Risco:** médio
+
+### Situação atual
+
+Homologação e produção têm recursos, rede, state e segredos separados, mas vivem na mesma
+conta AWS. Cada repositório usa uma única role de pipeline para os dois ambientes.
+
+### Causa raiz
+
+Separar a role por ambiente dentro de uma conta exigiria condições por tag em cada ação.
+Boa parte das ações de EC2, EKS e ELB não as aceita de forma consistente.
+
+### Melhoria planejada
+
+Uma conta AWS por ambiente, via AWS Organizations, com a role de cada pipeline criada
+dentro da conta do ambiente.
+
+### Justificativa de escopo
+
+Operar múltiplas contas numa conta de estudo acrescenta esforço sem mudar o que a fase
+avalia. A trust já restringe cada environment à própria branch, e produção exige revisor.
+
+### Impacto do débito
+
+Um workflow em `develop` alterado para mirar recursos de produção teria permissão para isso.
+O que impede hoje é processo — `develop` protegida, merge por Pull Request — e não o IAM.
+
+---
+
+## DT-10 · Produção preparada e nunca provisionada
+
+**Status:** aberto · **Prioridade:** baixa · **Risco:** baixo
+
+### Situação atual
+
+Produção está declarada em código, com pipeline e aprovação, mas cluster, banco e Lambda
+nunca foram provisionados nela.
+
+### Causa raiz
+
+Decisão de custo da [ADR-012](./adrs/ADR-012-ambientes-segregados.md): demonstrar e testar em
+homologação.
+
+### Melhoria planejada
+
+Provisionar produção ao menos uma vez antes de qualquer uso real, na ordem documentada, e
+destruir em seguida se não houver uso.
+
+### Justificativa de escopo
+
+Homologação exercita o mesmo código, os mesmos workflows e as mesmas policies.
+
+### Impacto do débito
+
+O primeiro provisionamento de produção pode revelar permissão faltando ou diferença de
+configuração que homologação não mostrou.
 
 ---
 

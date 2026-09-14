@@ -23,4 +23,16 @@ public class ConsultarStatusOSUseCase {
     public List<OrdemServico> listarTodas() {
         return repository.listarAtivasOrdenadas();
     }
+
+    public OrdemServico executarDoCliente(UUID osId, UUID clienteId) {
+        var os = executar(osId);
+        if (!os.getClienteId().equals(clienteId)) {
+            throw new RecursoNaoEncontradoException("Ordem de Serviço", osId);
+        }
+        return os;
+    }
+
+    public List<OrdemServico> listarDoCliente(UUID clienteId) {
+        return repository.listarPorCliente(clienteId);
+    }
 }

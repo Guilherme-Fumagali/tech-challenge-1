@@ -20,7 +20,7 @@
     <properties>
         <java.version>21</java.version>
         <jjwt.version>0.12.6</jjwt.version>
-        <springdoc.version>2.6.0</springdoc.version>
+        <springdoc.version>2.7.0</springdoc.version>
         <testcontainers.version>1.20.3</testcontainers.version>
         <lombok.version>1.18.34</lombok.version>
         <mapstruct.version>1.6.3</mapstruct.version>
@@ -201,6 +201,21 @@
                         <goals><goal>check</goal></goals>
                         <configuration>
                             <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.85</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.70</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
                                 <rule>
                                     <element>PACKAGE</element>
                                     <includes>
