@@ -65,6 +65,11 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
     }
 
     @Override
+    public List<OrdemServico> listarPorCliente(UUID clienteId) {
+        return jpa.findByClienteIdOrderByDataAberturaDesc(clienteId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<OrdemServico> listarFinalizadasNoPeriodo(LocalDateTime inicio, LocalDateTime fim) {
         return jpa.findFinalizadasNoPeriodo(inicio, fim).stream().map(mapper::toDomain).toList();
     }

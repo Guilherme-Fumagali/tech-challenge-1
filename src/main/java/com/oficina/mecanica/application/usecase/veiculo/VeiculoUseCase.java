@@ -35,6 +35,14 @@ public class VeiculoUseCase {
             .orElseThrow(() -> new RecursoNaoEncontradoException("Veículo", id));
     }
 
+    public Veiculo buscarPorIdDoCliente(UUID id, UUID clienteId) {
+        var veiculo = buscarPorId(id);
+        if (!veiculo.getClienteId().equals(clienteId)) {
+            throw new RecursoNaoEncontradoException("Veículo", id);
+        }
+        return veiculo;
+    }
+
     public List<Veiculo> listarTodos() {
         return veiculoRepository.listarTodos();
     }

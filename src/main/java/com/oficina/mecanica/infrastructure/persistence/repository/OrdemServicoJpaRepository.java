@@ -16,6 +16,8 @@ public interface OrdemServicoJpaRepository extends JpaRepository<OrdemServicoJpa
 
     List<OrdemServicoJpaEntity> findByVeiculoId(UUID veiculoId);
 
+    List<OrdemServicoJpaEntity> findByClienteIdOrderByDataAberturaDesc(UUID clienteId);
+
     @Query("""
         SELECT os FROM OrdemServicoJpaEntity os
         WHERE os.status IN ('FINALIZADA', 'ENTREGUE')
