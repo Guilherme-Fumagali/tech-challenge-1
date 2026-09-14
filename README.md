@@ -147,7 +147,7 @@ A aplicação não emite tokens. A autenticação é feita pelo CPF nas rotas do
 ```bash
 curl -X POST "$API_URL/auth/funcionarios" -H "Content-Type: application/json" -d '{"cpf":"<cpf-do-funcionario>"}'
 # 200 {"accessToken":"eyJ...","tokenType":"Bearer","expiresIn":900}
-# 400 CPF inválido; 404 não cadastrado e 403 inativo, com a mesma mensagem
+# 400 CPF inválido; 401 com resposta idêntica para CPF não cadastrado ou inativo
 
 curl "$API_URL/api/ordens" -H "Authorization: Bearer eyJ..."
 ```

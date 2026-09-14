@@ -178,7 +178,7 @@ Alterar o fator de autenticação contrariaria o requisito explícito da entrega
 ### Impacto do débito
 
 **CPF é identificador público, não segredo.** Quem souber o CPF de um cliente acessa os
-dados dele. Mitigações dentro do escopo: respostas de 404 e 403 indistinguíveis, para
+dados dele. Mitigações dentro do escopo: resposta 401 idêntica para CPF sem cadastro e cadastro inativo, para
 impedir enumeração de CPFs; throttling de 10 req/s na rota `/auth`; token de 15 minutos
 sem refresh; e CPF nunca gravado em log — apenas os 3 últimos dígitos. No caso do
 funcionário, o impacto é maior, pois o token dá acesso às rotas de gestão; em homologação,

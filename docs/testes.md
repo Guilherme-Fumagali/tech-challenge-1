@@ -99,5 +99,5 @@ O job é status check obrigatório nas regras de proteção de `develop` e `main
 |---|---|
 | Teste de carga | script k6 (`oficina-infra-k8s/cluster/k8s/loadtest/k6-script.js`) executado manualmente em homologação, para observar o HPA |
 | Teste ponta a ponta no ambiente implantado | roteiro manual com `docs/demo.http`, executado na demonstração |
-| Função de autenticação por CPF | testada no repositório `oficina-auth-lambda` (45 casos, incluindo PostgreSQL via Testcontainers) |
+| Função de autenticação por CPF | testada no repositório `oficina-auth-lambda` (44 casos, incluindo PostgreSQL via Testcontainers) |
 | Infraestrutura | validada nos repositórios de Terraform com `terraform fmt`, `terraform validate`, tflint e checkov |

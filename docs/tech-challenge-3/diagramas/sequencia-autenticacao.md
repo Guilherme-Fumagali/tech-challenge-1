@@ -32,10 +32,8 @@ sequenceDiagram
     AF->>DB: SELECT id, nome, status FROM clientes WHERE cpf_cnpj = ?
     DB-->>AF: linha ou vazio
 
-    alt cliente não encontrado
-        AF-->>C: 404 — "Não foi possível autenticar com o CPF informado."
-    else status INATIVO ou BLOQUEADO
-        AF-->>C: 403 — mesma mensagem do 404
+    alt cliente não encontrado, INATIVO ou BLOQUEADO
+        AF-->>C: 401 AUTENTICACAO_RECUSADA (resposta idêntica nos três casos)
     else ATIVO
         AF->>AF: assina JWT HS256 (sub=UUID, cpf, nome, role, exp=900s)
         AF-->>C: 200 { accessToken, tokenType, expiresIn }
@@ -65,8 +63,8 @@ sequenceDiagram
 
 ## Três detalhes que o diagrama torna explícitos
 
-**404 e 403 devolvem a mesma mensagem.** O código específico existe para o log; o corpo é genérico de propósito, para que ninguém use o endpoint para descobrir quais CPFs existem na base.
+**CPF sem cadastro e cadastro sem permissão recebem a mesma resposta.** O status, os cabeçalhos e o corpo são idênticos, e o motivo fica apenas no log. Assim, o endpoint não permite descobrir quais CPFs estão cadastrados.
 
-**O `sub` é o UUID, não o CPF.** Assim o identificador não se espalha pelos logs de todo request downstream.
+**O `sub` é o UUID do cliente.** O CPF não é usado como identificador, para não ser registrado nos logs das requisições seguintes.
 
-**A validação acontece duas vezes.** No gateway, pelo authorizer, que é o ponto de aplicação; e na aplicação, pelo filtro, que é a rede de segurança. O gateway autentica; quem decide se *este* cliente pode ver *esta* OS continua sendo a aplicação.
+**A validação acontece duas vezes.** O authorizer valida o token no gateway, e o filtro da aplicação valida novamente. A autorização sobre cada recurso, como verificar se a OS pertence ao cliente, é feita pela aplicação.
