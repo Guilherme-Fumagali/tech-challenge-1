@@ -19,7 +19,8 @@ New Relic, no free tier.
 
 Instrumentação em três frentes:
 - **APM:** agente Java oficial, adicionado ao container via `-javaagent`.
-- **Infraestrutura e logs:** integração Kubernetes do New Relic (DaemonSet + Fluent Bit).
+- **Infraestrutura:** integração Kubernetes do New Relic (chart `nri-bundle`, DaemonSet por nó).
+- **Logs:** encaminhados pelo agente Java, com `trace.id` e `span.id` da transação. O Fluent Bit do chart fica desligado para que cada linha seja enviada uma única vez.
 - **Métricas de negócio:** Micrometer com `micrometer-registry-otlp` apontando para o endpoint OTLP do New Relic.
 
 ## Alternativas consideradas
