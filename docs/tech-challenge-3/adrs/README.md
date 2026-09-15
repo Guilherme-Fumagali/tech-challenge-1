@@ -16,10 +16,11 @@ Registros de decisão arquitetural no formato apresentado na Aula 05 da discipli
 | [008](./ADR-008-registry-ecr.md) | Registry de imagens migra de GHCR para ECR | Aceita |
 | [009](./ADR-009-jwt-hmac-lambda-authorizer.md) | JWT HMAC validado por Lambda authorizer | Aceita |
 | [010](./ADR-010-postgresql-rds.md) | PostgreSQL em RDS mantido | Aceita |
-| [011](./ADR-011-hpa.md) | HPA por CPU e memória | Aceita (retroativa) |
+| [011](./ADR-011-hpa.md) | HPA por CPU e memória | Superada por ADR-015 |
 | [012](./ADR-012-ambientes-segregados.md) | Homologação e produção em infraestrutura segregada | Aceita |
 | [013](./ADR-013-identidade-das-pipelines.md) | Pipelines com role própria e menor privilégio | Aceita |
 | [014](./ADR-014-papeis-cliente-funcionario.md) | Papéis de cliente e funcionário | Aceita |
+| [015](./ADR-015-hpa-apenas-cpu.md) | HPA apenas por CPU | Aceita |
 
 ## Processo
 
