@@ -58,7 +58,7 @@ Não apresenta vantagem técnica, e o schema já depende de `gen_random_uuid()` 
 
 **Guilherme Fumagali:** *"O risco de conexões me preocupa mais que a escolha do engine. A `db.t4g.micro` suporta ~85 conexões e a Lambda escala por invocação. É preciso definir um limite numérico para esse controle."*
 
-**Resolução:** aceito e convertido em controle explícito: `ReservedConcurrentExecutions = 10` na função, uma conexão por container de execução mantida em campo estático, sem pool, e `connectTimeout`/`socketTimeout` curtos. Caso a concorrência precise ultrapassar 10, a solução prevista é o RDS Proxy, em vez do aumento do limite. Registrado na SPEC-01 §7.
+**Resolução:** aceito e convertido em controle explícito: teto de 10 execuções simultâneas da função, uma conexão por container de execução mantida em campo estático, sem pool, e `connectTimeout`/`socketTimeout` curtos. Na conta utilizada, o teto é imposto pelo limite total de 10 execuções simultâneas de Lambda, que também impede reservar concorrência; o template aceita a reserva pelo parâmetro `ConcorrenciaReservada` quando a cota for ampliada. Caso a concorrência precise ultrapassar 10, a solução prevista é o RDS Proxy, em vez do aumento do limite. Registrado na SPEC-01 §7.
 
 ## Decisão
 
@@ -68,5 +68,5 @@ Mantido o PostgreSQL 16 em RDS, conforme formalizado em [ADR-010](../adrs/ADR-01
 
 - Não há migração de dados nem reescrita da camada de persistência.
 - A justificativa formal descreve um sistema já em produção.
-- O limite de ~85 conexões é efetivo e foi mitigado por concorrência reservada.
+- O limite de ~85 conexões é efetivo e foi mitigado pelo teto de 10 execuções simultâneas da Lambda.
 - Single-AZ sem failover automático e `skip_final_snapshot`, ambas decisões de custo para ambiente de estudo.

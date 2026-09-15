@@ -46,7 +46,7 @@ kubectl get events -n oficina --sort-by=.lastTimestamp | tail -20
 | Sintoma | Causa provável | Ação |
 |---|---|---|
 | Erro novo logo após deploy | Regressão | **Rollback imediato** |
-| `CannotGetJdbcConnectionException` | Pool esgotado ou RDS indisponível | Ver conexões no RDS; a Lambda tem concorrência reservada em 10 |
+| `CannotGetJdbcConnectionException` | Pool esgotado ou RDS indisponível | Ver conexões no RDS; a Lambda executa no máximo 10 instâncias simultâneas |
 | `OutOfMemoryError` | Heap insuficiente | Ver [k8s-memoria-pod.md](./k8s-memoria-pod.md) |
 | Pods em `CrashLoopBackOff` | Falha de startup — migration, secret ausente | `kubectl logs --previous` |
 | Erro só em `/api/ordens/*/aprovar-externo` | Integração externa | Ver [integracao-falhas.md](./integracao-falhas.md) |
