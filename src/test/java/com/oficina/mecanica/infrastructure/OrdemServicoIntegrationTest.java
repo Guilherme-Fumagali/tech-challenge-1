@@ -472,6 +472,20 @@ class OrdemServicoIntegrationTest {
 
     // ── Helpers ────────────────────────────────────────────
 
+    @Test
+    void parametroObrigatorioAusenteRetornaBadRequest() throws Exception {
+        mvc.perform(get("/api/ordens/relatorio/tempo-medio")
+                .header("Authorization", "Bearer " + obterToken()))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void identificadorMalformadoRetornaBadRequest() throws Exception {
+        mvc.perform(get("/api/ordens/nao-e-uuid")
+                .header("Authorization", "Bearer " + obterToken()))
+            .andExpect(status().isBadRequest());
+    }
+
     private void avancarParaDiagnostico(String token, String osId, String pecaId) throws Exception {
         mvc.perform(post("/api/ordens/{id}/iniciar-diagnostico", osId)
                 .header("Authorization", "Bearer " + token)).andExpect(status().isOk());

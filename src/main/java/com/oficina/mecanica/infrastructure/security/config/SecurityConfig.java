@@ -3,6 +3,7 @@ package com.oficina.mecanica.infrastructure.security.config;
 import com.oficina.mecanica.infrastructure.security.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import jakarta.servlet.DispatcherType;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -27,6 +28,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 // Público sem JWT por decisão de negócio: status de OS e aprovação externa por token de e-mail
                 .requestMatchers(HttpMethod.GET, "/api/ordens/*/status").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/ordens/*/aprovar-externo").permitAll()
