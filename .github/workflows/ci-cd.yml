@@ -186,7 +186,7 @@ jobs:
           kubectl set image deployment/oficina-api \
             oficina-api=${REPOSITORY}:${{ needs.build-and-push-image.outputs.image_tag }} \
             -n "$NAMESPACE"
-          kubectl rollout status deployment/oficina-api -n "$NAMESPACE" --timeout=180s
+          kubectl rollout status deployment/oficina-api -n "$NAMESPACE" --timeout=600s
 
       - name: Diagnóstico em caso de falha
         if: failure()
