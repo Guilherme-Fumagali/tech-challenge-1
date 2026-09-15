@@ -7,7 +7,7 @@ Artefatos de arquitetura do Tech Challenge Fase 3.
 | Relatório de entrega | [`documento_entrega.docx`](documento_entrega.docx) |
 | Apresentação | [`apresentacao.pptx`](apresentacao.pptx) |
 | RFCs: nuvem, banco de dados e estratégia de autenticação | [`rfcs/`](rfcs/) |
-| ADRs: 14 decisões arquiteturais, com índice e processo | [`adrs/`](adrs/README.md) |
+| ADRs: 15 decisões arquiteturais, com índice e processo | [`adrs/`](adrs/README.md) |
 | Débitos técnicos | [`debitos-tecnicos.md`](debitos-tecnicos.md) |
 | Estratégia de testes da aplicação | [`../testes.md`](../testes.md) |
 | Contrato OpenAPI da aplicação | [`../openapi.json`](../openapi.json) |

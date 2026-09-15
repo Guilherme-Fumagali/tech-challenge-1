@@ -1,7 +1,7 @@
 # ADR-011 — HPA por CPU e memória
 
 - **Data:** 04/09/2026 (retroativa — implementado na Fase 2)
-- **Status:** Aceita
+- **Status:** Superada por [ADR-015](./ADR-015-hpa-apenas-cpu.md) quanto à métrica de memória
 
 ## Contexto
 
