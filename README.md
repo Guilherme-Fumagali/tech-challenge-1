@@ -24,6 +24,7 @@ Este repositório contém a aplicação Spring Boot. Infraestrutura e autentica�
 | Contrato OpenAPI | [`docs/openapi.json`](docs/openapi.json), visualizável no [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/Guilherme-Fumagali/tech-challenge-1/main/docs/openapi.json) |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` na execução local |
 | Coleção de requisições | [`docs/demo.http`](docs/demo.http) (formato HTTP Client, compatível com IntelliJ e VS Code REST Client) |
+| Carga de dados de demonstração | [`scripts/preparar-demo.sh`](scripts/preparar-demo.sh): cadastra cliente, veículo e catálogo e cria ordens de serviço em todos os status, via API Gateway. Uso: `CPF_FUNCIONARIO=... ./scripts/preparar-demo.sh` (requer `curl`, `jq` e credenciais AWS para ler a URL do SSM, ou `API_URL`) |
 | Documentação de arquitetura | [`docs/tech-challenge-3`](docs/tech-challenge-3): RFCs, ADRs, diagramas e débitos técnicos |
 | Testes | [`docs/testes.md`](docs/testes.md) |
 | Runbooks dos alertas | [`docs/runbooks`](docs/runbooks) |
