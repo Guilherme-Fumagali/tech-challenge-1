@@ -3,7 +3,7 @@
 # api: URL do API Gateway do ambiente (output api_gateway_url do oficina-infra-k8s).
 # cpfFuncionario: CPF do funcionário de homologação (secret FUNCIONARIO_SEED_CPF).
 # cpfCliente: CPF do cliente cadastrado no passo 4 ou por scripts/preparar-demo.sh.
-@api = https://SEU-API-GATEWAY.execute-api.us-east-1.amazonaws.com/staging
+@api = https://SEU-API-GATEWAY.execute-api.us-east-1.amazonaws.com
 @cpfFuncionario = CPF_DO_FUNCIONARIO
 @cpfCliente = 529.982.247-25
 
@@ -210,5 +210,5 @@ Authorization: Bearer {{tokenFuncionario}}
 
 
 ### 21. Relatório de tempo médio de execução (funcionário)
-GET {{api}}/api/ordens/relatorio/tempo-medio
+GET {{api}}/api/ordens/relatorio/tempo-medio?inicio=2026-09-01T00:00:00&fim=2026-12-31T23:59:59
 Authorization: Bearer {{tokenFuncionario}}

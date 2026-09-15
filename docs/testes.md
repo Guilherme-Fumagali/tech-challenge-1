@@ -6,7 +6,7 @@ Estratégia, organização e execução dos testes automatizados da aplicação.
 
 | Indicador | Valor |
 |---|---|
-| Casos executados | 145 (132 métodos, parte deles parametrizada) |
+| Casos executados | 147 (134 métodos, parte deles parametrizada) |
 | Cobertura de linhas (JaCoCo) | 91,0% |
 | Cobertura de branches (JaCoCo) | 75,8% |
 | Limites que falham o build | 85% de linhas e 70% de branches no projeto; 80% de instruções nos pacotes de domínio |
