@@ -126,10 +126,10 @@ Regras das branches `develop` e `main`: sem push direto, merge somente por Pull 
 |---|---|---|---|
 | Domínio | 5 | 34 | unitário, Java puro |
 | Aplicação | 8 | 71 | unitário, com Mockito |
-| Infraestrutura | 3 | 14 | unitário (JWT, métricas, notificação) |
+| Infraestrutura | 3 | 15 | unitário (JWT, métricas, notificação) |
 | Integração | 1 | 12 | Spring completo com PostgreSQL via Testcontainers |
 
-São 144 casos executados (parte dos métodos é parametrizada). O build falha se a cobertura ficar abaixo de 85% das linhas e 70% dos branches no projeto, ou de 80% das instruções no domínio. Todos os testes rodam a cada push. A descrição por classe está em [`docs/testes.md`](docs/testes.md).
+São 145 casos executados (parte dos métodos é parametrizada). O build falha se a cobertura ficar abaixo de 85% das linhas e 70% dos branches no projeto, ou de 80% das instruções no domínio. Todos os testes rodam a cada push. A descrição por classe está em [`docs/testes.md`](docs/testes.md).
 
 ```bash
 ./mvnw test      # requer Docker para o Testcontainers
