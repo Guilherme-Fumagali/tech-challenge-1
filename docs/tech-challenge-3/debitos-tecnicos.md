@@ -307,6 +307,71 @@ configuração que homologação não mostrou.
 
 ---
 
+## DT-11 · Concorrência reservada da Lambda depende de aumento de cota
+
+**Status:** aberto · **Prioridade:** baixa · **Risco:** baixo
+
+### Situação atual
+
+O template da Lambda aceita o parâmetro `ConcorrenciaReservada`, com padrão 0, que não reserva
+concorrência. O teto de dez execuções simultâneas, definido para proteger as conexões do
+`db.t4g.micro`, é imposto hoje pelo limite da conta, que é de dez execuções simultâneas para
+todas as funções.
+
+### Causa raiz
+
+A AWS exige manter dez execuções não reservadas na conta. Com o limite atual, qualquer reserva
+é recusada, e o deploy falha.
+
+### Melhoria planejada
+
+Solicitar aumento da cota *Concurrent executions* em Service Quotas e, depois, implantar com
+`ConcorrenciaReservada=10`, o que restabelece o teto explícito por função.
+
+### Justificativa de escopo
+
+Enquanto a cota for de dez execuções, o efeito prático é o mesmo, e o throttling de 10 req/s
+nas rotas de autenticação limita a taxa de invocação.
+
+### Impacto do débito
+
+Se a cota for ampliada sem que a reserva seja configurada, a função pode escalar além de dez
+execuções simultâneas e pressionar as conexões do banco.
+
+---
+
+## DT-12 · Manifests aplicados por `kubectl` dentro do Terraform
+
+**Status:** aberto · **Prioridade:** média · **Risco:** médio
+
+### Situação atual
+
+Os manifests do cluster são aplicados por um `null_resource` que executa `kubectl apply`, e a
+integração Kubernetes do New Relic, por um `helm upgrade`. O Terraform não conhece os objetos
+criados: não há plano, nem detecção de desvio, nem remoção do que sai dos arquivos.
+
+### Causa raiz
+
+A escolha evita configurar os providers `kubernetes` e `helm`, que dependem de credenciais do
+cluster obtidas no mesmo apply que o cria.
+
+### Melhoria planejada
+
+Migrar para os providers `kubernetes` e `helm`, autenticados pelo `aws_eks_cluster_auth`, de
+modo que cada objeto apareça no plano.
+
+### Justificativa de escopo
+
+A abordagem atual é a mesma da Fase 2 e atende ao requisito de provisionamento por código.
+
+### Impacto do débito
+
+Alterações em manifests não apareciam no plano e deixaram de ser aplicadas até que o hash dos
+arquivos fosse acrescentado aos gatilhos do recurso. Objetos removidos dos arquivos continuam
+existindo no cluster até a destruição do ambiente.
+
+---
+
 ## Herdado da Fase 2
 
 ## DT-01 · E-mail de orçamento sem detalhamento de itens
