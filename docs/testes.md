@@ -6,7 +6,7 @@ Estratégia, organização e execução dos testes automatizados da aplicação.
 
 | Indicador | Valor |
 |---|---|
-| Casos executados | 144 (131 métodos, parte deles parametrizada) |
+| Casos executados | 145 (132 métodos, parte deles parametrizada) |
 | Cobertura de linhas (JaCoCo) | 91,0% |
 | Cobertura de branches (JaCoCo) | 75,8% |
 | Limites que falham o build | 85% de linhas e 70% de branches no projeto; 80% de instruções nos pacotes de domínio |
@@ -52,12 +52,12 @@ Casos de uso com repositórios e portas substituídos por Mockito.
 | `ReprovarOrcamentoUseCaseTest` | 3 | estorno de estoque na reprovação interna e externa; token inválido não estorna |
 | `AdicionarPecaAOSUseCaseTest` | 3 | baixa de estoque ao incluir peça, estoque insuficiente e OS inexistente |
 
-### Infraestrutura (`infrastructure/`) — 14 métodos
+### Infraestrutura (`infrastructure/`) — 15 métodos
 
 | Classe | Métodos | O que verifica |
 |---|---|---|
 | `JwtServiceTest` | 8 | aceita tokens de cliente e de funcionário emitidos pela Lambda; recusa outra chave, outro emissor, token expirado, papel desconhecido e token malformado |
-| `MicrometerMetricasOrdemServicoTest` | 4 | abertura de OS, contagem de transições e permanência no status, falhas de transição e falhas de integração por motivo |
+| `MicrometerMetricasOrdemServicoTest` | 5 | abertura de OS, contagem de transições e permanência no status, logs de abertura e transição com o ID da OS, falhas de transição e falhas de integração por motivo |
 | `SmtpNotificacaoServiceTest` | 2 | envio do e-mail com os links de aprovação e reprovação; cliente inexistente |
 
 ### Integração (`infrastructure/OrdemServicoIntegrationTest`) — 12 métodos

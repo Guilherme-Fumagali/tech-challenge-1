@@ -33,7 +33,7 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
         jpa.save(mapper.toEntity(os));
 
         if (os.consumirMarcaDeNovaOrdem()) {
-            metricas.registrarAbertura();
+            metricas.registrarAbertura(os.getId());
         }
         os.drenarTransicoes().forEach(metricas::registrarTransicao);
         return os;
