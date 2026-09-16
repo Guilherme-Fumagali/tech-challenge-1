@@ -69,6 +69,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.vars.outputs.image_tag }}
       registry: ${{ steps.ecr.outputs.registry }}
+      publicada: ${{ steps.vars.outputs.publicar }}
     env:
       AMBIENTE: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
     steps:
@@ -83,17 +84,29 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Resolver repositório do SSM
+      - name: Resolver repositório do ambiente
         id: vars
         run: |
-          REPO=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/ecr-repository-url" \
-                   --query 'Parameter.Value' --output text)
-          echo "repository=${REPO}" >> "$GITHUB_OUTPUT"
           echo "image_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          if ! REPO=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/ecr-repository-url" \
+                        --query 'Parameter.Value' --output text 2>&1); then
+            grep -q ParameterNotFound <<<"$REPO" || { echo "$REPO"; exit 1; }
+            echo "::notice::ECR de ${AMBIENTE} não provisionado, push pulado."
+            echo "publicar=false" >> "$GITHUB_OUTPUT"
+          elif ! SAIDA=$(aws ecr describe-repositories --repository-names "${REPO##*/}" 2>&1); then
+            grep -q RepositoryNotFoundException <<<"$SAIDA" || { echo "$SAIDA"; exit 1; }
+            echo "::notice::ECR de ${AMBIENTE} não existe, push pulado."
+            echo "publicar=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "repository=${REPO}" >> "$GITHUB_OUTPUT"
+            echo "publicar=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: docker/setup-buildx-action@v3
+        if: steps.vars.outputs.publicar == 'true'
 
       - uses: docker/build-push-action@v6
+        if: steps.vars.outputs.publicar == 'true'
         with:
           context: .
           push: true
@@ -106,6 +119,7 @@ jobs:
   cluster:
     name: Conferir cluster (${{ github.ref_name == 'main' && 'prod' || 'staging' }})
     needs: build-and-push-image
+    if: ${{ !cancelled() && needs.build-and-push-image.result == 'success' && needs.build-and-push-image.outputs.publicada == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -135,7 +149,7 @@ jobs:
   deploy:
     name: Deploy no EKS (${{ github.ref_name == 'main' && 'prod' || 'staging' }})
     needs: [build-and-push-image, cluster]
-    if: needs.cluster.outputs.existe == 'true'
+    if: ${{ !cancelled() && needs.build-and-push-image.result == 'success' && needs.cluster.outputs.existe == 'true' }}
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
     permissions:
@@ -172,7 +186,7 @@ jobs:
           kubectl set image deployment/oficina-api \
             oficina-api=${REPOSITORY}:${{ needs.build-and-push-image.outputs.image_tag }} \
             -n "$NAMESPACE"
-          kubectl rollout status deployment/oficina-api -n "$NAMESPACE" --timeout=180s
+          kubectl rollout status deployment/oficina-api -n "$NAMESPACE" --timeout=600s
 
       - name: Diagnóstico em caso de falha
         if: failure()

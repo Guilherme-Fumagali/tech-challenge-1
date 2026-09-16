@@ -15,5 +15,6 @@ public interface OrdemServicoRepository {
     List<OrdemServico> listarAtivasOrdenadas();
     List<OrdemServico> listarPorStatus(StatusOS status);
     List<OrdemServico> listarPorVeiculo(UUID veiculoId);
+    List<OrdemServico> listarPorCliente(UUID clienteId);
     List<OrdemServico> listarFinalizadasNoPeriodo(LocalDateTime inicio, LocalDateTime fim);
 }

@@ -3,8 +3,9 @@ spring:
     show-sql: true
   flyway:
     enabled: true
+    placeholders:
+      funcionario-seed-cpf: 390.533.447-05
+      funcionario-seed-nome: Funcionária de Teste
 
 jwt:
   secret: chave-de-teste-super-longa-para-hmac-sha-256-minimo-32-chars
-  access-expiration-ms: 3600000
-  refresh-expiration-ms: 86400000

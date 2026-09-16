@@ -182,6 +182,38 @@ class OrdemServicoUseCasesTest {
     }
 
     @Test
+    void consultarDoCliente_deveRetornarOsDoProprioCliente() {
+        var os = osComStatus(StatusOS.RECEBIDA);
+        when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
+
+        var resultado = new ConsultarStatusOSUseCase(osRepository).executarDoCliente(os.getId(), os.getClienteId());
+
+        assertThat(resultado.getId()).isEqualTo(os.getId());
+    }
+
+    @Test
+    void consultarDoCliente_deveTratarOsDeOutroClienteComoInexistente() {
+        var os = osComStatus(StatusOS.RECEBIDA);
+        when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
+        var useCase = new ConsultarStatusOSUseCase(osRepository);
+
+        assertThatThrownBy(() -> useCase.executarDoCliente(os.getId(), UUID.randomUUID()))
+            .isInstanceOf(RecursoNaoEncontradoException.class);
+    }
+
+    @Test
+    void listarDoCliente_deveConsultarApenasAsOrdensDoCliente() {
+        var clienteId = UUID.randomUUID();
+        var os = osComStatus(StatusOS.EM_DIAGNOSTICO);
+        when(osRepository.listarPorCliente(clienteId)).thenReturn(List.of(os));
+
+        var resultado = new ConsultarStatusOSUseCase(osRepository).listarDoCliente(clienteId);
+
+        assertThat(resultado).containsExactly(os);
+        verify(osRepository, never()).listarAtivasOrdenadas();
+    }
+
+    @Test
     void consultarStatus_deveLancarExcecaoSeNaoEncontrada() {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());

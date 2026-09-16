@@ -3,12 +3,17 @@ package com.oficina.mecanica.infrastructure.observability;
 import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.entity.TransicaoOS;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Component
 public class MicrometerMetricasOrdemServico implements MetricasOrdemServico {
+
+    private static final Logger log = LoggerFactory.getLogger(MicrometerMetricasOrdemServico.class);
 
     static final String OS_ABERTAS = "oficina.os.abertas";
     static final String OS_TRANSICOES = "oficina.os.transicoes";
@@ -22,8 +27,11 @@ public class MicrometerMetricasOrdemServico implements MetricasOrdemServico {
     }
 
     @Override
-    public void registrarAbertura() {
+    public void registrarAbertura(UUID ordemServicoId) {
         registry.counter(OS_ABERTAS, "origem", "api").increment();
+        log.atInfo()
+            .addKeyValue("os.id", ordemServicoId)
+            .log("Ordem de serviço {} aberta", ordemServicoId);
     }
 
     @Override
@@ -36,6 +44,12 @@ public class MicrometerMetricasOrdemServico implements MetricasOrdemServico {
                 "status_origem", t.origem().name(),
                 "status_destino", t.destino().name())
             .record(t.duracaoNoStatusOrigem().toMillis(), TimeUnit.MILLISECONDS);
+
+        log.atInfo()
+            .addKeyValue("os.id", t.ordemServicoId())
+            .addKeyValue("os.status_origem", t.origem())
+            .addKeyValue("os.status_destino", t.destino())
+            .log("Ordem de serviço {} passou de {} para {}", t.ordemServicoId(), t.origem(), t.destino());
     }
 
     @Override

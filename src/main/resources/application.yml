@@ -17,6 +17,9 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    placeholders:
+      funcionario-seed-cpf: ${FUNCIONARIO_SEED_CPF:}
+      funcionario-seed-nome: ${FUNCIONARIO_SEED_NOME:}
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:1025}

@@ -2,6 +2,7 @@ package com.oficina.mecanica.infrastructure.web.controller;
 
 import com.oficina.mecanica.application.usecase.veiculo.VeiculoUseCase;
 import com.oficina.mecanica.domain.valueobject.Placa;
+import com.oficina.mecanica.infrastructure.security.Solicitante;
 import com.oficina.mecanica.infrastructure.web.dto.request.AtualizarVeiculoRequest;
 import com.oficina.mecanica.infrastructure.web.dto.request.CriarVeiculoRequest;
 import com.oficina.mecanica.infrastructure.web.dto.response.VeiculoResponse;
@@ -37,15 +38,23 @@ public class VeiculoController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Buscar veículo por ID")
+    @Operation(summary = "Buscar veículo por ID (cliente: apenas os próprios)")
     public ResponseEntity<VeiculoResponse> buscar(@PathVariable UUID id) {
-        return ResponseEntity.ok(VeiculoResponse.from(useCase.buscarPorId(id)));
+        var solicitante = Solicitante.atual();
+        var veiculo = solicitante.funcionario()
+            ? useCase.buscarPorId(id)
+            : useCase.buscarPorIdDoCliente(id, solicitante.id());
+        return ResponseEntity.ok(VeiculoResponse.from(veiculo));
     }
 
     @GetMapping
-    @Operation(summary = "Listar todos os veículos")
+    @Operation(summary = "Listar veículos (funcionário: todos; cliente: os próprios)")
     public ResponseEntity<List<VeiculoResponse>> listar() {
-        return ResponseEntity.ok(useCase.listarTodos().stream().map(VeiculoResponse::from).toList());
+        var solicitante = Solicitante.atual();
+        var veiculos = solicitante.funcionario()
+            ? useCase.listarTodos()
+            : useCase.listarPorCliente(solicitante.id());
+        return ResponseEntity.ok(veiculos.stream().map(VeiculoResponse::from).toList());
     }
 
     @GetMapping("/cliente/{clienteId}")

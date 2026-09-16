@@ -5,12 +5,16 @@ import com.oficina.mecanica.domain.valueobject.StatusOS;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.time.Duration;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(OutputCaptureExtension.class)
 class MicrometerMetricasOrdemServicoTest {
 
     private SimpleMeterRegistry registry;
@@ -24,10 +28,23 @@ class MicrometerMetricasOrdemServicoTest {
 
     @Test
     void aberturaDeOsAlimentaODashboardDeVolumeDiario() {
-        metricas.registrarAbertura();
-        metricas.registrarAbertura();
+        metricas.registrarAbertura(UUID.randomUUID());
+        metricas.registrarAbertura(UUID.randomUUID());
 
         assertThat(registry.counter("oficina.os.abertas", "origem", "api").count()).isEqualTo(2);
+    }
+
+    @Test
+    void aberturaETransicaoGeramLogComIdDaOrdem(CapturedOutput saida) {
+        var id = UUID.randomUUID();
+
+        metricas.registrarAbertura(id);
+        metricas.registrarTransicao(new TransicaoOS(
+            id, StatusOS.RECEBIDA, StatusOS.EM_DIAGNOSTICO, Duration.ofMinutes(5)));
+
+        assertThat(saida.getOut())
+            .contains("Ordem de serviço " + id + " aberta")
+            .contains("Ordem de serviço " + id + " passou de RECEBIDA para EM_DIAGNOSTICO");
     }
 
     @Test

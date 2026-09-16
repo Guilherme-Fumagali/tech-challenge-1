@@ -30,6 +30,22 @@ class JwtServiceTest {
     }
 
     @Test
+    void deveAceitarTokenDeFuncionario() {
+        var agora = Instant.now();
+        var token = Jwts.builder()
+            .subject(UUID.randomUUID().toString())
+            .issuer("oficina-auth")
+            .claim("role", "FUNCIONARIO")
+            .issuedAt(Date.from(agora))
+            .expiration(Date.from(agora.plusSeconds(900)))
+            .signWith(Keys.hmacShaKeyFor(SEGREDO.getBytes(StandardCharsets.UTF_8)))
+            .compact();
+
+        assertThat(service.isTokenValido(token)).isTrue();
+        assertThat(service.extrairRole(token)).isEqualTo("FUNCIONARIO");
+    }
+
+    @Test
     void deveRecusarTokenAssinadoComOutraChave() {
         var token = tokenValido(OUTRO_SEGREDO, "oficina-auth", UUID.randomUUID().toString(), 900);
         assertThat(service.isTokenValido(token)).isFalse();

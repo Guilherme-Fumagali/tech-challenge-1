@@ -33,7 +33,7 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
         jpa.save(mapper.toEntity(os));
 
         if (os.consumirMarcaDeNovaOrdem()) {
-            metricas.registrarAbertura();
+            metricas.registrarAbertura(os.getId());
         }
         os.drenarTransicoes().forEach(metricas::registrarTransicao);
         return os;
@@ -62,6 +62,11 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
     @Override
     public List<OrdemServico> listarPorVeiculo(UUID veiculoId) {
         return jpa.findByVeiculoId(veiculoId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<OrdemServico> listarPorCliente(UUID clienteId) {
+        return jpa.findByClienteIdOrderByDataAberturaDesc(clienteId).stream().map(mapper::toDomain).toList();
     }
 
     @Override

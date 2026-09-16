@@ -21,7 +21,7 @@ public class JwtService {
      * {@code ROLE_<lixo>} silencioso, que passaria a valer alguma coisa no dia em que
      * uma regra {@code hasRole} for adicionada ao SecurityConfig.
      */
-    private static final Set<String> ROLES_CONHECIDOS = Set.of("CLIENTE");
+    private static final Set<String> ROLES_CONHECIDOS = Set.of("CLIENTE", "FUNCIONARIO");
 
     private static final String ROLE_PADRAO = "CLIENTE";
 

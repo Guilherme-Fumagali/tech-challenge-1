@@ -1,6 +1,6 @@
 # ADRs — Tech Challenge Fase 3
 
-Registros de decisão arquitetural, no formato ensinado na Aula 05 de Documentação de Arquitetura de Soluções (a disciplina de Documentação de Arquitetura de Soluções).
+Registros de decisão arquitetural no formato apresentado na Aula 05 da disciplina de Documentação de Arquitetura de Soluções.
 
 ## Índice
 
@@ -16,36 +16,40 @@ Registros de decisão arquitetural, no formato ensinado na Aula 05 de Documenta�
 | [008](./ADR-008-registry-ecr.md) | Registry de imagens migra de GHCR para ECR | Aceita |
 | [009](./ADR-009-jwt-hmac-lambda-authorizer.md) | JWT HMAC validado por Lambda authorizer | Aceita |
 | [010](./ADR-010-postgresql-rds.md) | PostgreSQL em RDS mantido | Aceita |
-| [011](./ADR-011-hpa.md) | HPA por CPU e memória | Aceita (retroativa) |
+| [011](./ADR-011-hpa.md) | HPA por CPU e memória | Superada por ADR-015 |
+| [012](./ADR-012-ambientes-segregados.md) | Homologação e produção em infraestrutura segregada | Aceita |
+| [013](./ADR-013-identidade-das-pipelines.md) | Pipelines com role própria e menor privilégio | Aceita |
+| [014](./ADR-014-papeis-cliente-funcionario.md) | Papéis de cliente e funcionário | Aceita |
+| [015](./ADR-015-hpa-apenas-cpu.md) | HPA apenas por CPU | Aceita |
 
 ## Processo
 
 Conforme a Aula 05:
 
-1. Quem identifica a necessidade escreve a ADR usando este formato e assume o papel de **dono**.
-2. A ADR entra em **Proposta**. O dono conduz a revisão com o time.
-3. Precisando de mudanças, **permanece em Proposta**. Rejeitada, **o motivo é registrado** — para não rediscutir depois.
-4. Aprovada, passa para **Aceita** e **torna-se imutável**.
-5. Mudança de rumo exige **nova ADR**, que ao ser aceita marca a anterior como **Superada**.
+1. Quem identifica a necessidade escreve a ADR neste formato e assume o papel de dono.
+2. A ADR entra no estado Proposta, e o dono conduz a revisão com o time.
+3. Se forem necessárias mudanças, a ADR permanece em Proposta. Se for rejeitada, o motivo é registrado, para evitar que o tema seja rediscutido.
+4. Se aprovada, passa para Aceita e torna-se imutável.
+5. Uma mudança de rumo exige nova ADR, que, ao ser aceita, marca a anterior como Superada.
 
-**A imutabilidade é o ponto que mais se erra.** ADR aceita não se edita — se supera. O histórico é o valor.
+Após aceita, a ADR não é editada; mudanças de decisão são registradas em uma nova ADR, que marca a anterior como superada, preservando o histórico.
 
 ### Estados
 
 `Proposta` · `Aceita` · `Rejeitada` · `Depreciada` · `Superada por ADR-NNN`
 
-### Quando *não* abrir ADR
+### Quando não abrir ADR
 
-Decisão trivial, temporária ou reversível — bump de dependência, ajuste de configuração, renomear variável. Isso vai para changelog e histórico de commits. Registrar tudo sobrecarrega a documentação e afoga as decisões que importam.
+Decisões triviais, temporárias ou reversíveis, como atualização de dependência, ajuste de configuração ou renomeação de variável, não geram ADR. Esses casos ficam registrados no changelog e no histórico de commits. Registrar todas as decisões sobrecarregaria a documentação e dificultaria a identificação das decisões relevantes.
 
-## RFCs — a lacuna
+## RFCs
 
-O enunciado exige **RFCs** para decisões técnicas relevantes, mas **nenhuma aula da fase cobre RFC**. Extensão consciente, com esta convenção:
+O enunciado exige RFCs para decisões técnicas relevantes, mas nenhuma aula da fase aborda RFC. Por isso, o material foi complementado com a seguinte convenção:
 
 | | RFC | ADR |
 |---|---|---|
-| Momento | **antes** de decidir | **depois** de decidir |
+| Momento | antes de decidir | depois de decidir |
 | Propósito | propor direção e coletar comentários | registrar o que foi decidido e por quê |
 | Estado final | vira uma ADR | imutável |
 
-As três RFCs da fase (nuvem, banco, estratégia de autenticação) reusam as seções da ADR — Contexto, Proposta, Alternativas, Consequências — acrescentando **período de comentários** e **lista de revisores**. As ADRs 002, 003 e 010 são o resultado dessas RFCs; a RFC preserva a discussão, a ADR preserva a conclusão.
+As três RFCs da fase (nuvem, banco, estratégia de autenticação) reutilizam as seções da ADR (Contexto, Proposta, Alternativas, Consequências), acrescentando período de comentários e lista de revisores. As ADRs 002, 003 e 010 resultam dessas RFCs; a RFC registra a discussão e a ADR registra a conclusão.

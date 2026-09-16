@@ -5,9 +5,9 @@
 
 ## Contexto
 
-O enunciado exige integração com **Datadog ou New Relic**, monitorando latência de API, recursos do Kubernetes, healthchecks e uptime, alertas para falhas no processamento de OS e logs estruturados com correlação — além de três dashboards de negócio.
+O enunciado exige integração com Datadog ou New Relic, monitorando latência de API, recursos do Kubernetes, healthchecks e uptime, com alertas para falhas no processamento de OS e logs estruturados com correlação, além de três dashboards de negócio.
 
-A disciplina de Monitoramento Avançado cobre as duas plataformas com profundidade equivalente e espelhada: Datadog nas aulas 2–6, New Relic nas aulas 7–12.
+A disciplina de Monitoramento Avançado cobre as duas plataformas com profundidade equivalente e conteúdo espelhado: Datadog nas aulas 2–6 e New Relic nas aulas 7–12.
 
 A aplicação já emite traces via `micrometer-tracing-bridge-otel` + `opentelemetry-exporter-otlp` para o Grafana Tempo no ambiente local.
 
@@ -15,31 +15,32 @@ O ambiente é um projeto de estudo, com o EKS já custando US$ 73/mês. Qualquer
 
 ## Decisão
 
-**New Relic**, no free tier.
+New Relic, no free tier.
 
 Instrumentação em três frentes:
 - **APM:** agente Java oficial, adicionado ao container via `-javaagent`.
-- **Infraestrutura e logs:** integração Kubernetes do New Relic (DaemonSet + Fluent Bit).
+- **Infraestrutura:** integração Kubernetes do New Relic (chart `nri-bundle`, DaemonSet por nó).
+- **Logs:** encaminhados pelo agente Java, com `trace.id` e `span.id` da transação. O Fluent Bit do chart fica desligado para que cada linha seja enviada uma única vez.
 - **Métricas de negócio:** Micrometer com `micrometer-registry-otlp` apontando para o endpoint OTLP do New Relic.
 
 ## Alternativas consideradas
 
-**Datadog.** UI de Monitors e Timeboards mais rica, e os Composite Monitors da Aula 05 são um recurso que o New Relic não expõe com a mesma clareza. Descartada pelo modelo de free tier: o APM do Datadog é **trial de 14 dias**, depois cobrado por host. Isso obrigaria a cronometrar a janela de trial para coincidir com a gravação do vídeo — risco desnecessário numa entrega com prazo. O New Relic oferece **100 GB/mês de ingestão e 1 full user perpétuos**, o que permite deixar a instrumentação ligada durante toda a fase.
+**Datadog.** Interface de Monitors e Timeboards mais rica, e os Composite Monitors da Aula 05 são um recurso que o New Relic não expõe com a mesma clareza. Descartada pelo modelo de free tier: o APM do Datadog é um trial de 14 dias, depois cobrado por host. Isso obrigaria a planejar a janela de trial para coincidir com a gravação do vídeo, um risco desnecessário em uma entrega com prazo. O New Relic oferece 100 GB/mês de ingestão e 1 full user perpétuos, o que permite manter a instrumentação ativa durante toda a fase.
 
-**Apenas OTLP para o New Relic, sem agente Java.** Padrão aberto, sem acoplamento, e a aplicação já emite OTLP. Descartada porque **Apdex, transaction traces e service maps** — respectivamente as aulas 07, 08 e 12 — vêm prontos do agente e exigiriam construção manual via OTLP. O agente entrega o requisito com menos trabalho e mais fidelidade ao conteúdo.
+**Apenas OTLP para o New Relic, sem agente Java.** Padrão aberto, sem acoplamento, e a aplicação já emite OTLP. Descartada porque Apdex, transaction traces e service maps (respectivamente as aulas 07, 08 e 12) vêm prontos no agente e exigiriam construção manual via OTLP. O agente atende ao requisito com menos trabalho e maior aderência ao conteúdo.
 
-**Manter Grafana + Tempo + Loki self-hosted.** Custo zero de licença, mas descartada por violar o requisito, que nomeia Datadog ou New Relic, e por adicionar carga de operação ao cluster.
+**Manter Grafana + Tempo + Loki self-hosted.** Sem custo de licença, mas descartada por violar o requisito, que nomeia Datadog ou New Relic, e por adicionar carga de operação ao cluster.
 
 ## Consequências
 
 **Positivas**
-- Instrumentação pode ficar ligada indefinidamente sem custo nem contagem regressiva.
-- Apdex, service map e Logs in Context saem do agente sem trabalho extra — cobrem as aulas 07, 08 e 12 na entrega.
+- A instrumentação pode permanecer ativa indefinidamente, sem custo e sem prazo de expiração.
+- Apdex, service map e Logs in Context são fornecidos pelo agente sem trabalho adicional e cobrem as aulas 07, 08 e 12 na entrega.
 - NRQL permite versionar dashboards e alert conditions em Terraform, como recomenda a Aula 10.
 
 **Negativas**
-- **Duas vias de telemetria coexistem:** agente Java (APM) e OTLP (métricas de negócio). Modelo mental mais complexo e risco de métrica duplicada se o agente também capturar o que o Micrometer envia.
-- O `-javaagent` adiciona ~1 s ao startup do pod e consome memória do heap — relevante porque o deployment define `-XX:MaxRAMPercentage=70.0`.
-- **Telemetria exige egress para a internet** (`collector.newrelic.com`, `otlp.nr-data.net`). É o motivo pelo qual subnets privadas sem qualquer NAT são inviáveis — ver [ADR-007](./ADR-007-rede-privada-nat-instance.md).
-- O free tier tem teto de 100 GB/mês; logs em `DEBUG` estouram rápido. Mitigação em [SPEC-04](../../../../artefatos-tech-challenge-3/plano-implementacao/specs/SPEC-04-logs-estruturados.md) §5.
+- **Duas vias de telemetria coexistem:** agente Java (APM) e OTLP (métricas de negócio). Isso torna o modelo mais complexo e cria risco de métrica duplicada se o agente também capturar o que o Micrometer envia.
+- O `-javaagent` adiciona ~1 s ao startup do pod e consome memória do heap, o que é relevante porque o deployment define `-XX:MaxRAMPercentage=70.0`.
+- **A telemetria exige egress para a internet** (`collector.newrelic.com`, `otlp.nr-data.net`). Por esse motivo, subnets privadas sem nenhum NAT são inviáveis; ver [ADR-007](./ADR-007-rede-privada-nat-instance.md).
+- O free tier tem teto de 100 GB/mês, e logs em `DEBUG` esgotam essa cota rapidamente. Mitigação em [SPEC-04](../../../../artefatos-tech-challenge-3/plano-implementacao/specs/SPEC-04-logs-estruturados.md) §5.
 - O conteúdo de Datadog das aulas 2–6 fica sem aplicação prática.

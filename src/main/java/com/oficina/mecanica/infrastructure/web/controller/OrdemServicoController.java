@@ -1,6 +1,7 @@
 package com.oficina.mecanica.infrastructure.web.controller;
 
 import com.oficina.mecanica.application.usecase.ordemservico.*;
+import com.oficina.mecanica.infrastructure.security.Solicitante;
 import com.oficina.mecanica.infrastructure.web.dto.request.AdicionarItemRequest;
 import com.oficina.mecanica.infrastructure.web.dto.request.CriarOrdemServicoRequest;
 import com.oficina.mecanica.infrastructure.web.dto.response.OrdemServicoResponse;
@@ -44,16 +45,23 @@ public class OrdemServicoController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todas as Ordens de Serviço")
+    @Operation(summary = "Listar Ordens de Serviço (funcionário: ativas; cliente: as próprias)")
     public ResponseEntity<List<OrdemServicoResponse>> listar() {
-        return ResponseEntity.ok(consultar.listarTodas().stream()
-            .map(OrdemServicoResponse::from).toList());
+        var solicitante = Solicitante.atual();
+        var ordens = solicitante.funcionario()
+            ? consultar.listarTodas()
+            : consultar.listarDoCliente(solicitante.id());
+        return ResponseEntity.ok(ordens.stream().map(OrdemServicoResponse::from).toList());
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Buscar detalhes de uma OS")
+    @Operation(summary = "Buscar detalhes de uma OS (cliente: apenas as próprias)")
     public ResponseEntity<OrdemServicoResponse> buscar(@PathVariable UUID id) {
-        return ResponseEntity.ok(OrdemServicoResponse.from(consultar.executar(id)));
+        var solicitante = Solicitante.atual();
+        var os = solicitante.funcionario()
+            ? consultar.executar(id)
+            : consultar.executarDoCliente(id, solicitante.id());
+        return ResponseEntity.ok(OrdemServicoResponse.from(os));
     }
 
     @GetMapping("/{id}/status")

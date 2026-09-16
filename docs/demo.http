@@ -1,29 +1,46 @@
-### Demo — Tech Challenge Fase 2 (oficina-api em AWS EKS)
-@base = http://a0d19e8c2baf44ef0a637ef67e7c0d93-1715318699.us-east-1.elb.amazonaws.com/api
+### Coleção de requisições — oficina-api (Fase 3)
+# Formato HTTP Client (IntelliJ) e VS Code REST Client.
+# api: URL do API Gateway do ambiente (output api_gateway_url do oficina-infra-k8s).
+# cpfFuncionario: CPF do funcionário de homologação (secret FUNCIONARIO_SEED_CPF).
+# cpfCliente: CPF do cliente cadastrado no passo 4 ou por scripts/preparar-demo.sh.
+@api = https://SEU-API-GATEWAY.execute-api.us-east-1.amazonaws.com
+@cpfFuncionario = CPF_DO_FUNCIONARIO
+@cpfCliente = 529.982.247-25
 
 
-### 1. LOGIN (JWT) — access 15min + refresh 7d
-POST {{base}}/auth/login
+### 1. Chamada protegida sem token (esperado: 401 no gateway)
+GET {{api}}/api/ordens
+
+
+### 2. Autenticação do funcionário por CPF
+POST {{api}}/auth/funcionarios
 Content-Type: application/json
 
 {
-  "username": "admin",
-  "password": "S7byqGkW64RY9TlE"
+  "cpf": "{{cpfFuncionario}}"
 }
 
 > {%
-client.global.set("token", response.body.accessToken);
-client.global.set("refreshToken", response.body.refreshToken);
+client.global.set("tokenFuncionario", response.body.accessToken);
 %}
 
 
-### 2. CADASTRAR CLIENTE (CPF com dígitos verificadores reais)
-POST {{base}}/clientes
+### 3. CPF com dígito verificador inválido (esperado: 400)
+POST {{api}}/auth
 Content-Type: application/json
-Authorization: Bearer {{token}}
 
 {
-  "cpfCnpj": "529.982.247-25",
+  "cpf": "529.982.247-26"
+}
+
+
+### 4. Cadastrar cliente (funcionário)
+POST {{api}}/api/clientes
+Content-Type: application/json
+Authorization: Bearer {{tokenFuncionario}}
+
+{
+  "cpfCnpj": "{{cpfCliente}}",
   "nome": "João da Silva",
   "email": "joao@email.com",
   "telefone": "11999998888"
@@ -34,10 +51,10 @@ client.global.set("clienteId", response.body.id);
 %}
 
 
-### 3. CADASTRAR VEÍCULO (placa Mercosul)
-POST {{base}}/veiculos
+### 5. Cadastrar veículo do cliente (funcionário)
+POST {{api}}/api/veiculos
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{tokenFuncionario}}
 
 {
   "placa": "ABC1D23",
@@ -52,13 +69,13 @@ client.global.set("veiculoId", response.body.id);
 %}
 
 
-### 4. SETUP — SERVIÇO NO CATÁLOGO
-POST {{base}}/servicos
+### 6. Cadastrar serviço no catálogo (funcionário)
+POST {{api}}/api/servicos
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{tokenFuncionario}}
 
 {
-  "nome": "Troca de Óleo",
+  "nome": "Troca de óleo",
   "descricao": "Troca de óleo e filtro",
   "precoUnitario": 150.00,
   "tempoEstimadoHoras": 1
@@ -69,13 +86,13 @@ client.global.set("servicoId", response.body.id);
 %}
 
 
-### 5. SETUP — PEÇA NO CATÁLOGO
-POST {{base}}/pecas
+### 7. Cadastrar peça no catálogo (funcionário)
+POST {{api}}/api/pecas
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{tokenFuncionario}}
 
 {
-  "nome": "Filtro de Óleo",
+  "nome": "Filtro de óleo",
   "descricao": "Filtro de óleo Mann W712",
   "precoUnitario": 35.00,
   "quantidadeEstoque": 10,
@@ -87,10 +104,10 @@ client.global.set("pecaId", response.body.id);
 %}
 
 
-### 6. ABRIR OS
-POST {{base}}/ordens
+### 8. Abrir ordem de serviço (funcionário)
+POST {{api}}/api/ordens
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{tokenFuncionario}}
 
 {
   "clienteId": "{{clienteId}}",
@@ -102,15 +119,15 @@ client.global.set("osId", response.body.id);
 %}
 
 
-### 7. INICIAR DIAGNÓSTICO
-POST {{base}}/ordens/{{osId}}/iniciar-diagnostico
-Authorization: Bearer {{token}}
+### 9. Iniciar diagnóstico
+POST {{api}}/api/ordens/{{osId}}/iniciar-diagnostico
+Authorization: Bearer {{tokenFuncionario}}
 
 
-### 8. ADICIONAR SERVIÇO (snapshot de preço)
-POST {{base}}/ordens/{{osId}}/servicos
+### 10. Adicionar serviço
+POST {{api}}/api/ordens/{{osId}}/servicos
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{tokenFuncionario}}
 
 {
   "itemId": "{{servicoId}}",
@@ -118,10 +135,10 @@ Authorization: Bearer {{token}}
 }
 
 
-### 9. ADICIONAR PEÇA (decrementa estoque)
-POST {{base}}/ordens/{{osId}}/pecas
+### 11. Adicionar peça
+POST {{api}}/api/ordens/{{osId}}/pecas
 Content-Type: application/json
-Authorization: Bearer {{token}}
+Authorization: Bearer {{tokenFuncionario}}
 
 {
   "itemId": "{{pecaId}}",
@@ -129,79 +146,48 @@ Authorization: Bearer {{token}}
 }
 
 
-### 10. GERAR ORÇAMENTO (dispara e-mail!)
-# Total = soma dos snapshots (imune a reajuste futuro).
-# Ao gerar, a API manda um e-mail ao cliente (SMTP/MailHog) com o token de aprovação.
-POST {{base}}/ordens/{{osId}}/gerar-orcamento
-Authorization: Bearer {{token}}
+### 12. Gerar orçamento (envia o e-mail com os links de aprovação)
+POST {{api}}/api/ordens/{{osId}}/gerar-orcamento
+Authorization: Bearer {{tokenFuncionario}}
 
 
-### 11. APROVAR (interno, com JWT — caminho do funcionário)
-POST {{base}}/ordens/{{osId}}/aprovar
-Authorization: Bearer {{token}}
-
-
-### 12. CONCLUIR
-POST {{base}}/ordens/{{osId}}/concluir
-Authorization: Bearer {{token}}
-
-
-### 13. ENTREGAR
-POST {{base}}/ordens/{{osId}}/entregar
-Authorization: Bearer {{token}}
-
-
-### 14a. APROVAÇÃO EXTERNA — Nova OS
-# Fluxo: nova OS → item → gerar orçamento (dispara e-mail) → cliente aprova via token, SEM login.
-@token = eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsInR5cCI6ImFjY2VzcyIsImlhdCI6MTc4NDA4MTU4NCwiZXhwIjoxNzg0MDgyNDg0fQ.r2wnAWFHjSWCIy3t6wHfg679w6cOn5IoLr1axnpkRsPc5JL9vWJClZjcfZGPSquOOdN5trAw2XlH9YdZjJ-_cg
-@clienteId = 739c5003-6e1c-4e29-aca4-f0bbb4697cd8
-@veiculoId = bed82b8c-6511-43cd-95b5-7f9898aec13f
-@pecaId = 9c9e075f-2cc4-4978-b423-e6beae6442e3
-
-
-POST {{base}}/ordens
+### 13. Autenticação do cliente por CPF
+POST {{api}}/auth
 Content-Type: application/json
-Authorization: Bearer {{token}}
 
 {
-  "clienteId": "{{clienteId}}",
-  "veiculoId": "{{veiculoId}}"
+  "cpf": "{{cpfCliente}}"
 }
 
 > {%
-client.global.set("os2Id", response.body.id);
+client.global.set("tokenCliente", response.body.accessToken);
 %}
 
 
-### 14b. Iniciar diagnóstico
-POST {{base}}/ordens/{{os2Id}}/iniciar-diagnostico
-Authorization: Bearer {{token}}
+### 14. Cliente lista as próprias ordens
+GET {{api}}/api/ordens
+Authorization: Bearer {{tokenCliente}}
 
 
-### 14c. Adicionar peça
-POST {{base}}/ordens/{{os2Id}}/pecas
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
-{
-  "itemId": "{{pecaId}}",
-  "quantidade": 1
-}
+### 15. Cliente tenta acessar rota de gestão (esperado: 403)
+GET {{api}}/api/clientes
+Authorization: Bearer {{tokenCliente}}
 
 
-### 14d. Gerar orçamento → e-mail com token sai para o MailHog
-POST {{base}}/ordens/{{os2Id}}/gerar-orcamento
-Authorization: Bearer {{token}}
+### 16. Link do e-mail: página de confirmação (não altera a OS)
+@tokenAprovacao = TOKEN_DO_EMAIL
+GET {{api}}/api/ordens/{{osId}}/aprovar-externo?token={{tokenAprovacao}}
 
 
-### 14e. Cole o token do e-mail (MailHog) na variável abaixo
-# kubectl port-forward -n oficina svc/oficina-mailhog 8025:8025
-# → http://localhost:8025 → e-mail "Orçamento pendente" → copie o token
-@tokenAprovacao = COLE_O_TOKEN_DO_EMAIL_AQUI
+### 17. Confirmação enviada pela página
+POST {{api}}/api/ordens/{{osId}}/aprovar-externo
+Content-Type: application/x-www-form-urlencoded
+
+token={{tokenAprovacao}}&decisao=APROVAR
 
 
-### 14f. APROVAR via token externo — endpoint PÚBLICO (repare: sem Authorization!)
-POST {{base}}/ordens/{{os2Id}}/aprovar-externo
+### 18. Reutilização do mesmo token pela API (esperado: 401)
+POST {{api}}/api/ordens/{{osId}}/aprovar-externo
 Content-Type: application/json
 
 {
@@ -210,101 +196,19 @@ Content-Type: application/json
 }
 
 
-### 14g. PROVA — OS aceita: status foi para EM_EXECUCAO (endpoint público, sem JWT)
-GET {{base}}/ordens/{{os2Id}}/status
-
-> {%
-client.test("OS ACEITA via e-mail → EM_EXECUCAO", function () {
-  client.assert(response.status === 200, "status HTTP: " + response.status);
-  client.assert(response.body.status === "EM_EXECUCAO",
-    "esperado EM_EXECUCAO, veio: " + response.body.status);
-});
-%}
+### 19. Consulta pública de status, sem JWT
+GET {{api}}/api/ordens/{{osId}}/status
 
 
-### 15a. REPROVAÇÃO EXTERNA + ESTORNO ATÔMICO — Nova OS
-# Nova OS com 2 peças; ao REPROVAR pelo token, as 2 unidades voltam ao estoque.
-POST {{base}}/ordens
-Content-Type: application/json
-Authorization: Bearer {{token}}
+### 20. Concluir e entregar (funcionário)
+POST {{api}}/api/ordens/{{osId}}/concluir
+Authorization: Bearer {{tokenFuncionario}}
 
-{
-  "clienteId": "{{clienteId}}",
-  "veiculoId": "{{veiculoId}}"
-}
-
-> {%
-client.global.set("os3Id", response.body.id);
-%}
+###
+POST {{api}}/api/ordens/{{osId}}/entregar
+Authorization: Bearer {{tokenFuncionario}}
 
 
-### 15b. Iniciar diagnóstico
-POST {{base}}/ordens/{{os3Id}}/iniciar-diagnostico
-Authorization: Bearer {{token}}
-
-
-### 15c. Adicionar 2 peças
-POST {{base}}/ordens/{{os3Id}}/pecas
-Content-Type: application/json
-Authorization: Bearer {{token}}
-
-{
-  "itemId": "{{pecaId}}",
-  "quantidade": 2
-}
-
-
-### 15d. Gerar orçamento → novo e-mail/token no MailHog
-POST {{base}}/ordens/{{os3Id}}/gerar-orcamento
-Authorization: Bearer {{token}}
-
-
-### 15e. Cole o token do NOVO e-mail (MailHog) na variável abaixo
-@tokenAprovacao2 = COLE_O_TOKEN_DO_SEGUNDO_EMAIL_AQUI
-
-
-### 15f. REPROVAR via token externo — estorna as 2 peças ao estoque atomicamente
-POST {{base}}/ordens/{{os3Id}}/aprovar-externo
-Content-Type: application/json
-
-{
-  "token": "{{tokenAprovacao2}}",
-  "decisao": "REPROVAR"
-}
-
-
-### 15g. PROVA — OS rejeitada: status foi para CANCELADA (endpoint público, sem JWT)
-GET {{base}}/ordens/{{os3Id}}/status
-
-> {%
-client.test("OS REJEITADA via e-mail → CANCELADA", function () {
-  client.assert(response.status === 200, "status HTTP: " + response.status);
-  client.assert(response.body.status === "CANCELADA",
-    "esperado CANCELADA, veio: " + response.body.status);
-});
-%}
-
-
-### 16. RENOVAR TOKEN (ROTAÇÃO)
-# O refresh anterior é REVOGADO e um novo par é emitido.
-# Reusar um refresh já rotacionado revoga TODA a família (detecção de roubo).
-POST {{base}}/auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": "{{refreshToken}}"
-}
-
-> {%
-client.global.set("token", response.body.accessToken);
-client.global.set("refreshToken", response.body.refreshToken);
-%}
-
-
-### 17. LOGOUT (revoga o refresh token)
-POST {{base}}/auth/logout
-Content-Type: application/json
-
-{
-  "refreshToken": "{{refreshToken}}"
-}
+### 21. Relatório de tempo médio de execução (funcionário)
+GET {{api}}/api/ordens/relatorio/tempo-medio?inicio=2026-09-01T00:00:00&fim=2026-12-31T23:59:59
+Authorization: Bearer {{tokenFuncionario}}

@@ -23,7 +23,7 @@ public class LogNotificacaoService implements NotificacaoService {
 
     @Override
     public void notificarOrcamentoPendente(UUID osId, UUID clienteId, BigDecimal valorTotal, String tokenAprovacao) {
-        log.info("[NOTIFICAÇÃO] Orçamento aguardando aprovação — OS={} | Cliente={} | Total=R$ {} | Token={}",
-            osId, clienteId, valorTotal, tokenAprovacao);
+        log.info("[NOTIFICAÇÃO] Orçamento aguardando aprovação — OS={} | Cliente={} | Total=R$ {}",
+            osId, clienteId, valorTotal);
     }
 }
