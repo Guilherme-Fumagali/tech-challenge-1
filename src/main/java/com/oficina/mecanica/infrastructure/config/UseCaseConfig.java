@@ -1,5 +1,8 @@
 package com.oficina.mecanica.infrastructure.config;
 
+import com.oficina.mecanica.application.port.ConsultaExecucao;
+import com.oficina.mecanica.application.port.ConsultaOrcamento;
+import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.application.port.MetricasSaga;
 import com.oficina.mecanica.application.port.PublicadorMensagens;
 import com.oficina.mecanica.application.port.RegistroMensagensProcessadas;
@@ -104,6 +107,15 @@ public class UseCaseConfig {
     public ConsultarHistoricoOSUseCase consultarHistoricoOSUseCase(OrdemServicoRepository os,
                                                                    HistoricoStatusRepository historico) {
         return new ConsultarHistoricoOSUseCase(os, historico);
+    }
+
+    @Bean
+    public ConsultarAcompanhamentoUseCase consultarAcompanhamentoUseCase(ConsultarStatusOSUseCase consultar,
+                                                                         HistoricoStatusRepository historico,
+                                                                         ConsultaOrcamento orcamento,
+                                                                         ConsultaExecucao execucao,
+                                                                         MetricasOrdemServico metricas) {
+        return new ConsultarAcompanhamentoUseCase(consultar, historico, orcamento, execucao, metricas);
     }
 
     @Bean

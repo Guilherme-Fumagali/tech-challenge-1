@@ -1,5 +1,7 @@
 package com.oficina.mecanica.infrastructure;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,9 +34,13 @@ public abstract class IntegracaoBase {
         new LocalStackContainer(DockerImageName.parse("localstack/localstack:3"))
             .withServices(LocalStackContainer.Service.SQS);
 
+    protected static final WireMockServer PARTICIPANTES = new WireMockServer(WireMockConfiguration.options()
+        .dynamicPort());
+
     static {
         Startables.deepStart(POSTGRES, LOCALSTACK).join();
         FilasDeTeste.inicializar(LOCALSTACK);
+        PARTICIPANTES.start();
     }
 
     @Value("${jwt.secret}")
@@ -49,6 +55,8 @@ public abstract class IntegracaoBase {
         registry.add("spring.cloud.aws.region.static", LOCALSTACK::getRegion);
         registry.add("spring.cloud.aws.credentials.access-key", LOCALSTACK::getAccessKey);
         registry.add("spring.cloud.aws.credentials.secret-key", LOCALSTACK::getSecretKey);
+        registry.add("app.integracoes.billing.url", PARTICIPANTES::baseUrl);
+        registry.add("app.integracoes.execution.url", PARTICIPANTES::baseUrl);
     }
 
     protected String tokenFuncionario() {

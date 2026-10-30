@@ -5,14 +5,17 @@ import com.oficina.mecanica.application.usecase.saga.ConsultarSagaUseCase;
 import com.oficina.mecanica.infrastructure.security.Solicitante;
 import com.oficina.mecanica.infrastructure.web.dto.request.AdicionarItemRequest;
 import com.oficina.mecanica.infrastructure.web.dto.request.CriarOrdemServicoRequest;
+import com.oficina.mecanica.infrastructure.web.dto.response.AcompanhamentoResponse;
 import com.oficina.mecanica.infrastructure.web.dto.response.HistoricoStatusResponse;
 import com.oficina.mecanica.infrastructure.web.dto.response.OrdemServicoAbertaResponse;
 import com.oficina.mecanica.infrastructure.web.dto.response.OrdemServicoResponse;
 import com.oficina.mecanica.infrastructure.web.dto.response.SagaResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,19 +35,22 @@ public class OrdemServicoController {
     private final AdicionarPecaAOSUseCase adicionarPeca;
     private final ConsultarHistoricoOSUseCase historico;
     private final ConsultarSagaUseCase saga;
+    private final ConsultarAcompanhamentoUseCase acompanhamento;
 
     public OrdemServicoController(CriarOrdemServicoUseCase criarOS,
                                   ConsultarStatusOSUseCase consultar,
                                   AdicionarServicoAOSUseCase adicionarServico,
                                   AdicionarPecaAOSUseCase adicionarPeca,
                                   ConsultarHistoricoOSUseCase historico,
-                                  ConsultarSagaUseCase saga) {
+                                  ConsultarSagaUseCase saga,
+                                  ConsultarAcompanhamentoUseCase acompanhamento) {
         this.criarOS = criarOS;
         this.consultar = consultar;
         this.adicionarServico = adicionarServico;
         this.adicionarPeca = adicionarPeca;
         this.historico = historico;
         this.saga = saga;
+        this.acompanhamento = acompanhamento;
     }
 
     @PostMapping
@@ -88,6 +94,18 @@ public class OrdemServicoController {
             ? historico.executar(id)
             : historico.executarDoCliente(id, solicitante.id());
         return ResponseEntity.ok(registros.stream().map(HistoricoStatusResponse::from).toList());
+    }
+
+    @GetMapping("/{id}/acompanhamento")
+    @Operation(summary = "Acompanhamento composto: OS e histórico locais, orçamento e pagamento (Billing) e execução "
+        + "(Execution); fonte indisponível vem nula e listada em fontesIndisponiveis (cliente: apenas as próprias)")
+    public ResponseEntity<AcompanhamentoResponse> acompanhamento(
+            @PathVariable UUID id,
+            @Parameter(hidden = true) @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false)
+            String autorizacao) {
+        var solicitante = Solicitante.atual();
+        var resultado = acompanhamento.executar(id, solicitante.funcionario() ? null : solicitante.id(), autorizacao);
+        return ResponseEntity.ok(AcompanhamentoResponse.from(resultado));
     }
 
     @GetMapping("/{id}/saga")

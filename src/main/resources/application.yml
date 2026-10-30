@@ -20,6 +20,10 @@ spring:
         static: ${AWS_REGION:us-east-1}
       sqs:
         queue-not-found-strategy: fail
+  task:
+    scheduling:
+      pool:
+        size: 3
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -62,6 +66,52 @@ app:
     verificacao-prazos: 30000
     max-reenvios: 3
     lote: 20
+  integracoes:
+    billing:
+      url: ${BILLING_URL:http://localhost:8081}
+    execution:
+      url: ${EXECUTION_URL:http://localhost:8082}
+    timeout-conexao: 1s
+    timeout-leitura: 3s
+
+resilience4j:
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 2s
+        cancel-running-future: true
+    instances:
+      billing:
+        base-config: default
+      execution:
+        base-config: default
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+    instances:
+      billing:
+        base-config: default
+      execution:
+        base-config: default
+  bulkhead:
+    configs:
+      default:
+        max-concurrent-calls: 10
+        max-wait-duration: 0
+    instances:
+      billing:
+        base-config: default
+      execution:
+        base-config: default
 
 management:
   endpoints:

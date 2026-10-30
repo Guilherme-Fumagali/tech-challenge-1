@@ -1,6 +1,38 @@
 {
   "components" : {
     "schemas" : {
+      "AcompanhamentoResponse" : {
+        "properties" : {
+          "execucao" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "fontesIndisponiveis" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "historico" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HistoricoStatusResponse"
+            },
+            "type" : "array"
+          },
+          "orcamento" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "ordemServico" : {
+            "$ref" : "#/components/schemas/OrdemServicoResponse"
+          }
+        },
+        "type" : "object"
+      },
       "AdicionarItemRequest" : {
         "properties" : {
           "itemId" : {
@@ -826,6 +858,37 @@
           "bearerAuth" : [ ]
         } ],
         "summary" : "Buscar detalhes de uma OS (cliente: apenas as próprias)",
+        "tags" : [ "Ordens de Serviço" ]
+      }
+    },
+    "/api/ordens/{id}/acompanhamento" : {
+      "get" : {
+        "operationId" : "acompanhamento",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AcompanhamentoResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Acompanhamento composto: OS e histórico locais, orçamento e pagamento (Billing) e execução (Execution); fonte indisponível vem nula e listada em fontesIndisponiveis (cliente: apenas as próprias)",
         "tags" : [ "Ordens de Serviço" ]
       }
     },

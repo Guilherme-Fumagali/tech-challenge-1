@@ -29,6 +29,8 @@
         <owasp.version>10.0.4</owasp.version>
         <spring-cloud-aws.version>3.3.1</spring-cloud-aws.version>
         <newrelic.version>9.4.0</newrelic.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
+        <wiremock.version>3.9.2</wiremock.version>
         <!-- SonarCloud -->
         <sonar.organization>guilherme-fumagali</sonar.organization>
         <sonar.projectKey>Guilherme-Fumagali_tech-challenge-1</sonar.projectKey>
@@ -104,6 +106,16 @@
             <groupId>com.newrelic.agent.java</groupId>
             <artifactId>newrelic-api</artifactId>
             <version>${newrelic.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>${resilience4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
         <!-- PostgreSQL -->
@@ -192,6 +204,12 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <version>${wiremock.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
