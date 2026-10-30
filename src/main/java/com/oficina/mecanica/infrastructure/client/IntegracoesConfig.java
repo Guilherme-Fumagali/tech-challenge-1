@@ -1,6 +1,5 @@
 package com.oficina.mecanica.infrastructure.client;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
@@ -27,14 +26,12 @@ public class IntegracoesConfig {
         return executor;
     }
 
-    @Bean
-    @Qualifier(BillingRestClient.FONTE)
+    @Bean(BillingRestClient.FONTE)
     public RestClient restClientBilling(RestClient.Builder builder, PropriedadesIntegracoes propriedades) {
         return construir(builder, propriedades.billing().url(), propriedades);
     }
 
-    @Bean
-    @Qualifier(ExecutionRestClient.FONTE)
+    @Bean(ExecutionRestClient.FONTE)
     public RestClient restClientExecution(RestClient.Builder builder, PropriedadesIntegracoes propriedades) {
         return construir(builder, propriedades.execution().url(), propriedades);
     }
