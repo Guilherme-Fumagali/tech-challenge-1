@@ -20,7 +20,7 @@ A saga da oficina não é simples:
 - Duas esperas por pessoas: decisão do cliente e pagamento.
 - Atividades do mecânico que podem levar dias.
 - Três caminhos de falha com compensações em ordens diferentes.
-- Um passo pivô (pagamento aprovado) a partir do qual desfazer exige estorno no gateway de pagamento.
+- Depois do pagamento aprovado, desfazer exige estorno no gateway de pagamento.
 
 ## Decisão
 

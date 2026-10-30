@@ -1,6 +1,6 @@
 # Sequência — compensação por falha na execução
 
-Depois do passo pivô (pagamento aprovado), desfazer exige estorno no Mercado Pago.
+Depois do pagamento aprovado, desfazer exige estorno no Mercado Pago.
 
 ```mermaid
 ---

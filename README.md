@@ -117,7 +117,7 @@ stateDiagram-v2
 | `COMPENSADA` | `CANCELADA` | — | — |
 | `FALHA` | inalterado | intervenção manual ([runbook](docs/runbooks/saga-falha.md)) | — |
 
-Compensações, na ordem em que primeiro se impede trabalho novo e por último se devolve recurso:
+Compensações, na ordem da visão pessimista (aula 3 de SAGA): primeiro o que impede trabalho novo, por último o que devolve recurso:
 
 | Motivo | Gatilho | Ordem |
 |---|---|---|
@@ -128,13 +128,7 @@ Compensações, na ordem em que primeiro se impede trabalho novo e por último s
 
 O estorno do estoque é a compensação local: devolve as peças de cada item à `Peca` correspondente, cancela a OS e só ocorre se a OS ainda não estiver `CANCELADA`.
 
-Classificação dos passos:
-
-| Passo | Tipo |
-|---|---|
-| Abrir a OS, enfileirar o diagnóstico, reservar estoque, gerar orçamento, criar cobrança | compensáveis |
-| Pagamento aprovado | pivô: a partir daqui a OS segue para a execução, e voltar exige estorno no gateway |
-| Enfileirar reparo, finalizar | retentáveis: falha técnica é repetida; falha de negócio do reparo aciona `FALHA_EXECUCAO` |
+Depois do pagamento aprovado, desfazer a saga exige estorno no Mercado Pago. Por isso só a falha na execução estorna o pagamento. Falha técnica (serviço fora do ar, erro de rede) não gera compensação: a mensagem volta para a fila e é repetida.
 
 Garantias:
 

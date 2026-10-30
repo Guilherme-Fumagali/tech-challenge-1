@@ -1215,7 +1215,7 @@ components:
       name: PagamentoAprovado
       title: PagamentoAprovado
       summary: O pagamento foi confirmado pelo gateway.
-      description: 'Efeito no orquestrador: Pivô da saga: OS → EM_EXECUCAO com dataInicio, IniciarReparo e saga AGUARDANDO_FILA_REPARO.'
+      description: 'Efeito no orquestrador: OS → EM_EXECUCAO com dataInicio, IniciarReparo e saga AGUARDANDO_FILA_REPARO.'
       traits:
       - $ref: '#/components/messageTraits/atributosSqs'
       payload:

@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O enunciado exige que a parte de pagamentos do Billing Service se integre ao Mercado Pago. A aprovação do pagamento é o passo pivô da saga ([ADR-017](./ADR-017-saga-orquestrada.md)): depois dele, desfazer exige estorno no gateway.
+O enunciado exige que a parte de pagamentos do Billing Service se integre ao Mercado Pago. Depois que o pagamento é aprovado, desfazer a saga ([ADR-017](./ADR-017-saga-orquestrada.md)) exige estorno no gateway.
 
 O Mercado Pago oferece:
 
@@ -32,7 +32,7 @@ Três restrições do ambiente:
   - Valida a assinatura `x-signature`: HMAC-SHA256 do manifesto `id:{data.id};request-id:{x-request-id};ts:{ts};` com o segredo do painel, comparação em tempo constante.
   - Não confia no corpo da notificação: o status vem sempre de `GET /v1/payments/{id}` com o token do vendedor.
 - **Reconciliação:** job a cada 60 s busca por `external_reference` os pagamentos pendentes há mais de um minuto. Cobre notificação perdida, atrasada ou não enviada, como no caso das credenciais de teste.
-- **Estorno:** `POST /v1/payments/{id}/refunds` como compensação do passo pivô quando a execução falha.
+- **Estorno:** `POST /v1/payments/{id}/refunds` como compensação quando a execução falha depois do pagamento.
 - Criação de preferência e estorno com `X-Idempotency-Key` (id do orçamento e id do pagamento), retry com backoff exponencial em erro de rede/5xx e circuit breaker (Resilience4j).
 - **Gateway simulado** no perfil `local` (`GatewayPagamentoSimulado`), para executar a saga completa sem a conta do Mercado Pago nos testes e no compose.
 - Regra de recusa: a primeira recusa encerra a cobrança e dispara a compensação. Um pagamento aprovado que chegue depois para orçamento já cancelado é estornado automaticamente.
