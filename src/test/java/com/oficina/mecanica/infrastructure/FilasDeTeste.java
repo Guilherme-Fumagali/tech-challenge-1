@@ -97,10 +97,31 @@ public final class FilasDeTeste {
     }
 
     public static void publicarCorpo(String fila, String corpo, String tipo) {
+        publicarCorpo(fila, corpo, tipo, Map.of());
+    }
+
+    public static void publicarCorpo(String fila, String corpo, String tipo, Map<String, String> outrosAtributos) {
         var url = url(fila);
-        sqs.sendMessage(r -> r.queueUrl(url).messageBody(corpo).messageAttributes(Map.of(
-            "tipo", MessageAttributeValue.builder().dataType("String").stringValue(tipo).build(),
-            "versao", MessageAttributeValue.builder().dataType("String").stringValue("1").build())));
+        var atributos = new java.util.HashMap<String, MessageAttributeValue>();
+        atributos.put("tipo", MessageAttributeValue.builder().dataType("String").stringValue(tipo).build());
+        atributos.put("versao", MessageAttributeValue.builder().dataType("String").stringValue("1").build());
+        outrosAtributos.forEach((nome, valor) -> atributos.put(nome,
+            MessageAttributeValue.builder().dataType("String").stringValue(valor).build()));
+        sqs.sendMessage(r -> r.queueUrl(url).messageBody(corpo).messageAttributes(atributos));
+    }
+
+    public static String envelope(UUID mensagemId, String tipo, UUID sagaId, UUID osId, Map<String, Object> dados) {
+        ObjectNode envelope = JSON.createObjectNode();
+        envelope.put("mensagemId", mensagemId.toString());
+        envelope.put("tipo", tipo);
+        envelope.put("versao", 1);
+        envelope.put("sagaId", sagaId.toString());
+        envelope.put("osId", osId.toString());
+        envelope.putNull("causadaPor");
+        envelope.put("origem", origem(tipo));
+        envelope.put("ocorridoEm", Instant.now().truncatedTo(ChronoUnit.MILLIS).toString());
+        envelope.set("dados", JSON.valueToTree(dados));
+        return escrever(envelope);
     }
 
     public static MensagemRecebida aguardarMensagem(String fila, Predicate<MensagemRecebida> filtro, Duration limite) {

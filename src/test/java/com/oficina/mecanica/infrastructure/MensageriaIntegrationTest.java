@@ -157,6 +157,19 @@ class MensageriaIntegrationTest extends IntegracaoBase {
     }
 
     @Test
+    void atributoDeTipoJavaDeOutroServicoNaoInterfereNaLeitura() {
+        var cenario = cenario(EstadoSaga.AGUARDANDO_FILA_DIAGNOSTICO, false);
+        var mensagemId = UUID.randomUUID();
+
+        FilasDeTeste.publicarCorpo(FilasDeTeste.OS_EVENTOS, FilasDeTeste.envelope(mensagemId, "ExecucaoEnfileirada",
+                cenario.sagaId(), cenario.osId(), Map.of("etapa", "DIAGNOSTICO")), "ExecucaoEnfileirada",
+            Map.of("JavaType", "com.oficina.execution.infrastructure.messaging.MensagemEnvelope"));
+
+        await().atMost(Duration.ofSeconds(15))
+            .untilAsserted(() -> assertThat(estadoSaga(cenario.osId())).isEqualTo("AGUARDANDO_DIAGNOSTICO"));
+    }
+
+    @Test
     void eventoDeTipoDesconhecidoEhRejeitadoSemNovaTentativa() {
         var cenario = cenario(EstadoSaga.EM_DIAGNOSTICO, false);
 
