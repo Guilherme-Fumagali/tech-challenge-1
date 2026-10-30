@@ -1,7 +1,9 @@
 package com.oficina.mecanica.domain;
 
 import com.oficina.mecanica.domain.exception.EstoqueInsuficienteException;
+import com.oficina.mecanica.domain.exception.EventoForaDeOrdemException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
+import com.oficina.mecanica.domain.exception.SagaNaoEncontradaException;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
 import org.junit.jupiter.api.Test;
 
@@ -37,5 +39,19 @@ class ExceptionTest {
     void transicaoInvalida() {
         var ex = new TransicaoInvalidaException("RECEBIDA → ENTREGUE");
         assertThat(ex.getMessage()).contains("RECEBIDA → ENTREGUE");
+    }
+
+    @Test
+    void eventoForaDeOrdem() {
+        var ex = new EventoForaDeOrdemException("PagamentoAprovado", "AGUARDANDO_APROVACAO");
+        assertThat(ex.getMessage()).contains("PagamentoAprovado").contains("AGUARDANDO_APROVACAO");
+    }
+
+    @Test
+    void sagaNaoEncontradaEhRecursoNaoEncontrado() {
+        var osId = UUID.randomUUID();
+        var ex = new SagaNaoEncontradaException(osId);
+        assertThat(ex).isInstanceOf(RecursoNaoEncontradoException.class);
+        assertThat(ex.getMessage()).contains(osId.toString());
     }
 }
