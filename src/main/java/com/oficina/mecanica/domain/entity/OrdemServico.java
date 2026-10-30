@@ -36,6 +36,7 @@ public class OrdemServico {
     private String tokenAprovacaoExterna;
     private LocalDateTime tokenExpiracao;
     private LocalDateTime dataUltimaTransicao;
+    private Long versao;
 
     @Getter(AccessLevel.NONE)
     private final List<TransicaoOS> transicoesPendentes = new ArrayList<>();
@@ -71,6 +72,7 @@ public class OrdemServico {
         os.dataUltimaTransicao = dados.dataUltimaTransicao() != null
             ? dados.dataUltimaTransicao()
             : dados.dataAbertura();
+        os.versao = dados.versao();
         os.transicoesPendentes.clear();
         os.novaOrdem = false;
         return os;
@@ -97,6 +99,10 @@ public class OrdemServico {
         var copia = List.copyOf(transicoesPendentes);
         transicoesPendentes.clear();
         return copia;
+    }
+
+    public void registrarVersaoPersistida(Long versaoPersistida) {
+        this.versao = versaoPersistida;
     }
 
     public boolean consumirMarcaDeNovaOrdem() {

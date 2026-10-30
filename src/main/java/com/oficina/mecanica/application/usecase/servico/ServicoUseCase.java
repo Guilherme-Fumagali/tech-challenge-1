@@ -1,5 +1,6 @@
 package com.oficina.mecanica.application.usecase.servico;
 
+import com.oficina.mecanica.application.port.UnidadeDeTrabalho;
 import com.oficina.mecanica.domain.entity.Servico;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
 import com.oficina.mecanica.domain.repository.ServicoRepository;
@@ -11,14 +12,16 @@ import java.util.UUID;
 public class ServicoUseCase {
 
     private final ServicoRepository repository;
+    private final UnidadeDeTrabalho unidadeDeTrabalho;
 
-    public ServicoUseCase(ServicoRepository repository) {
+    public ServicoUseCase(ServicoRepository repository, UnidadeDeTrabalho unidadeDeTrabalho) {
         this.repository = repository;
+        this.unidadeDeTrabalho = unidadeDeTrabalho;
     }
 
     public Servico cadastrar(String nome, String descricao, BigDecimal preco, BigDecimal tempoHoras) {
         var servico = new Servico(UUID.randomUUID(), nome, descricao, preco, tempoHoras);
-        return repository.salvar(servico);
+        return unidadeDeTrabalho.executar(() -> repository.salvar(servico));
     }
 
     public Servico buscarPorId(UUID id) {
@@ -31,13 +34,17 @@ public class ServicoUseCase {
     }
 
     public Servico atualizar(UUID id, String nome, String descricao, BigDecimal preco, BigDecimal tempoHoras) {
-        var servico = buscarPorId(id);
-        servico.atualizar(nome, descricao, preco, tempoHoras);
-        return repository.salvar(servico);
+        return unidadeDeTrabalho.executar(() -> {
+            var servico = buscarPorId(id);
+            servico.atualizar(nome, descricao, preco, tempoHoras);
+            return repository.salvar(servico);
+        });
     }
 
     public void deletar(UUID id) {
-        buscarPorId(id);
-        repository.deletar(id);
+        unidadeDeTrabalho.executar(() -> {
+            buscarPorId(id);
+            repository.deletar(id);
+        });
     }
 }

@@ -30,7 +30,8 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
 
     @Override
     public OrdemServico salvar(OrdemServico os) {
-        jpa.save(mapper.toEntity(os));
+        var salva = jpa.saveAndFlush(mapper.toEntity(os));
+        os.registrarVersaoPersistida(salva.getVersao());
 
         if (os.consumirMarcaDeNovaOrdem()) {
             metricas.registrarAbertura(os.getId());

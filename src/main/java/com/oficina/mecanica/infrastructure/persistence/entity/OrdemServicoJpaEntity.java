@@ -2,6 +2,7 @@ package com.oficina.mecanica.infrastructure.persistence.entity;
 
 import com.oficina.mecanica.domain.valueobject.StatusOS;
 import jakarta.persistence.*;
+import org.hibernate.annotations.OptimisticLock;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,9 +59,15 @@ public class OrdemServicoJpaEntity {
     @Column(name = "data_ultima_transicao", nullable = false)
     private LocalDateTime dataUltimaTransicao;
 
+    @Version
+    @Column(nullable = false)
+    private Long versao;
+
+    @OptimisticLock(excluded = false)
     @OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemServicoJpaEntity> itensServico = new ArrayList<>();
 
+    @OptimisticLock(excluded = false)
     @OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemPecaJpaEntity> itensPeca = new ArrayList<>();
 }

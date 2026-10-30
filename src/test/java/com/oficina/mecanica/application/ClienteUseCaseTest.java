@@ -32,7 +32,7 @@ class ClienteUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new ClienteUseCase(repository);
+        useCase = new ClienteUseCase(repository, new UnidadeDeTrabalhoImediata());
     }
 
     @Test

@@ -23,5 +23,6 @@ public record DadosOrdemServico(
     LocalDateTime dataExclusaoLogica,
     String tokenAprovacaoExterna,
     LocalDateTime tokenExpiracao,
-    LocalDateTime dataUltimaTransicao
+    LocalDateTime dataUltimaTransicao,
+    Long versao
 ) {}

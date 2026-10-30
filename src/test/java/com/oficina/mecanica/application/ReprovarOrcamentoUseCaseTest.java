@@ -38,7 +38,7 @@ class ReprovarOrcamentoUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new ReprovarOrcamentoUseCase(osRepository, pecaRepository);
+        useCase = new ReprovarOrcamentoUseCase(osRepository, pecaRepository, new UnidadeDeTrabalhoImediata());
     }
 
     @Test
@@ -84,7 +84,7 @@ class ReprovarOrcamentoUseCaseTest {
         when(pecaRepository.salvar(any())).thenReturn(peca);
         when(osRepository.salvar(any())).thenReturn(os);
 
-        new ReprovarOrcamentoExternoUseCase(osRepository, pecaRepository).executar(os.getId(), "token-valido");
+        new ReprovarOrcamentoExternoUseCase(osRepository, pecaRepository, new UnidadeDeTrabalhoImediata()).executar(os.getId(), "token-valido");
 
         assertThat(peca.getQuantidadeEstoque()).isEqualTo(8);
         assertThat(os.getStatus()).isEqualTo(StatusOS.CANCELADA);
@@ -104,7 +104,7 @@ class ReprovarOrcamentoUseCaseTest {
 
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
 
-        var uc = new ReprovarOrcamentoExternoUseCase(osRepository, pecaRepository);
+        var uc = new ReprovarOrcamentoExternoUseCase(osRepository, pecaRepository, new UnidadeDeTrabalhoImediata());
         var osId = os.getId();
         // A mensagem faz parte da asserção de propósito: "expirado" lança esta mesma exceção.
         // Checar só o tipo deixaria o teste passar por token vencido, sem provar nada sobre a

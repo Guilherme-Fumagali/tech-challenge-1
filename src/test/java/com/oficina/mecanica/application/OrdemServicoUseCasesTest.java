@@ -64,7 +64,7 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(osRepository.salvar(os)).thenReturn(os);
 
-        new IniciarDiagnosticoUseCase(osRepository).executar(os.getId());
+        new IniciarDiagnosticoUseCase(osRepository, new UnidadeDeTrabalhoImediata()).executar(os.getId());
 
         assertThat(os.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
         verify(osRepository).salvar(os);
@@ -75,7 +75,7 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        var uc = new IniciarDiagnosticoUseCase(osRepository);
+        var uc = new IniciarDiagnosticoUseCase(osRepository, new UnidadeDeTrabalhoImediata());
         assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
@@ -88,7 +88,7 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(osRepository.salvar(os)).thenReturn(os);
 
-        new AprovarOrcamentoUseCase(osRepository).executar(os.getId());
+        new AprovarOrcamentoUseCase(osRepository, new UnidadeDeTrabalhoImediata()).executar(os.getId());
 
         assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
     }
@@ -98,7 +98,7 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        var uc = new AprovarOrcamentoUseCase(osRepository);
+        var uc = new AprovarOrcamentoUseCase(osRepository, new UnidadeDeTrabalhoImediata());
         assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
@@ -116,7 +116,7 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(osRepository.salvar(os)).thenReturn(os);
 
-        new AprovarOrcamentoExternoUseCase(osRepository).executar(os.getId(), "token-123");
+        new AprovarOrcamentoExternoUseCase(osRepository, new UnidadeDeTrabalhoImediata()).executar(os.getId(), "token-123");
 
         assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
         assertThat(os.getTokenAprovacaoExterna()).isNull();
@@ -132,7 +132,7 @@ class OrdemServicoUseCasesTest {
 
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
 
-        var uc = new AprovarOrcamentoExternoUseCase(osRepository);
+        var uc = new AprovarOrcamentoExternoUseCase(osRepository, new UnidadeDeTrabalhoImediata());
         var osId = os.getId();
         // A mensagem faz parte da asserção de propósito: "expirado" lança esta mesma exceção.
         // Checar só o tipo deixaria o teste passar por token vencido, sem provar nada sobre a
@@ -150,7 +150,7 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(osRepository.salvar(os)).thenReturn(os);
 
-        new ConcluirServicosUseCase(osRepository).executar(os.getId());
+        new ConcluirServicosUseCase(osRepository, new UnidadeDeTrabalhoImediata()).executar(os.getId());
 
         assertThat(os.getStatus()).isEqualTo(StatusOS.FINALIZADA);
         assertThat(os.getDataConclusao()).isNotNull();
@@ -164,7 +164,7 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(osRepository.salvar(os)).thenReturn(os);
 
-        new EntregarVeiculoUseCase(osRepository).executar(os.getId());
+        new EntregarVeiculoUseCase(osRepository, new UnidadeDeTrabalhoImediata()).executar(os.getId());
 
         assertThat(os.getStatus()).isEqualTo(StatusOS.ENTREGUE);
     }
@@ -244,7 +244,7 @@ class OrdemServicoUseCasesTest {
         when(veiculoRepository.buscarPorId(veiculoId)).thenReturn(Optional.of(veiculo));
         when(osRepository.salvar(any())).thenReturn(os);
 
-        var resultado = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository)
+        var resultado = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository, new UnidadeDeTrabalhoImediata())
             .executar(clienteId, veiculoId);
 
         assertThat(resultado.getStatus()).isEqualTo(StatusOS.RECEBIDA);
@@ -257,7 +257,7 @@ class OrdemServicoUseCasesTest {
         when(clienteRepository.buscarPorId(clienteId)).thenReturn(Optional.empty());
 
         var randomVeiculoId = UUID.randomUUID();
-        var uc = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository);
+        var uc = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository, new UnidadeDeTrabalhoImediata());
         assertThatThrownBy(() -> uc.executar(clienteId, randomVeiculoId))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
@@ -273,7 +273,7 @@ class OrdemServicoUseCasesTest {
         when(clienteRepository.buscarPorId(clienteId)).thenReturn(Optional.of(cliente));
         when(veiculoRepository.buscarPorId(veiculoId)).thenReturn(Optional.of(veiculoDeOutro));
 
-        var uc = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository);
+        var uc = new CriarOrdemServicoUseCase(osRepository, clienteRepository, veiculoRepository, new UnidadeDeTrabalhoImediata());
         assertThatThrownBy(() -> uc.executar(clienteId, veiculoId))
             .isInstanceOf(DomainException.class)
             .hasMessageContaining("não pertence");
@@ -293,7 +293,7 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
         when(osRepository.salvar(os)).thenReturn(os);
 
-        new GerarOrcamentoUseCase(osRepository, notificacaoService, Duration.ofHours(168)).executar(os.getId());
+        new GerarOrcamentoUseCase(osRepository, notificacaoService, Duration.ofHours(168), new UnidadeDeTrabalhoImediata()).executar(os.getId());
 
         assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
         assertThat(os.getTokenAprovacaoExterna()).isNotBlank();
@@ -305,7 +305,7 @@ class OrdemServicoUseCasesTest {
         var id = UUID.randomUUID();
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
-        var uc = new GerarOrcamentoUseCase(osRepository, notificacaoService, Duration.ofHours(168));
+        var uc = new GerarOrcamentoUseCase(osRepository, notificacaoService, Duration.ofHours(168), new UnidadeDeTrabalhoImediata());
         assertThatThrownBy(() -> uc.executar(id))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
@@ -323,7 +323,7 @@ class OrdemServicoUseCasesTest {
         when(servicoRepository.buscarPorId(servicoId)).thenReturn(Optional.of(servico));
         when(osRepository.salvar(os)).thenReturn(os);
 
-        new AdicionarServicoAOSUseCase(osRepository, servicoRepository).executar(os.getId(), servicoId, 1);
+        new AdicionarServicoAOSUseCase(osRepository, servicoRepository, new UnidadeDeTrabalhoImediata()).executar(os.getId(), servicoId, 1);
 
         assertThat(os.getItensServico()).hasSize(1);
         assertThat(os.getItensServico().get(0).getPrecoSnapshot()).isEqualByComparingTo("80.00");
@@ -336,7 +336,7 @@ class OrdemServicoUseCasesTest {
         when(osRepository.buscarPorId(id)).thenReturn(Optional.empty());
 
         var randomServicoId = UUID.randomUUID();
-        var uc = new AdicionarServicoAOSUseCase(osRepository, servicoRepository);
+        var uc = new AdicionarServicoAOSUseCase(osRepository, servicoRepository, new UnidadeDeTrabalhoImediata());
         assertThatThrownBy(() -> uc.executar(id, randomServicoId, 1))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }
@@ -349,7 +349,7 @@ class OrdemServicoUseCasesTest {
         when(servicoRepository.buscarPorId(servicoId)).thenReturn(Optional.empty());
 
         var osId = os.getId();
-        var uc = new AdicionarServicoAOSUseCase(osRepository, servicoRepository);
+        var uc = new AdicionarServicoAOSUseCase(osRepository, servicoRepository, new UnidadeDeTrabalhoImediata());
         assertThatThrownBy(() -> uc.executar(osId, servicoId, 1))
             .isInstanceOf(RecursoNaoEncontradoException.class);
     }

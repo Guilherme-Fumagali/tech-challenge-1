@@ -28,7 +28,7 @@ class PecaUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new PecaUseCase(repository);
+        useCase = new PecaUseCase(repository, new UnidadeDeTrabalhoImediata());
     }
 
     private Peca peca(UUID id) {

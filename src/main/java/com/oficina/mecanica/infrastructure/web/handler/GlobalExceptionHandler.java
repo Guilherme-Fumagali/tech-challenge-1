@@ -6,6 +6,7 @@ import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
 import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +41,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EstoqueInsuficienteException.class)
     public ResponseEntity<ProblemDetail> handleEstoque(EstoqueInsuficienteException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ProblemDetail> handleConcorrencia(OptimisticLockingFailureException ex) {
+        return build(HttpStatus.CONFLICT,
+            "O recurso foi alterado por outra operação. Consulte o estado atual e repita a requisição.");
     }
 
     @ExceptionHandler(TokenAprovacaoInvalidoException.class)
