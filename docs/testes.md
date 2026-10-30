@@ -6,8 +6,8 @@ Estratégia, organização e execução dos testes automatizados do OS Service (
 
 | Indicador | Valor |
 |---|---|
-| Casos executados | 333 (domínio 129, aplicação 99, infraestrutura unitários 55, integração 43, cenários BDD 7) |
-| Cobertura de linhas (JaCoCo) | 95,3% (2.078 linhas) |
+| Casos executados | 334 (domínio 129, aplicação 99, infraestrutura unitários 55, integração 44, cenários BDD 7) |
+| Cobertura de linhas (JaCoCo) | 95,3% (2.081 linhas) |
 | Cobertura de ramos (JaCoCo) | 85,1% (502 ramos) |
 | Cobertura de instruções do domínio | 99,4% |
 | Limites que falham o build | 85% de linhas e 70% de ramos no projeto; 80% de instruções nos pacotes de domínio |
@@ -85,7 +85,7 @@ Casos de uso com repositórios e portas substituídos por Mockito; a unidade de 
 | `messaging/RelayOutboxTest` | 2 | marcação de publicada e falha registrada sem interromper o lote |
 | `observability/MicrometerMetricasSagaTest` | 2 | nomes e atributos da SPEC-14 §2 |
 
-### Integração — 43 casos
+### Integração — 44 casos
 
 Contexto Spring completo, MockMvc, PostgreSQL e LocalStack.
 
@@ -94,7 +94,7 @@ Contexto Spring completo, MockMvc, PostgreSQL e LocalStack.
 | `OrdemServicoIntegrationTest` | 9 | inclusão de itens só em diagnóstico com baixa de estoque, entrega, ordenação da listagem, papéis, propriedade, seed da V9 e contrato `docs/openapi.json` |
 | `MensageriaIntegrationTest` | 8 | relay publica o envelope com os atributos `tipo` e `versao` e marca a linha; evento aplicado com registro na inbox; duplicata descartada; evento fora de ordem e corpo inválido indo para a DLQ após cinco recebimentos; gauge da DLQ; atributo `JavaType` ignorado; reprovação com devolução do estoque |
 | `AcompanhamentoIntegrationTest` | 7 | composição com WireMock: sucesso com repasse do `Authorization`, limite de 2 s, circuito aberto sem chamada ao participante, abertura do circuito após falhas, 404 sem indisponibilidade, 4xx sem abrir o circuito, restrição do cliente |
-| `SegurancaEErrosIntegrationTest` | 6 | 401 e 403 em JSON, corpo malformado, 405/404/415 preservados, 409 por integridade e status público com três campos |
+| `SegurancaEErrosIntegrationTest` | 7 | 401 e 403 em JSON, corpo malformado, 405/404/415 preservados, 409 por integridade, status público com três campos e marcado sem segurança no contrato |
 | `IdentidadeInternaIntegrationTest` | 5 | identidade de cliente e de funcionário com a chave interna, e-mail da migration V15, 401 sem chave, 404 sem repetir o documento e 400 para documento inválido |
 | `UnidadeDeTrabalhoIntegrationTest` | 4 | falha depois da baixa de estoque desfaz a baixa, gravação conjunta, versão desatualizada recusada e versão sincronizada em duas gravações |
 | `SagaOrdemServicoIntegrationTest` | 2 | abertura com `IniciarDiagnostico` na fila, consultas da saga e do histórico por papel, reenvio por prazo vencido e falha após o limite |

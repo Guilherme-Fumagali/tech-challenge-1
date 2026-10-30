@@ -288,9 +288,9 @@ Ordem de provisionamento: plataforma (`oficina-infra-k8s` base e cluster) → `i
 | Domínio (Java puro) | 7 | 129 |
 | Aplicação (Mockito) | 13 | 99 |
 | Infraestrutura, unitários | 11 | 55 |
-| Integração (Spring, PostgreSQL e LocalStack via Testcontainers, WireMock) | 8 | 43 |
+| Integração (Spring, PostgreSQL e LocalStack via Testcontainers, WireMock) | 8 | 44 |
 | BDD (Cucumber, Gherkin em português) | 1 funcionalidade | 7 cenários |
-| **Total** | | **333** |
+| **Total** | | **334** |
 
 A tabela de transições da SPEC-08 tem um teste por linha em `SagaOrdemServicoTest`. Os cenários BDD cobrem o fluxo completo até a entrega, a reprovação, o pagamento recusado, a falha na execução com estorno, o diagnóstico sem itens, a mensagem duplicada e o reenvio por prazo vencido. A descrição por classe está em [`docs/testes.md`](docs/testes.md).
 
@@ -307,10 +307,10 @@ Execução de `./mvnw -B verify` em 30/10/2026 (JaCoCo 0.8.12):
 |---|---|---|---|---|
 | `domain` | 523 | 99,8% | 199 | 92,5% |
 | `application` | 422 | 100,0% | 66 | 93,9% |
-| `infrastructure` | 1.104 | 91,8% | 225 | 77,8% |
+| `infrastructure` | 1.107 | 91,8% | 225 | 77,8% |
 | `db.migration` (migrations Java) | 26 | 84,6% | 12 | 50,0% |
 | `OficinaMecanicaApplication` | 3 | 33,3% | 0 | — |
-| **Total** | **2.078** | **95,3%** | **502** | **85,1%** |
+| **Total** | **2.081** | **95,3%** | **502** | **85,1%** |
 
 O build falha abaixo de 85% de linhas e 70% de ramos no projeto ou de 80% de instruções nos pacotes de domínio. No CI, o relatório completo é publicado como artefato `jacoco-report` e o resumo de linhas e ramos aparece no sumário da execução; o SonarCloud recebe o `jacoco.xml` (badge de cobertura no topo deste documento).
 
