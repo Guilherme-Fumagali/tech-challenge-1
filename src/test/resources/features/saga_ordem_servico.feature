@@ -71,12 +71,12 @@ Funcionalidade: Ciclo da ordem de serviço coordenado com a execução e o fatur
     Então a execução recebe o pedido de reabertura do diagnóstico
     E a ordem de serviço fica "EM_DIAGNOSTICO"
     E o faturamento não recebe pedido de orçamento
-    Quando o mecânico inclui o serviço e 1 peças na ordem de serviço
+    Quando o mecânico inclui o serviço e 1 peça na ordem de serviço
     E o mecânico conclui o diagnóstico
     Então o faturamento recebe o pedido de orçamento com total de 240.00
 
   Cenário: Aviso repetido de pagamento aprovado não produz efeito duplicado
-    Dado uma ordem de serviço aguardando pagamento com 1 peças reservadas
+    Dado uma ordem de serviço aguardando pagamento com 1 peça reservada
     Quando o pagamento é aprovado
     E o mesmo aviso de pagamento aprovado chega novamente
     Então a ordem de serviço fica "EM_EXECUCAO"

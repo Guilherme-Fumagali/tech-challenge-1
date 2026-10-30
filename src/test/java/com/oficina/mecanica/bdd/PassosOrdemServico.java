@@ -104,7 +104,7 @@ public class PassosOrdemServico {
             assertThat(consultar(get("/api/ordens/{id}", osId)).get("status").asText()).isEqualTo(status));
     }
 
-    @Quando("o mecânico inclui o serviço e {int} peças na ordem de serviço")
+    @Quando("o mecânico inclui o serviço e {int} peça(s) na ordem de serviço")
     public void oMecanicoIncluiItens(int quantidadePecas) throws Exception {
         enviar(post("/api/ordens/{id}/servicos", osId), Map.of("itemId", servicoId, "quantidade", 1));
         enviar(post("/api/ordens/{id}/pecas", osId), Map.of("itemId", pecaId, "quantidade", quantidadePecas));
@@ -300,7 +300,7 @@ public class PassosOrdemServico {
         aOrdemDeServicoFica("EM_DIAGNOSTICO");
     }
 
-    @Dado("uma ordem de serviço com orçamento enviado ao cliente e {int} peças reservadas")
+    @Dado("uma ordem de serviço com orçamento enviado ao cliente e {int} peça(s) reservada(s)")
     public void umaOrdemComOrcamentoEnviado(int pecas) throws Exception {
         umaOrdemEmDiagnostico();
         enviar(post("/api/ordens/{id}/pecas", osId), Map.of("itemId", pecaId, "quantidade", pecas));
@@ -310,14 +310,14 @@ public class PassosOrdemServico {
         aOrdemDeServicoFica("AGUARDANDO_APROVACAO");
     }
 
-    @Dado("uma ordem de serviço aguardando pagamento com {int} peças reservadas")
+    @Dado("uma ordem de serviço aguardando pagamento com {int} peça(s) reservada(s)")
     public void umaOrdemAguardandoPagamento(int pecas) throws Exception {
         umaOrdemComOrcamentoEnviado(pecas);
         oClienteAprovaOOrcamento();
         aOrdemDeServicoFica("AGUARDANDO_PAGAMENTO");
     }
 
-    @Dado("uma ordem de serviço em execução com {int} peças reservadas")
+    @Dado("uma ordem de serviço em execução com {int} peça(s) reservada(s)")
     public void umaOrdemEmExecucao(int pecas) throws Exception {
         umaOrdemAguardandoPagamento(pecas);
         oPagamentoEhAprovado();
