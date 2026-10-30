@@ -61,7 +61,7 @@ curl -s "$API_URL/api/ordens/<osId>/saga" -H "Authorization: Bearer <token de fu
 
 | Sinal no log | Causa provável | Ação |
 |---|---|---|
-| `Mensagem fora do formato do envelope` | Contrato divergente da SPEC-08 no emissor | Corrigir o emissor; a mensagem pode ser descartada |
+| `Mensagem fora do formato do envelope` | Contrato divergente do AsyncAPI no emissor | Corrigir o emissor; a mensagem pode ser descartada |
 | `Evento ... recebido antes do esperado` | Evento chegou antes do anterior e o anterior se perdeu | Ver passos da saga; reenviar o evento faltante ou reprocessar após corrigir |
 | `Saga da ordem de serviço não encontrado` | Evento de outro ambiente ou de OS removida | Descartar após confirmar a origem |
 | `CannotGetJdbcConnectionException` | Banco indisponível durante as cinco tentativas | Recuperar o banco e reprocessar |

@@ -6,12 +6,12 @@ Estratégia, organização e execução dos testes automatizados do OS Service (
 
 | Indicador | Valor |
 |---|---|
-| Casos executados | 334 (domínio 129, aplicação 99, infraestrutura unitários 55, integração 44, cenários BDD 7) |
-| Cobertura de linhas (JaCoCo) | 95,3% (2.081 linhas) |
-| Cobertura de ramos (JaCoCo) | 85,1% (502 ramos) |
+| Casos executados | 333 (domínio 129, aplicação 99, infraestrutura unitários 54, integração 44, cenários BDD 7) |
+| Cobertura de linhas (JaCoCo) | 95,3% (2.072 linhas) |
+| Cobertura de ramos (JaCoCo) | 85,1% (498 ramos) |
 | Cobertura de instruções do domínio | 99,4% |
 | Limites que falham o build | 85% de linhas e 70% de ramos no projeto; 80% de instruções nos pacotes de domínio |
-| Execução no CI | todo push e todo pull request, job **Build & Test** |
+| Execução no CI | todo push, job **Build & Test** |
 
 Os números são da execução de `./mvnw -B verify` em 30/10/2026.
 
@@ -69,14 +69,14 @@ Casos de uso com repositórios e portas substituídos por Mockito; a unidade de 
 | `AdicionarPecaAOSUseCaseTest` | 3 | baixa de estoque, estoque insuficiente e OS inexistente |
 | `ConsultarAcompanhamentoUseCaseTest` | 3 | composição das três fontes, fonte que falha vira nula e indisponível, cliente de outra OS |
 
-### Infraestrutura — unitários (`infrastructure/`) — 55 casos
+### Infraestrutura — unitários (`infrastructure/`) — 54 casos
 
 | Classe | Casos | O que verifica |
 |---|---|---|
 | `messaging/TradutorEventosTest` | 19 | instante do fato de cada evento do contrato, etapa, comando rejeitado com motivo e código, campos ausentes |
 | `security/JwtServiceTest` | 8 | tokens de cliente e de funcionário; outra chave, outro emissor, expirado, papel desconhecido e malformado |
 | `messaging/ConsumidorEventosOsTest` | 5 | entrega ao caso de uso, contagem por resultado, tipo desconhecido, erro propagado para nova tentativa e envelope inválido |
-| `observability/MicrometerMetricasOrdemServicoTest` | 5 | métricas de abertura e transição da OS |
+| `observability/MicrometerMetricasOrdemServicoTest` | 4 | métricas de abertura e transição da OS |
 | `security/ChaveInternaFilterTest` | 4 | chave correta, ausente, diferente e não configurada nas rotas `/internal/**` |
 | `web/GlobalExceptionHandlerTest` | 4 | 409 por versão concorrente e por integridade, 500 genérico e status preservado de erros do protocolo |
 | `ConfiguracaoDePerfisTest` | 2 | segredo JWT sem valor padrão fora dos perfis `local` e `test`; SQS do perfil `local` |
@@ -130,13 +130,13 @@ O `maven-surefire-plugin` está fixado na versão 3.5.6: a 3.5.3, gerenciada pel
 ./mvnw test -Dtest=OrdemServicoIntegrationTest -DatualizarOpenApi=true
 ```
 
-O contrato das mensagens está em `docs/asyncapi.yaml`; os exemplos seguem o envelope verificado em `MensageriaIntegrationTest`.
+O contrato das mensagens está em `docs/asyncapi.yaml`; o envelope é verificado em `MensageriaIntegrationTest`.
 
 ## Fora do escopo automatizado
 
 | Tipo | Situação |
 |---|---|
-| Saga contra os três serviços implantados | roteiro manual com `docs/postman/oficina-fase4.postman_collection.json` no ambiente de homologação |
+| Saga contra os três serviços implantados | roteiro manual com `docs/demo.http` no ambiente de homologação |
 | Teste de carga | não executado nesta fase |
 | Função de autenticação, Billing e Execution | testados nos respectivos repositórios |
 | Infraestrutura (`infra/`) | `terraform fmt`, `terraform validate`, tflint e checkov no workflow `infra.yml` |

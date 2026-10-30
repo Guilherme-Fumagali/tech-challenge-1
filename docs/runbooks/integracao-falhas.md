@@ -1,44 +1,52 @@
-# Procedimento — Fontes indisponíveis no acompanhamento
+# Runbook — Falhas em integrações
 
-**Sinal:** métrica `oficina.integracao.falhas` do OS Service, atributos `integracao`
-(`billing` ou `execution`) e `motivo` (classe da exceção). Na Fase 4 este sinal aparece no
-dashboard técnico e não tem condição de alerta própria; a condição da Fase 3 sobre o envio de
-e-mail deixou de existir porque o e-mail saiu do OS Service.
+**Alerta:** `AWS-Oficina-<Amb>-MercadoPago-Falhas-Warning`
+**Dispara quando:** `sum(oficina.integracao.mercadopago)` com `resultado != 'sucesso'` acima de 0.
 
-## O que significa
+## Mercado Pago
 
-O `GET /api/ordens/{id}/acompanhamento` compõe a resposta com chamadas ao Billing
-(`GET /api/orcamentos?osId=`) e ao Execution (`GET /api/execucoes/{osId}`). Cada chamada tem
-limite de 2 s, circuit breaker (janela de 10 chamadas, 50% de falhas, 30 s aberto) e bulkhead
-de 10 chamadas simultâneas. Quando uma fonte falha, a resposta sai com o campo nulo e o nome
-da fonte em `fontesIndisponiveis`; o contador registra o motivo.
+### O que significa
 
-| `motivo` | Origem |
+O Billing Service não concluiu uma chamada ao Mercado Pago: criação da cobrança, consulta de
+pagamento ou estorno. O atributo `operacao` indica qual. As chamadas têm tempo limite, novas
+tentativas e circuit breaker.
+
+| Operação | Efeito na OS |
 |---|---|
-| `TimeoutException` | Participante acima de 2 s |
-| `CallNotPermittedException` | Circuito aberto após falhas seguidas |
-| `BulkheadFullException` | Mais de 10 consultas simultâneas ao mesmo participante |
-| `HttpServerErrorException...` | Participante respondeu 5xx |
+| Criação da cobrança | a aprovação do orçamento falha; a OS continua `AGUARDANDO_APROVACAO` e o cliente pode tentar de novo |
+| Consulta | o pagamento fica pendente até a próxima reconciliação (a cada 60 s) |
+| Estorno | o comando `EstornarPagamento` volta para a fila; após 5 falhas vai para a DLQ |
 
-## Impacto
-
-O acompanhamento continua respondendo com os dados locais da OS e do histórico. A saga não
-depende dessas chamadas.
-
-## Diagnóstico
+### Diagnóstico
 
 ```sql
-SELECT sum(oficina.integracao.falhas) FROM Metric
-WHERE env = '<env>' FACET integracao, motivo TIMESERIES AUTO SINCE 1 hour ago
+SELECT sum(oficina.integracao.mercadopago) FROM Metric
+WHERE env = '<env>' FACET operacao, resultado TIMESERIES AUTO SINCE 1 hour ago
 ```
+
+Respostas 401 nos logs do Billing indicam `MP_ACCESS_TOKEN` inválido ou expirado. Para
+indisponibilidade do provedor, consultar status.mercadopago.com.
+
+### Mitigação
+
+- **Provedor fora do ar:** aguardar; os pagamentos pendentes são reconciliados automaticamente.
+- **Credencial inválida:** atualizar o segredo do repositório do Billing e refazer o deploy.
+- **Estorno parado na DLQ:** reprocessar conforme [mensageria-dlq.md](./mensageria-dlq.md); se
+  o estorno precisar ser feito no painel do Mercado Pago, seguir [saga-falha.md](./saga-falha.md).
+
+Escalar em falhas de estorno, que deixam valor cobrado de uma OS cancelada, ou indisponibilidade
+acima de 30 minutos.
+
+## Acompanhamento da OS com fontes indisponíveis
+
+Sem condição de alerta. O `GET /api/ordens/{id}/acompanhamento` consulta Billing e Execution
+com limite de 2 s e circuit breaker; quando um deles falha, a resposta sai com o campo nulo e o
+nome da fonte em `fontesIndisponiveis`. A saga não depende dessas chamadas.
 
 ```bash
 kubectl get pods -n oficina -l app.kubernetes.io/name=billing-service
 kubectl get pods -n oficina -l app.kubernetes.io/name=execution-service
-kubectl exec -n oficina deploy/os-service -- wget -qO- http://billing-service/actuator/health
 ```
 
-## Mitigação
-
-Recuperar o participante. O circuito fecha sozinho: depois de 30 s aberto, deixa passar duas
-chamadas de teste e volta ao estado fechado se elas tiverem sucesso.
+Recuperar o participante. O circuito fecha sozinho depois de 30 s, se as chamadas de teste
+tiverem sucesso.

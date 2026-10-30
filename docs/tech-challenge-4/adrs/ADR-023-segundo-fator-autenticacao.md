@@ -1,4 +1,4 @@
-# ADR-024 — Segundo fator na autenticação e desacoplamento do banco do OS
+# ADR-023 — Segundo fator na autenticação e desacoplamento do banco do OS
 
 - **Data:** 29/10/2026
 - **Status:** Aceita

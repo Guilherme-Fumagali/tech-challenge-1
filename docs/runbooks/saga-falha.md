@@ -1,4 +1,4 @@
-# Runbook — Saga em FALHA
+# Runbook — Saga em FALHA e pico de compensações
 
 **Alerta:** `AWS-Oficina-<Amb>-Saga-Falha-Critical`
 **Dispara quando:** `sum(oficina.saga.falhas) > 0` (atributo `estado` = estado em que a saga parou).
@@ -6,7 +6,7 @@
 ## O que significa
 
 O orquestrador do OS Service não consegue continuar a saga sem intervenção. Há três caminhos
-para o estado `FALHA` (SPEC-08 §7.4 e §7.5):
+para o estado `FALHA`:
 
 | Origem | Registro no log da saga |
 |---|---|
@@ -73,3 +73,26 @@ UPDATE sagas_ordem_servico
 
 Sempre que houver pagamento aprovado envolvido, ou mais de uma saga em `FALHA` pelo mesmo
 motivo em uma hora.
+
+## Pico de compensações
+
+**Alerta:** `AWS-Oficina-<Amb>-Saga-Compensacoes-Warning`
+**Dispara quando:** `sum(oficina.saga.compensadas)` acima de 5 em 15 minutos.
+
+Mais ordens de serviço do que o normal foram canceladas pelas compensações. O sistema está
+funcionando; o alerta existe porque um volume fora do padrão costuma ter causa comum. O
+atributo `motivo` separa as causas:
+
+```sql
+SELECT sum(oficina.saga.compensadas) FROM Metric
+WHERE env = '<env>' FACET motivo TIMESERIES AUTO SINCE 3 hours ago
+```
+
+| `motivo` | Causa comum | Ação |
+|---|---|---|
+| `PAGAMENTO_RECUSADO` | recusas em sequência no Mercado Pago | ver [integracao-falhas.md](./integracao-falhas.md) |
+| `REJEICAO` | cadastro do cliente incompleto (sem e-mail) | corrigir o cadastro e abrir nova OS |
+| `REPROVACAO` | orçamentos expirando em massa | revisar a validade do orçamento no Billing |
+| `FALHA_EXECUCAO` | falta de peça ou erro no reparo | conferir os apontamentos no Execution |
+
+Escalar quando o pico persistir por mais de uma hora com o mesmo `motivo`.

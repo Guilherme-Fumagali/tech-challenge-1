@@ -1,8 +1,9 @@
-# ADR-022 — Infraestrutura no repositório de cada serviço e identidade de pod
+# ADR-022 — Infraestrutura por serviço, identidade de pod e roteamento na borda
 
 - **Data:** 29/10/2026
 - **Status:** Aceita
 - **Supera:** [ADR-001](../../tech-challenge-3/adrs/ADR-001-quatro-repositorios.md) quanto aos manifestos Kubernetes e ao banco fora do repositório da aplicação
+- **Complementa:** [ADR-004](../../tech-challenge-3/adrs/ADR-004-api-gateway-http-api.md) (API Gateway em modo HTTP API)
 - **Encerra:** DT-12 (manifestos aplicados por `kubectl` dentro do Terraform)
 
 ## Contexto
@@ -31,6 +32,15 @@ Os serviços passam a usar SQS. Os pods só tinham a role do nó, compartilhada 
 - **Role de pod por serviço** (EKS Pod Identity), com *permissions boundary* `oficina-pod-boundary`. Só consome a própria fila e envia para as filas de destino.
 - O pipeline de cada serviço tem role OIDC própria ([ADR-013](../../tech-challenge-3/adrs/ADR-013-identidade-das-pipelines.md)). Só cria roles de pod com o boundary e só lê o prefixo SSM do próprio serviço e os parâmetros compartilhados.
 - O banco do OS Service sai do `oficina-infra-db` para `tech-challenge-1/infra/`. O repositório antigo permanece como registro da Fase 3.
+- **Borda:** o mesmo NLB e o mesmo VPC Link atendem os três serviços, cada um com listener e NodePort próprios. O API Gateway, ponto único de entrada da aula 3 de Estrutura de Microsserviços, encaminha cada prefixo ao serviço dono:
+
+| Serviço | Listener do NLB | NodePort | Prefixos no gateway |
+|---|---|---|---|
+| OS | 80 | 30080 | `/api/{proxy+}` (demais caminhos), `/actuator/health` |
+| Billing | 8081 | 30081 | `/api/orcamentos`, `/api/pagamentos` |
+| Execution | 8082 | 30082 | `/api/execucoes` |
+
+  As rotas públicas (status da OS, decisão do orçamento por token, webhook do Mercado Pago e health) são declaradas uma a uma. Entre serviços, a chamada usa o DNS do Kubernetes, sem passar pelo gateway; `/internal/**` do OS não tem rota no gateway.
 
 ## Alternativas consideradas
 
@@ -39,6 +49,8 @@ Os serviços passam a usar SQS. Os pods só tinham a role do nó, compartilhada 
 **IRSA (IAM Roles for Service Accounts).** Exige provedor OIDC do cluster e anotação na ServiceAccount, com a role amarrada ao issuer do cluster, que muda a cada provisionamento. A Pod Identity associa role e ServiceAccount por API, sem provedor OIDC. Descartada.
 
 **Permissões de SQS na role do nó.** Simples, mas qualquer pod poderia consumir a fila de outro serviço. Descartada.
+
+**Ingress controller ou AWS Load Balancer Controller na borda.** Concentrariam o roteamento no cluster, mas acrescentariam um componente com IAM próprio para operar. Descartados; um NLB por serviço também foi descartado pelo custo fixo de cada balanceador.
 
 **Argo CD ou Flux (GitOps).** Separaria entrega e integração contínua, mas acrescentaria um componente ao cluster. Descartada para a fase; o deploy por `kubectl apply -k` no pipeline atende o requisito.
 
@@ -54,4 +66,5 @@ Os serviços passam a usar SQS. Os pods só tinham a role do nó, compartilhada 
 
 - A ordem de provisionamento ganha um passo por serviço, e o destroy da plataforma precisa conferir os bancos dos três serviços antes de remover a rede.
 - As três roles de pipeline têm permissão de edição no mesmo namespace `oficina`; um pipeline consegue alterar recursos de outro serviço (débito registrado).
+- Os NodePorts são um contrato fixo entre a plataforma e cada serviço, e o tráfego interno entre serviços é HTTP sem TLS.
 - Criar as roles e o boundary exige executar o script de bootstrap com credencial administrativa, fora do pipeline.

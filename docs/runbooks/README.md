@@ -19,12 +19,12 @@ serviço usam `<Recurso>` igual a `OsService`, `BillingService` ou `ExecutionSer
 | `AWS-Oficina-<Amb>-<Serviço>-MemoriaPod-Warning` | [k8s-memoria-pod.md](./k8s-memoria-pod.md) |
 | `AWS-Oficina-<Amb>-Mensageria-DLQ-Critical` | [mensageria-dlq.md](./mensageria-dlq.md) |
 | `AWS-Oficina-<Amb>-Saga-Falha-Critical` | [saga-falha.md](./saga-falha.md) |
-| `AWS-Oficina-<Amb>-Saga-Compensacoes-Warning` | [saga-compensacoes.md](./saga-compensacoes.md) |
-| `AWS-Oficina-<Amb>-MercadoPago-Falhas-Warning` | [mercadopago-falhas.md](./mercadopago-falhas.md) |
+| `AWS-Oficina-<Amb>-Saga-Compensacoes-Warning` | [saga-falha.md](./saga-falha.md) |
+| `AWS-Oficina-<Amb>-MercadoPago-Falhas-Warning` | [integracao-falhas.md](./integracao-falhas.md) |
 | `AWS-Oficina-<Amb>-OS-FalhaTransicao-Critical` | [os-falha-transicao.md](./os-falha-transicao.md) |
 | `AWS-Oficina-<Amb>-Health-Uptime-Critical` | [health-uptime.md](./health-uptime.md) |
 
-Procedimento sem condição de alerta: [integracao-falhas.md](./integracao-falhas.md), para as
+O mesmo [integracao-falhas.md](./integracao-falhas.md) traz o procedimento, sem alerta, para as
 fontes indisponíveis no acompanhamento composto da OS.
 
 ## Formato

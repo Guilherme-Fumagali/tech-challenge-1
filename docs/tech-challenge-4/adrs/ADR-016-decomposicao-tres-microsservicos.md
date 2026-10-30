@@ -29,11 +29,17 @@ A migração segue o padrão Strangler Fig citado no capítulo da fase: o reposi
 
 Cada serviço tem o seu código, `Dockerfile`, manifestos Kubernetes, Terraform do próprio banco e das próprias filas, pipelines e documentação. Não há biblioteca compartilhada entre eles: o código transversal (segurança JWT, tratamento de erros, outbox, observabilidade) é replicado em cada repositório, o que corresponde ao padrão *microservice chassis* da aula 5 de Estrutura de Microsserviços II aplicado por cópia.
 
+### Consulta entre serviços
+
+A visão única da OS (status, histórico, orçamento, pagamento e execução) usa o padrão API Composition da aula 5 de Estrutura de Microsserviços, preferido "pela facilidade de uso". O OS Service expõe `GET /api/ordens/{id}/acompanhamento`, consulta Billing e Execution em paralelo repassando o JWT do chamador e protege cada chamada com limite de 2 s e circuit breaker (Resilience4j), o padrão da aula 2. Se um serviço não responde, a resposta vem parcial, com a fonte listada em `fontesIndisponiveis`.
+
 ## Alternativas consideradas
 
 **Quatro serviços, com catálogo e estoque isolados.** Aproximaria o desenho do exemplo de e-commerce das aulas de SAGA (serviço de estoque com reserva e cancelamento de reserva). Descartada porque a reserva passaria a depender de chamada remota durante o diagnóstico e o estorno viraria mais uma compensação, sem ganho de autonomia para o negócio da oficina, onde catálogo e OS são operados pelas mesmas pessoas.
 
 **Repositório novo para o OS Service, arquivando o monólito.** Descartada porque perderia o histórico das três fases e os testes que sustentam o domínio; o padrão Strangler Fig recomenda evoluir o sistema existente.
+
+**CQRS para o acompanhamento.** Uma cópia local de orçamento e execução, alimentada por eventos, tiraria a dependência dos outros serviços na consulta, mas o OS passaria a manter dados que não são seus. Descartada para uma consulta de baixo volume.
 
 **Biblioteca compartilhada (chassis como dependência Maven).** Reduziria a duplicação, mas criaria acoplamento de versão entre os serviços e exigiria um quarto repositório com publicação de artefato. Descartada para esta fase; a duplicação fica registrada como débito.
 
@@ -48,5 +54,5 @@ Cada serviço tem o seu código, `Dockerfile`, manifestos Kubernetes, Terraform 
 **Negativas**
 
 - O fluxo da OS passa a atravessar três serviços e exige gestão transacional distribuída ([ADR-017](./ADR-017-saga-orquestrada.md)).
-- Consultas que antes eram um `SELECT` passam a exigir composição de APIs ([ADR-025](./ADR-025-composicao-api-acompanhamento.md)).
+- Consultas que antes eram um `SELECT` passam a exigir composição de APIs, limitada ao tempo da fonte mais lenta.
 - Código transversal replicado em três repositórios; uma correção de segurança precisa ser aplicada três vezes.

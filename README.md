@@ -24,11 +24,11 @@ Serviço de ordens de serviço da oficina mecânica, desenvolvido no Tech Challe
 | Contrato OpenAPI | [`docs/openapi.json`](docs/openapi.json), no [Redoc](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/Guilherme-Fumagali/tech-challenge-1/develop/docs/openapi.json) e no [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/Guilherme-Fumagali/tech-challenge-1/develop/docs/openapi.json) |
 | Contrato das mensagens | [`docs/asyncapi.yaml`](docs/asyncapi.yaml) (AsyncAPI 2.6), no [AsyncAPI Studio](https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/Guilherme-Fumagali/tech-challenge-1/develop/docs/asyncapi.yaml) |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` na execução local |
-| Coleção Postman | [`docs/postman/oficina-fase4.postman_collection.json`](docs/postman/oficina-fase4.postman_collection.json): fluxo completo pelos três serviços via API Gateway, login em duas etapas; ambiente em [`docs/postman/homologacao.postman_environment.json`](docs/postman/homologacao.postman_environment.json) |
+| Requisições de demonstração | [`docs/demo.http`](docs/demo.http): fluxo completo pelos três serviços via API Gateway, com login em duas etapas |
 | Carga de dados de demonstração | [`scripts/preparar-demo.sh`](scripts/preparar-demo.sh): autentica o funcionário em duas etapas (pede o código no terminal), cadastra cliente, veículo e catálogo e abre ordens de serviço. Uso: `CPF_FUNCIONARIO=... ./scripts/preparar-demo.sh` (requer `curl`, `jq` e credenciais AWS para ler a URL do SSM, ou `API_URL`) |
 | Testes | [`docs/testes.md`](docs/testes.md) |
 | Runbooks dos alertas | [`docs/runbooks`](docs/runbooks) |
-| Documentação da Fase 4: ADRs 016 a 025, diagramas, Domain Storytelling, débitos técnicos, relatório e slides | [`docs/tech-challenge-4`](docs/tech-challenge-4/README.md) |
+| Documentação da Fase 4: ADRs 016 a 023, diagramas, Domain Storytelling, débitos técnicos, relatório e slides | [`docs/tech-challenge-4`](docs/tech-challenge-4/README.md) |
 | Documentação das fases anteriores | [`docs/tech-challenge-3`](docs/tech-challenge-3), [`docs/tech-challenge-2`](docs/tech-challenge-2), [`docs/tech-challenge-1`](docs/tech-challenge-1) |
 | Vídeo de demonstração | a publicar |
 
@@ -71,51 +71,13 @@ src/main/java/com/oficina/mecanica/
 └── infrastructure/  Spring Boot, JPA, REST, segurança, mensageria SQS (outbox, relay, inbox, consumidor), clientes REST e métricas
 ```
 
-Toda escrita passa pela porta `UnidadeDeTrabalho` (adaptador `TransacaoSpring`, `TransactionTemplate` com `PROPAGATION_REQUIRED`): leitura, validação, gravação, histórico e registro das mensagens no outbox acontecem na mesma transação. `ordens_servico` e `pecas` têm `@Version`; a OS incrementa a versão também quando só os itens mudam, e uma gravação com versão desatualizada responde 409.
+Cada caso de uso que grava dados roda em uma única transação (porta `UnidadeDeTrabalho`), incluindo o histórico e as mensagens do outbox. `ordens_servico` e `pecas` têm trava otimista (`@Version`): uma gravação com versão desatualizada responde 409.
 
 ## Papel na saga
 
-O OS Service é o orquestrador da saga da ordem de serviço. A coordenação é orquestrada, e não coreografada, porque o fluxo envolve três serviços, quatro caminhos de compensação e prazos de resposta: com um orquestrador, o estado de cada saga fica em um só lugar (`sagas_ordem_servico` e `saga_passos`), pode ser consultado em `GET /api/ordens/{id}/saga` e é retomado após reinício de pod. A coreografia foi descartada porque espalharia essa lógica pelos participantes, sem um ponto único para saber em que etapa uma OS está. A decisão está registrada na ADR-017 da documentação da Fase 4.
+O OS Service é o orquestrador da saga da ordem de serviço. A orquestração foi escolhida porque o fluxo envolve três serviços e quatro caminhos de compensação: com um orquestrador, o estado de cada saga fica em um só lugar (`sagas_ordem_servico` e `saga_passos`), pode ser consultado em `GET /api/ordens/{id}/saga` e é retomado após reinício de pod. A justificativa completa está na [ADR-017](docs/tech-challenge-4/adrs/ADR-017-saga-orquestrada.md).
 
-A lógica de transição está em uma classe de domínio sem Spring (`domain/saga/SagaOrdemServico`): recebe o evento e devolve a decisão (ação na OS, comandos a enviar, compensação local e resultado `APLICADO` ou `IGNORADO`). O caso de uso `ProcessarEventoSagaUseCase` executa a decisão na mesma transação que registra a mensagem na inbox.
-
-```mermaid
-stateDiagram-v2
-    [*] --> AGUARDANDO_FILA_DIAGNOSTICO: abertura da OS / IniciarDiagnostico
-    AGUARDANDO_FILA_DIAGNOSTICO --> AGUARDANDO_DIAGNOSTICO: ExecucaoEnfileirada(DIAGNOSTICO)
-    AGUARDANDO_FILA_DIAGNOSTICO --> EM_DIAGNOSTICO: DiagnosticoIniciado
-    AGUARDANDO_DIAGNOSTICO --> EM_DIAGNOSTICO: DiagnosticoIniciado
-    EM_DIAGNOSTICO --> EM_DIAGNOSTICO: DiagnosticoConcluido sem itens / ReabrirDiagnostico
-    EM_DIAGNOSTICO --> AGUARDANDO_ORCAMENTO: DiagnosticoConcluido com itens / GerarOrcamento
-    AGUARDANDO_ORCAMENTO --> AGUARDANDO_APROVACAO: OrcamentoGerado
-    AGUARDANDO_ORCAMENTO --> COMPENSANDO: ComandoRejeitado (REJEICAO)
-    AGUARDANDO_APROVACAO --> AGUARDANDO_PAGAMENTO: OrcamentoAprovado
-    AGUARDANDO_APROVACAO --> COMPENSANDO: OrcamentoReprovado ou OrcamentoExpirado (REPROVACAO)
-    AGUARDANDO_PAGAMENTO --> AGUARDANDO_FILA_REPARO: PagamentoAprovado / IniciarReparo
-    AGUARDANDO_PAGAMENTO --> COMPENSANDO: PagamentoRecusado (PAGAMENTO_RECUSADO)
-    AGUARDANDO_FILA_REPARO --> EM_EXECUCAO: ExecucaoEnfileirada(REPARO) ou ReparoIniciado
-    AGUARDANDO_FILA_REPARO --> COMPENSANDO: ExecucaoFalhou (FALHA_EXECUCAO)
-    EM_EXECUCAO --> CONCLUIDA: ExecucaoFinalizada
-    EM_EXECUCAO --> COMPENSANDO: ExecucaoFalhou (FALHA_EXECUCAO)
-    COMPENSANDO --> COMPENSANDO: resposta da compensação corrente
-    COMPENSANDO --> COMPENSADA: estorno local do estoque
-    COMPENSANDO --> FALHA: compensação rejeitada ou prazo esgotado
-```
-
-| Estado da saga | Status da OS | Espera | Prazo de resposta |
-|---|---|---|---|
-| `AGUARDANDO_FILA_DIAGNOSTICO` | `RECEBIDA` | `ExecucaoEnfileirada{DIAGNOSTICO}` | sim |
-| `AGUARDANDO_DIAGNOSTICO` | `RECEBIDA` | `DiagnosticoIniciado` | não (pessoa) |
-| `EM_DIAGNOSTICO` | `EM_DIAGNOSTICO` | `DiagnosticoConcluido` | não |
-| `AGUARDANDO_ORCAMENTO` | `EM_DIAGNOSTICO` | `OrcamentoGerado` | sim |
-| `AGUARDANDO_APROVACAO` | `AGUARDANDO_APROVACAO` | decisão do cliente | não (validade no Billing) |
-| `AGUARDANDO_PAGAMENTO` | `AGUARDANDO_PAGAMENTO` | resultado do pagamento | não (prazo no Billing) |
-| `AGUARDANDO_FILA_REPARO` | `EM_EXECUCAO` | `ExecucaoEnfileirada{REPARO}` | sim |
-| `EM_EXECUCAO` | `EM_EXECUCAO` | `ExecucaoFinalizada` ou `ExecucaoFalhou` | não |
-| `COMPENSANDO` | inalterado até o fim | resposta da compensação corrente | sim |
-| `CONCLUIDA` | `FINALIZADA` (depois `ENTREGUE`, local) | — | — |
-| `COMPENSADA` | `CANCELADA` | — | — |
-| `FALHA` | inalterado | intervenção manual ([runbook](docs/runbooks/saga-falha.md)) | — |
+A lógica de transição fica na classe de domínio `SagaOrdemServico`, sem Spring: recebe o evento e devolve a decisão (ação na OS, comandos a enviar e compensação local). Os estados estão no [diagrama da saga](docs/tech-challenge-4/diagramas/estados-saga.md).
 
 Compensações, na ordem da visão pessimista (aula 3 de SAGA): primeiro o que impede trabalho novo, por último o que devolve recurso:
 
@@ -130,16 +92,11 @@ O estorno do estoque é a compensação local: devolve as peças de cada item à
 
 Depois do pagamento aprovado, desfazer a saga exige estorno no Mercado Pago. Por isso só a falha na execução estorna o pagamento. Falha técnica (serviço fora do ar, erro de rede) não gera compensação: a mensagem volta para a fila e é repetida.
 
-Garantias:
-
-- **Prazos e reenvio:** comandos que exigem resposta gravam `prazo_resposta` (padrão 2 minutos, `app.saga.prazo-resposta`). O `AgendadorPrazosSaga` reivindica as sagas vencidas com `FOR UPDATE SKIP LOCKED` e reenvia o último comando com `mensagemId` novo; após 3 reenvios (`app.saga.max-reenvios`) a saga vai para `FALHA`.
-- **Eventos fora de ordem:** um evento que chega antes do estado esperado lança `EventoForaDeOrdemException`; a mensagem volta para a fila após a visibilidade e é reprocessada.
-- **Eventos já aplicados:** um evento cujo efeito já está no estado é registrado como `IGNORADO` no log da saga.
-- **Rejeições:** `ComandoRejeitado` para `IniciarDiagnostico`, `IniciarReparo` ou um comando de compensação leva a saga a `FALHA`.
+Se um participante não responde no prazo (2 minutos), o comando é reenviado; depois de 3 reenvios a saga vai para `FALHA` e gera alerta ([runbook](docs/runbooks/saga-falha.md)). Um evento que chega fora de ordem volta para a fila e é reprocessado.
 
 ## Mensagens
 
-O contrato completo, com exemplos, está em [`docs/asyncapi.yaml`](docs/asyncapi.yaml).
+O contrato está em [`docs/asyncapi.yaml`](docs/asyncapi.yaml).
 
 | Direção | Fila | Tipos |
 |---|---|---|
@@ -147,15 +104,9 @@ O contrato completo, com exemplos, está em [`docs/asyncapi.yaml`](docs/asyncapi
 | Publica | `oficina-<env>-billing-comandos` | `GerarOrcamento`, `CancelarOrcamento`, `EstornarPagamento` |
 | Consome | `oficina-<env>-os-eventos` | `ExecucaoEnfileirada`, `DiagnosticoIniciado`, `DiagnosticoConcluido`, `ReparoIniciado`, `ExecucaoFinalizada`, `ExecucaoFalhou`, `ExecucaoCancelada`, `OrcamentoGerado`, `OrcamentoAprovado`, `OrcamentoReprovado`, `OrcamentoExpirado`, `OrcamentoCancelado`, `PagamentoAprovado`, `PagamentoRecusado`, `PagamentoEstornado`, `ComandoRejeitado` |
 
-Toda mensagem é um envelope JSON com `mensagemId`, `tipo`, `versao`, `sagaId`, `osId`, `causadaPor`, `origem` (`os-service`), `ocorridoEm` (UTC) e `dados`, e leva os atributos SQS `tipo` e `versao` do tipo String. O agente do New Relic usa até três atributos adicionais (`newrelic`, `traceparent`, `tracestate`); o atributo `JavaType` do Spring não é enviado e é ignorado no consumo.
+Toda mensagem é um envelope JSON com `mensagemId`, `tipo`, `versao`, `sagaId`, `osId`, `causadaPor`, `origem`, `ocorridoEm` e `dados`.
 
-| Mecanismo | Implementação |
-|---|---|
-| Transactional Outbox | `PublicadorOutbox` grava o envelope na tabela `outbox` na transação do caso de uso; nenhum caso de uso chama a SQS |
-| Relay | `RelayOutbox`, a cada 500 ms, reivindica até 50 linhas com `FOR UPDATE SKIP LOCKED`, envia com `SqsTemplate` e marca `publicada_em`; erro incrementa `tentativas` e a linha volta no ciclo seguinte |
-| Consumo | `ConsumidorEventosOs` com `@SqsListener`, reconhecimento `ON_SUCCESS`, até 5 mensagens simultâneas |
-| Idempotência | `mensagens_processadas` recebe o `mensagemId` na mesma transação do efeito (`INSERT ... ON CONFLICT DO NOTHING`); duplicata é descartada e contada com `resultado=duplicada` |
-| Falha técnica | exceção → a mensagem volta após 30 s → após 5 recebimentos vai para `oficina-<env>-os-eventos-dlq`, medida pelo gauge `oficina.mensageria.dlq.mensagens` |
+As mensagens são gravadas na tabela `outbox` na mesma transação do caso de uso e enviadas para a fila pelo `RelayOutbox` (Transaction Outbox). O consumidor registra o `mensagemId` em `mensagens_processadas` na mesma transação do efeito, e uma mensagem repetida é ignorada (handler idempotente). Uma mensagem que falha cinco vezes vai para a DLQ `oficina-<env>-os-eventos-dlq`, que gera alerta.
 
 ## Banco e justificativa
 
@@ -163,13 +114,11 @@ PostgreSQL 16 em RDS (`oficina-os-db-<env>`, banco `oficina`, `db.t4g.micro`, `r
 
 Motivos da escolha:
 
-- O domínio tem entidades relacionadas com invariantes que o banco garante: estoque não negativo (`chk_estoque_nao_negativo`), CPF/CNPJ e placa únicos, status válidos, chaves estrangeiras entre OS, itens, peças e serviços.
-- A reserva de estoque e o item da OS são gravados na mesma transação ACID; a compensação devolve as peças e cancela a OS também em uma transação.
-- O Transactional Outbox e a inbox só são atômicos se a mudança de estado e o registro da mensagem estiverem no mesmo banco transacional.
-- `SELECT ... FOR UPDATE SKIP LOCKED` permite que várias réplicas executem o relay e o job de prazos sem processar a mesma linha.
+- Entidades relacionadas com regras garantidas pelo banco: estoque não negativo, CPF/CNPJ e placa únicos, chaves estrangeiras entre OS, itens, peças e serviços.
+- A reserva de estoque e o item da OS são gravados na mesma transação; o outbox só é confiável se a mudança de estado e a mensagem estiverem no mesmo banco.
 - O relatório de tempo médio e a listagem por prioridade são consultas relacionais.
 
-Um banco NoSQL perderia as constraints e a transação entre várias tabelas no núcleo do domínio. O Billing usa outra instância PostgreSQL e o Execution usa DocumentDB; a justificativa de cada um está no repositório do serviço.
+Um banco NoSQL perderia as constraints e a transação entre tabelas. O Billing usa outra instância PostgreSQL e o Execution usa DocumentDB; a justificativa de cada um está na [ADR-019](docs/tech-challenge-4/adrs/ADR-019-banco-por-servico.md).
 
 | Migration | Conteúdo |
 |---|---|
@@ -189,7 +138,7 @@ Um banco NoSQL perderia as constraints e a transação entre várias tabelas no 
 | Linguagem e framework | Java 21, Spring Boot 3.4 |
 | Persistência | PostgreSQL 16, Spring Data JPA, Flyway, MapStruct |
 | Mensageria | Amazon SQS, Spring Cloud AWS 3.3.1 (AWS SDK v2) |
-| Resiliência | Resilience4j 2.2.0 (TimeLimiter, CircuitBreaker, Bulkhead) |
+| Resiliência | Resilience4j 2.2.0 (TimeLimiter, CircuitBreaker e Bulkhead) |
 | Segurança | Spring Security, JJWT 0.12 (validação de JWT HMAC), chave interna para `/internal/**` |
 | Documentação | SpringDoc OpenAPI, AsyncAPI 2.6 |
 | Observabilidade | agente Java do New Relic 9.4.0 com `newrelic-api`, Micrometer com OTLP, logs em formato ECS |
@@ -262,16 +211,16 @@ Ordem de provisionamento: plataforma (`oficina-infra-k8s` base e cluster) → `i
 
 | Workflow | Job | Quando executa | O que faz |
 |---|---|---|---|
-| [`ci-cd.yml`](.github/workflows/ci-cd.yml) | Build & Test | todo push e todo pull request | `./mvnw -B verify`: unitários, integração com Testcontainers, cenários BDD, contrato OpenAPI e limites de cobertura; publica os relatórios JaCoCo e Cucumber e o resumo de cobertura |
-| | SonarCloud | pull request e push em `develop` ou `main` | análise estática e cobertura, aguardando o quality gate |
+| [`ci-cd.yml`](.github/workflows/ci-cd.yml) | Build & Test | todo push | `./mvnw -B verify`: unitários, integração com Testcontainers, cenários BDD, contrato OpenAPI e limites de cobertura; publica os relatórios JaCoCo e Cucumber e o resumo de cobertura |
+| | SonarCloud | todo push | análise estática e cobertura, aguardando o quality gate |
 | | Build & push no ECR | push em `develop` ou `main`, com os dois jobs anteriores aprovados | imagem com as tags do commit e `latest` no repositório lido de `/oficina/<env>/os/ecr-repository-url`; sem repositório, conclui com aviso |
 | | Conferir cluster | após a publicação da imagem | verifica se o cluster do ambiente existe |
 | | Deploy no EKS | cluster existente | cria o Secret `os-service-secrets` a partir do SSM, aplica o overlay com a imagem do commit, aguarda o rollout e consulta `/actuator/health/readiness` e `/actuator/info` |
-| [`infra.yml`](.github/workflows/infra.yml) | Format & validate (infra) | push que altera `infra/` e todo pull request | `terraform fmt`, `validate`, tflint e checkov |
+| [`infra.yml`](.github/workflows/infra.yml) | Format & validate (infra) | todo push | `terraform fmt`, `validate`, tflint e checkov |
 | | Plan / Apply | disparo manual em `develop` ou `main` | plan, e apply no GitHub Environment do ambiente |
 | [`destroy-aws.yml`](.github/workflows/destroy-aws.yml) | Destroy | disparo manual | `terraform destroy` e conferência de que banco, filas e role foram removidos |
 
-- Os testes rodam em todo push e em todo pull request; o deploy só ocorre depois de **Build & Test** e **SonarCloud** aprovados.
+- Os testes e a análise do SonarCloud rodam em todo push, inclusive nas branches de pull request; o deploy só ocorre depois de **Build & Test** e **SonarCloud** aprovados.
 - As branches `develop` e `main` não aceitam push direto: o merge exige pull request com uma aprovação e as verificações **Build & Test**, **SonarCloud** e **Format & validate (infra)**.
 - A autenticação na AWS usa OIDC com a role `oficina-api-github-actions`, sem chave estática ([ADR-013](docs/tech-challenge-3/adrs/ADR-013-identidade-das-pipelines.md)). Os segredos da aplicação são lidos do SSM no momento do deploy; os dados do funcionário de homologação vêm de segredos do repositório e só são usados em `staging`.
 - O deploy em produção aguarda a revisão obrigatória do GitHub Environment `prod`.
@@ -282,12 +231,12 @@ Ordem de provisionamento: plataforma (`oficina-infra-k8s` base e cluster) → `i
 |---|---|---|
 | Domínio (Java puro) | 7 | 129 |
 | Aplicação (Mockito) | 13 | 99 |
-| Infraestrutura, unitários | 11 | 55 |
+| Infraestrutura, unitários | 11 | 54 |
 | Integração (Spring, PostgreSQL e LocalStack via Testcontainers, WireMock) | 8 | 44 |
 | BDD (Cucumber, Gherkin em português) | 1 funcionalidade | 7 cenários |
-| **Total** | | **334** |
+| **Total** | | **333** |
 
-A tabela de transições da SPEC-08 tem um teste por linha em `SagaOrdemServicoTest`. Os cenários BDD cobrem o fluxo completo até a entrega, a reprovação, o pagamento recusado, a falha na execução com estorno, o diagnóstico sem itens, a mensagem duplicada e o reenvio por prazo vencido. A descrição por classe está em [`docs/testes.md`](docs/testes.md).
+A tabela de transições da saga tem um teste por linha em `SagaOrdemServicoTest`. Os cenários BDD cobrem o fluxo completo até a entrega, a reprovação, o pagamento recusado, a falha na execução com estorno, o diagnóstico sem itens, a mensagem duplicada e o reenvio por prazo vencido. A descrição por classe está em [`docs/testes.md`](docs/testes.md).
 
 ```bash
 ./mvnw test      # requer Docker para o Testcontainers
@@ -301,11 +250,11 @@ Execução de `./mvnw -B verify` em 30/10/2026 (JaCoCo 0.8.12):
 | Pacotes | Linhas | Cobertura de linhas | Ramos | Cobertura de ramos |
 |---|---|---|---|---|
 | `domain` | 523 | 99,8% | 199 | 92,5% |
-| `application` | 422 | 100,0% | 66 | 93,9% |
-| `infrastructure` | 1.107 | 91,8% | 225 | 77,8% |
+| `application` | 416 | 100,0% | 62 | 95,2% |
+| `infrastructure` | 1.104 | 91,8% | 225 | 77,8% |
 | `db.migration` (migrations Java) | 26 | 84,6% | 12 | 50,0% |
 | `OficinaMecanicaApplication` | 3 | 33,3% | 0 | — |
-| **Total** | **2.081** | **95,3%** | **502** | **85,1%** |
+| **Total** | **2.072** | **95,3%** | **498** | **85,1%** |
 
 O build falha abaixo de 85% de linhas e 70% de ramos no projeto ou de 80% de instruções nos pacotes de domínio. No CI, o relatório completo é publicado como artefato `jacoco-report` e o resumo de linhas e ramos aparece no sumário da execução; o SonarCloud recebe o `jacoco.xml` (badge de cobertura no topo deste documento).
 
@@ -318,7 +267,7 @@ A aplicação não emite tokens. A função `oficina-auth-lambda` autentica pelo
 | `POST /auth` e `POST /auth/confirmacao` | `GET /internal/identidades/clientes/{cpfCnpj}` | `CLIENTE` |
 | `POST /auth/funcionarios` e `POST /auth/funcionarios/confirmacao` | `GET /internal/identidades/funcionarios/{cpf}` | `FUNCIONARIO` |
 
-As rotas `/internal/**` não têm rota no API Gateway; a função chega a elas pelo NLB e envia o cabeçalho `X-Chave-Interna`, comparado em tempo constante pelo `ChaveInternaFilter`. Sem chave ou com chave diferente, a resposta é 401 genérico; documento inexistente responde 404 sem repetir o documento.
+As rotas `/internal/**` não têm rota no API Gateway; a função chega a elas pelo NLB e envia o cabeçalho `X-Chave-Interna`, verificado pelo `ChaveInternaFilter`. Sem chave ou com chave diferente, a resposta é 401 genérico; documento inexistente responde 404 sem repetir o documento.
 
 | Papel | Acesso |
 |---|---|
@@ -346,13 +295,13 @@ O token é validado pelo Lambda authorizer e pelo `JwtService`: emissor `oficina
 | Identidades | `GET /internal/identidades/clientes/{cpfCnpj}`, `GET /internal/identidades/funcionarios/{cpf}` | cabeçalho `X-Chave-Interna` |
 | Saúde e versão | `GET /actuator/health`, `/actuator/health/{liveness,readiness}`, `/actuator/info` (commit em execução) | pública |
 
-As transições de status deixaram de ter endpoint: vêm dos eventos da saga. O acompanhamento compõe a OS e o histórico locais com o orçamento e o pagamento do Billing e a execução do Execution, consultados em paralelo com limite de 2 s, circuit breaker (janela de 10 chamadas, 50% de falhas, 30 s aberto) e bulkhead de 10 chamadas, repassando o `Authorization` recebido. Uma fonte indisponível vem nula e listada em `fontesIndisponiveis`; uma fonte sem dados (404) vem nula sem ser listada.
+As transições de status deixaram de ter endpoint: vêm dos eventos da saga. O acompanhamento compõe a OS e o histórico locais com o orçamento e o pagamento do Billing e a execução do Execution, consultados em paralelo com limite de 2 s e circuit breaker, repassando o `Authorization` recebido. Uma fonte indisponível vem nula e listada em `fontesIndisponiveis`.
 
 ## Observabilidade
 
 | Sinal | Implementação |
 |---|---|
-| Métricas da OS | `oficina.os.abertas`, `oficina.os.transicoes`, `oficina.os.duracao_status`, `oficina.integracao.falhas` |
+| Métricas da OS | `oficina.os.abertas`, `oficina.os.transicoes`, `oficina.os.duracao_status` |
 | Métricas da saga | `oficina.saga.iniciadas`, `oficina.saga.concluidas`, `oficina.saga.compensadas{motivo}`, `oficina.saga.falhas{estado}`, `oficina.saga.reenvios{comando}`, `oficina.saga.etapa.duracao{estado}` |
 | Métricas de mensageria | `oficina.mensageria.publicadas{tipo}`, `oficina.mensageria.consumidas{tipo, resultado}`, `oficina.mensageria.dlq.mensagens{fila}` (lido da DLQ a cada 60 s) |
 | Rastreamento pela fila | cabeçalhos do New Relic gravados no outbox, aceitos pelo relay e enviados como atributos da mensagem; o consumo aceita os cabeçalhos recebidos (`@Trace(dispatcher = true)`) |
@@ -365,10 +314,10 @@ Dashboards e alertas são criados por Terraform no `oficina-infra-k8s`; cada ale
 
 | Tema | Local |
 |---|---|
-| Contratos | [`docs/openapi.json`](docs/openapi.json), [`docs/asyncapi.yaml`](docs/asyncapi.yaml), [`docs/postman`](docs/postman) |
+| Contratos | [`docs/openapi.json`](docs/openapi.json), [`docs/asyncapi.yaml`](docs/asyncapi.yaml), [`docs/demo.http`](docs/demo.http) |
 | Testes | [`docs/testes.md`](docs/testes.md) |
 | Runbooks | [`docs/runbooks`](docs/runbooks) |
-| Fase 4: ADRs 016 a 025, arquitetura geral, sequências e estados da saga, modelos de dados, débitos técnicos, relatório e slides | [`docs/tech-challenge-4`](docs/tech-challenge-4/README.md) |
+| Fase 4: ADRs 016 a 023, arquitetura geral, sequências e estados da saga, modelos de dados, débitos técnicos, relatório e slides | [`docs/tech-challenge-4`](docs/tech-challenge-4/README.md) |
 | Domain Storytelling do fluxo distribuído (Fase 4) | [`docs/tech-challenge-4/diagramas/domain-storytelling.md`](docs/tech-challenge-4/diagramas/domain-storytelling.md) |
 | DDD: Event Storming, Context Map, Domain Storytelling, linguagem ubíqua | [`docs/ddd`](docs/ddd) |
 | Anti-Corruption Layer e notificação | [`docs/ddd/notificacao-acl.md`](docs/ddd/notificacao-acl.md) |
