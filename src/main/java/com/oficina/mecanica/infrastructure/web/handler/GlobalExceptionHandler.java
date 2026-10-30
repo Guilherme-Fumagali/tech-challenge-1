@@ -2,6 +2,7 @@ package com.oficina.mecanica.infrastructure.web.handler;
 
 import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.EstoqueInsuficienteException;
+import com.oficina.mecanica.domain.exception.IdentidadeNaoEncontradaException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
 import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
@@ -15,15 +16,25 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.net.URI;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String INSTANCIA_IDENTIDADES = "/internal/identidades";
+
     private final MetricasOrdemServico metricas;
 
     public GlobalExceptionHandler(MetricasOrdemServico metricas) {
         this.metricas = metricas;
+    }
+
+    @ExceptionHandler(IdentidadeNaoEncontradaException.class)
+    public ResponseEntity<ProblemDetail> handleIdentidadeNaoEncontrada(IdentidadeNaoEncontradaException ex) {
+        var pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        pd.setInstance(URI.create(INSTANCIA_IDENTIDADES));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(pd);
     }
 
     @ExceptionHandler(RecursoNaoEncontradoException.class)

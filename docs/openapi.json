@@ -178,6 +178,44 @@
         "required" : [ "clienteId", "marca", "modelo", "placa" ],
         "type" : "object"
       },
+      "HistoricoStatusResponse" : {
+        "properties" : {
+          "evento" : {
+            "type" : "string"
+          },
+          "ocorridoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "statusDestino" : {
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "type" : "string"
+          },
+          "statusOrigem" : {
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "IdentidadeResponse" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "IncrementarEstoqueRequest" : {
         "properties" : {
           "quantidade" : {
@@ -240,6 +278,35 @@
         },
         "type" : "object"
       },
+      "OrdemServicoAbertaResponse" : {
+        "properties" : {
+          "clienteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "dataAbertura" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "sagaId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "type" : "string"
+          },
+          "veiculoId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "OrdemServicoResponse" : {
         "properties" : {
           "clienteId" : {
@@ -283,6 +350,37 @@
           },
           "veiculoId" : {
             "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PassoResponse" : {
+        "properties" : {
+          "detalhe" : {
+            "type" : "string"
+          },
+          "direcao" : {
+            "enum" : [ "ENVIADO", "RECEBIDO", "LOCAL" ],
+            "type" : "string"
+          },
+          "mensagemId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "ocorridoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "resultado" : {
+            "enum" : [ "APLICADO", "IGNORADO", "REJEITADO" ],
+            "type" : "string"
+          },
+          "sequencia" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "tipo" : {
             "type" : "string"
           }
         },
@@ -334,6 +432,59 @@
           "totalOrdens" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SagaResponse" : {
+        "properties" : {
+          "atualizadaEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "compensacoesPendentes" : {
+            "items" : {
+              "enum" : [ "CANCELAR_EXECUCAO", "CANCELAR_ORCAMENTO", "ESTORNAR_PAGAMENTO", "ESTORNAR_ESTOQUE" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "criadaEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "estado" : {
+            "enum" : [ "AGUARDANDO_FILA_DIAGNOSTICO", "AGUARDANDO_DIAGNOSTICO", "EM_DIAGNOSTICO", "AGUARDANDO_ORCAMENTO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "AGUARDANDO_FILA_REPARO", "EM_EXECUCAO", "COMPENSANDO", "CONCLUIDA", "COMPENSADA", "FALHA" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "motivoCompensacao" : {
+            "enum" : [ "REPROVACAO", "REJEICAO", "PAGAMENTO_RECUSADO", "FALHA_EXECUCAO" ],
+            "type" : "string"
+          },
+          "osId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "passos" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PassoResponse"
+            },
+            "type" : "array"
+          },
+          "prazoResposta" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "tentativasReenvio" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "ultimoComando" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -391,13 +542,18 @@
         "bearerFormat" : "JWT",
         "scheme" : "bearer",
         "type" : "http"
+      },
+      "chaveInterna" : {
+        "in" : "header",
+        "name" : "X-Chave-Interna",
+        "type" : "apiKey"
       }
     }
   },
   "info" : {
-    "description" : "Sistema de gestão de Ordens de Serviço para oficina mecânica — Tech Challenge Fase 1 PosTech FIAP",
-    "title" : "Oficina Mecânica API",
-    "version" : "1.0"
+    "description" : "Clientes, veículos, catálogo, estoque e ordens de serviço; orquestra a saga da ordem de serviço com o Billing Service e o Execution Service. Tech Challenge Fase 4 — PosTech FIAP",
+    "title" : "OS Service — Oficina Mecânica",
+    "version" : "4.0"
   },
   "openapi" : "3.0.1",
   "paths" : {
@@ -589,7 +745,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
+                  "$ref" : "#/components/schemas/OrdemServicoAbertaResponse"
                 }
               }
             },
@@ -599,7 +755,7 @@
         "security" : [ {
           "bearerAuth" : [ ]
         } ],
-        "summary" : "Abrir nova Ordem de Serviço",
+        "summary" : "Abrir nova Ordem de Serviço e iniciar a saga (pedido de diagnóstico ao Execution)",
         "tags" : [ "Ordens de Serviço" ]
       }
     },
@@ -704,6 +860,40 @@
         "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
       }
     },
+    "/api/ordens/{id}/historico" : {
+      "get" : {
+        "operationId" : "historico",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/HistoricoStatusResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Histórico de status da OS, com o evento que causou cada transição (cliente: apenas as próprias)",
+        "tags" : [ "Ordens de Serviço" ]
+      }
+    },
     "/api/ordens/{id}/pecas" : {
       "post" : {
         "operationId" : "adicionarPeca",
@@ -742,6 +932,37 @@
           "bearerAuth" : [ ]
         } ],
         "summary" : "Adicionar peça à OS (decrementa estoque atomicamente)",
+        "tags" : [ "Ordens de Serviço" ]
+      }
+    },
+    "/api/ordens/{id}/saga" : {
+      "get" : {
+        "operationId" : "saga",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SagaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Estado da saga da OS e passos trocados com os participantes",
         "tags" : [ "Ordens de Serviço" ]
       }
     },
@@ -1356,6 +1577,66 @@
         } ],
         "summary" : "Atualizar veículo",
         "tags" : [ "Veículos" ]
+      }
+    },
+    "/internal/identidades/clientes/{cpfCnpj}" : {
+      "get" : {
+        "operationId" : "cliente",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "cpfCnpj",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IdentidadeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "chaveInterna" : [ ]
+        } ],
+        "summary" : "Identidade do cliente por CPF ou CNPJ, consultada pela função de autenticação",
+        "tags" : [ "Identidades (uso interno)" ]
+      }
+    },
+    "/internal/identidades/funcionarios/{cpf}" : {
+      "get" : {
+        "operationId" : "funcionario",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "cpf",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IdentidadeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "chaveInterna" : [ ]
+        } ],
+        "summary" : "Identidade do funcionário por CPF, consultada pela função de autenticação",
+        "tags" : [ "Identidades (uso interno)" ]
       }
     }
   }

@@ -1,5 +1,8 @@
 package com.oficina.mecanica.infrastructure;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -9,6 +12,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.lifecycle.Startables;
 import org.testcontainers.utility.DockerImageName;
+
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
@@ -29,6 +37,9 @@ public abstract class IntegracaoBase {
         FilasDeTeste.inicializar(LOCALSTACK);
     }
 
+    @Value("${jwt.secret}")
+    protected String segredoJwt;
+
     @DynamicPropertySource
     static void registrarPropriedades(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
@@ -38,5 +49,25 @@ public abstract class IntegracaoBase {
         registry.add("spring.cloud.aws.region.static", LOCALSTACK::getRegion);
         registry.add("spring.cloud.aws.credentials.access-key", LOCALSTACK::getAccessKey);
         registry.add("spring.cloud.aws.credentials.secret-key", LOCALSTACK::getSecretKey);
+    }
+
+    protected String tokenFuncionario() {
+        return token(UUID.randomUUID().toString(), "FUNCIONARIO");
+    }
+
+    protected String tokenCliente(UUID clienteId) {
+        return token(clienteId.toString(), "CLIENTE");
+    }
+
+    private String token(String sub, String role) {
+        var agora = Instant.now();
+        return Jwts.builder()
+            .subject(sub)
+            .issuer("oficina-auth")
+            .claim("role", role)
+            .issuedAt(Date.from(agora))
+            .expiration(Date.from(agora.plusSeconds(900)))
+            .signWith(Keys.hmacShaKeyFor(segredoJwt.getBytes(StandardCharsets.UTF_8)))
+            .compact();
     }
 }

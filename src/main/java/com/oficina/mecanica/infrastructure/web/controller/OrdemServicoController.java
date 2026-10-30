@@ -1,10 +1,14 @@
 package com.oficina.mecanica.infrastructure.web.controller;
 
 import com.oficina.mecanica.application.usecase.ordemservico.*;
+import com.oficina.mecanica.application.usecase.saga.ConsultarSagaUseCase;
 import com.oficina.mecanica.infrastructure.security.Solicitante;
 import com.oficina.mecanica.infrastructure.web.dto.request.AdicionarItemRequest;
 import com.oficina.mecanica.infrastructure.web.dto.request.CriarOrdemServicoRequest;
+import com.oficina.mecanica.infrastructure.web.dto.response.HistoricoStatusResponse;
+import com.oficina.mecanica.infrastructure.web.dto.response.OrdemServicoAbertaResponse;
 import com.oficina.mecanica.infrastructure.web.dto.response.OrdemServicoResponse;
+import com.oficina.mecanica.infrastructure.web.dto.response.SagaResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,22 +30,28 @@ public class OrdemServicoController {
     private final ConsultarStatusOSUseCase consultar;
     private final AdicionarServicoAOSUseCase adicionarServico;
     private final AdicionarPecaAOSUseCase adicionarPeca;
+    private final ConsultarHistoricoOSUseCase historico;
+    private final ConsultarSagaUseCase saga;
 
     public OrdemServicoController(CriarOrdemServicoUseCase criarOS,
                                   ConsultarStatusOSUseCase consultar,
                                   AdicionarServicoAOSUseCase adicionarServico,
-                                  AdicionarPecaAOSUseCase adicionarPeca) {
+                                  AdicionarPecaAOSUseCase adicionarPeca,
+                                  ConsultarHistoricoOSUseCase historico,
+                                  ConsultarSagaUseCase saga) {
         this.criarOS = criarOS;
         this.consultar = consultar;
         this.adicionarServico = adicionarServico;
         this.adicionarPeca = adicionarPeca;
+        this.historico = historico;
+        this.saga = saga;
     }
 
     @PostMapping
-    @Operation(summary = "Abrir nova Ordem de Serviço")
-    public ResponseEntity<OrdemServicoResponse> criar(@Valid @RequestBody CriarOrdemServicoRequest req) {
-        var os = criarOS.executar(req.clienteId(), req.veiculoId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(OrdemServicoResponse.from(os));
+    @Operation(summary = "Abrir nova Ordem de Serviço e iniciar a saga (pedido de diagnóstico ao Execution)")
+    public ResponseEntity<OrdemServicoAbertaResponse> criar(@Valid @RequestBody CriarOrdemServicoRequest req) {
+        var abertura = criarOS.executar(req.clienteId(), req.veiculoId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(OrdemServicoAbertaResponse.from(abertura));
     }
 
     @GetMapping
@@ -68,6 +78,22 @@ public class OrdemServicoController {
     @Operation(summary = "Consultar status de uma OS (endpoint público — sem autenticação)")
     public ResponseEntity<OrdemServicoResponse> consultarStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(OrdemServicoResponse.from(consultar.executar(id)));
+    }
+
+    @GetMapping("/{id}/historico")
+    @Operation(summary = "Histórico de status da OS, com o evento que causou cada transição (cliente: apenas as próprias)")
+    public ResponseEntity<List<HistoricoStatusResponse>> historico(@PathVariable UUID id) {
+        var solicitante = Solicitante.atual();
+        var registros = solicitante.funcionario()
+            ? historico.executar(id)
+            : historico.executarDoCliente(id, solicitante.id());
+        return ResponseEntity.ok(registros.stream().map(HistoricoStatusResponse::from).toList());
+    }
+
+    @GetMapping("/{id}/saga")
+    @Operation(summary = "Estado da saga da OS e passos trocados com os participantes")
+    public ResponseEntity<SagaResponse> saga(@PathVariable UUID id) {
+        return ResponseEntity.ok(SagaResponse.from(saga.executar(id)));
     }
 
     @PostMapping("/{id}/servicos")

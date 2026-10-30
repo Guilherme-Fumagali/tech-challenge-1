@@ -5,12 +5,15 @@ import com.oficina.mecanica.application.port.PublicadorMensagens;
 import com.oficina.mecanica.application.port.RegistroMensagensProcessadas;
 import com.oficina.mecanica.application.port.UnidadeDeTrabalho;
 import com.oficina.mecanica.application.usecase.cliente.ClienteUseCase;
+import com.oficina.mecanica.application.usecase.identidade.ConsultarIdentidadeUseCase;
 import com.oficina.mecanica.application.usecase.ordemservico.*;
 import com.oficina.mecanica.application.usecase.peca.PecaUseCase;
 import com.oficina.mecanica.application.usecase.relatorio.RelatorioTempoMedioUseCase;
 import com.oficina.mecanica.application.usecase.saga.ConfiguracaoSaga;
+import com.oficina.mecanica.application.usecase.saga.ConsultarSagaUseCase;
 import com.oficina.mecanica.application.usecase.saga.MontadorDadosComando;
 import com.oficina.mecanica.application.usecase.saga.ProcessarEventoSagaUseCase;
+import com.oficina.mecanica.application.usecase.saga.VerificarPrazosSagaUseCase;
 import com.oficina.mecanica.application.usecase.servico.ServicoUseCase;
 import com.oficina.mecanica.application.usecase.veiculo.VeiculoUseCase;
 import com.oficina.mecanica.domain.repository.*;
@@ -72,8 +75,40 @@ public class UseCaseConfig {
     public CriarOrdemServicoUseCase criarOrdemServicoUseCase(OrdemServicoRepository os,
                                                               ClienteRepository c,
                                                               VeiculoRepository v,
-                                                              UnidadeDeTrabalho u) {
-        return new CriarOrdemServicoUseCase(os, c, v, u);
+                                                              SagaOrdemServicoRepository sagas,
+                                                              MontadorDadosComando montador,
+                                                              PublicadorMensagens publicador,
+                                                              MetricasSaga metricas,
+                                                              UnidadeDeTrabalho u,
+                                                              ConfiguracaoSaga configuracao,
+                                                              Clock relogio) {
+        return new CriarOrdemServicoUseCase(os, c, v, sagas, montador, publicador, metricas, u, configuracao, relogio);
+    }
+
+    @Bean
+    public VerificarPrazosSagaUseCase verificarPrazosSagaUseCase(SagaOrdemServicoRepository sagas,
+                                                                 PublicadorMensagens publicador,
+                                                                 MetricasSaga metricas,
+                                                                 UnidadeDeTrabalho u,
+                                                                 ConfiguracaoSaga configuracao,
+                                                                 Clock relogio) {
+        return new VerificarPrazosSagaUseCase(sagas, publicador, metricas, u, configuracao, relogio);
+    }
+
+    @Bean
+    public ConsultarSagaUseCase consultarSagaUseCase(SagaOrdemServicoRepository sagas) {
+        return new ConsultarSagaUseCase(sagas);
+    }
+
+    @Bean
+    public ConsultarHistoricoOSUseCase consultarHistoricoOSUseCase(OrdemServicoRepository os,
+                                                                   HistoricoStatusRepository historico) {
+        return new ConsultarHistoricoOSUseCase(os, historico);
+    }
+
+    @Bean
+    public ConsultarIdentidadeUseCase consultarIdentidadeUseCase(ClienteRepository c, FuncionarioRepository f) {
+        return new ConsultarIdentidadeUseCase(c, f);
     }
 
     @Bean

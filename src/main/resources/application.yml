@@ -26,6 +26,7 @@ spring:
     placeholders:
       funcionario-seed-cpf: ${FUNCIONARIO_SEED_CPF:}
       funcionario-seed-nome: ${FUNCIONARIO_SEED_NOME:}
+      funcionario-seed-email: ${FUNCIONARIO_SEED_EMAIL:}
 
 server:
   port: ${PORT:8080}
@@ -42,6 +43,8 @@ springdoc:
     path: /v3/api-docs
 
 app:
+  seguranca:
+    chave-interna: ${CHAVE_INTERNA:}
   mensageria:
     origem: os-service
     filas:

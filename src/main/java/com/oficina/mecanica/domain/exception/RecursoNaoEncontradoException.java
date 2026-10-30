@@ -9,4 +9,7 @@ public class RecursoNaoEncontradoException extends DomainException {
     public RecursoNaoEncontradoException(String recurso, String identificador) {
         super("%s não encontrado: %s".formatted(recurso, identificador));
     }
+    protected RecursoNaoEncontradoException(String mensagem) {
+        super(mensagem);
+    }
 }

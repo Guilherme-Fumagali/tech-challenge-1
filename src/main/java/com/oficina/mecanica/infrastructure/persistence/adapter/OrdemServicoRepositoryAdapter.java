@@ -61,6 +61,11 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
     }
 
     @Override
+    public boolean existePorId(UUID id) {
+        return jpa.existsById(id);
+    }
+
+    @Override
     public List<OrdemServico> listarTodas() {
         return jpa.findAll().stream().map(mapper::toDomain).toList();
     }
