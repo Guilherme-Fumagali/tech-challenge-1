@@ -1,14 +1,13 @@
 package com.oficina.mecanica.domain.entity;
 
 import com.oficina.mecanica.domain.exception.DomainException;
-import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
-import com.oficina.mecanica.domain.valueobject.TokenAprovacaoExterna;
-import lombok.Getter;
 import lombok.AccessLevel;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -19,7 +18,12 @@ import java.util.UUID;
 @Getter
 public class OrdemServico {
 
-    private static final Duration VALIDADE_TOKEN_PADRAO = Duration.ofHours(168);
+    static final String EVENTO_DIAGNOSTICO_INICIADO = "DiagnosticoIniciado";
+    static final String EVENTO_ORCAMENTO_GERADO = "OrcamentoGerado";
+    static final String EVENTO_ORCAMENTO_APROVADO = "OrcamentoAprovado";
+    static final String EVENTO_PAGAMENTO_APROVADO = "PagamentoAprovado";
+    static final String EVENTO_EXECUCAO_FINALIZADA = "ExecucaoFinalizada";
+    static final String EVENTO_VEICULO_ENTREGUE = "VeiculoEntregue";
 
     private UUID id;
     private UUID clienteId;
@@ -33,8 +37,6 @@ public class OrdemServico {
     private LocalDateTime dataConclusao;
     private boolean excluidaLogicamente;
     private LocalDateTime dataExclusaoLogica;
-    private String tokenAprovacaoExterna;
-    private LocalDateTime tokenExpiracao;
     private LocalDateTime dataUltimaTransicao;
     private Long versao;
 
@@ -67,8 +69,6 @@ public class OrdemServico {
         os.dataConclusao = dados.dataConclusao();
         os.excluidaLogicamente = dados.excluidaLogicamente();
         os.dataExclusaoLogica = dados.dataExclusaoLogica();
-        os.tokenAprovacaoExterna = dados.tokenAprovacaoExterna();
-        os.tokenExpiracao = dados.tokenExpiracao();
         os.dataUltimaTransicao = dados.dataUltimaTransicao() != null
             ? dados.dataUltimaTransicao()
             : dados.dataAbertura();
@@ -78,21 +78,66 @@ public class OrdemServico {
         return os;
     }
 
-    public void iniciarDiagnostico() {
-        transicionarPara(StatusOS.EM_DIAGNOSTICO);
+    public void registrarInicioDiagnostico() {
+        transicionarPara(StatusOS.EM_DIAGNOSTICO, EVENTO_DIAGNOSTICO_INICIADO);
     }
 
-    private void transicionarPara(StatusOS destino) {
-        status.validarTransicaoPara(destino);
-        var agora = LocalDateTime.now(ZoneOffset.UTC);
-        var referencia = dataUltimaTransicao != null ? dataUltimaTransicao : dataAbertura;
-        var permanencia = referencia != null
-            ? Duration.between(referencia.atOffset(ZoneOffset.UTC), agora.atOffset(ZoneOffset.UTC))
-            : Duration.ZERO;
+    public void registrarOrcamentoEnviado() {
+        exigirStatus(StatusOS.EM_DIAGNOSTICO, "registrar orçamento enviado");
+        if (!possuiItens()) {
+            throw new DomainException("A OS deve ter ao menos um item antes de gerar o orçamento.");
+        }
+        transicionarPara(StatusOS.AGUARDANDO_APROVACAO, EVENTO_ORCAMENTO_GERADO);
+    }
 
-        transicoesPendentes.add(new TransicaoOS(id, status, destino, permanencia));
-        this.status = destino;
-        this.dataUltimaTransicao = agora;
+    public void registrarAprovacao(Instant aprovadaEm) {
+        transicionarPara(StatusOS.AGUARDANDO_PAGAMENTO, EVENTO_ORCAMENTO_APROVADO);
+        this.dataAprovacao = emUtc(aprovadaEm);
+    }
+
+    public void registrarPagamento(Instant pagoEm) {
+        transicionarPara(StatusOS.EM_EXECUCAO, EVENTO_PAGAMENTO_APROVADO);
+        this.dataInicio = emUtc(pagoEm);
+    }
+
+    public void registrarConclusao(Instant concluidaEm) {
+        transicionarPara(StatusOS.FINALIZADA, EVENTO_EXECUCAO_FINALIZADA);
+        this.dataConclusao = emUtc(concluidaEm);
+    }
+
+    public void cancelar(String motivo) {
+        if (motivo == null || motivo.isBlank()) {
+            throw new DomainException("O cancelamento da OS exige um motivo.");
+        }
+        transicionarPara(StatusOS.CANCELADA, motivo);
+    }
+
+    public void entregar() {
+        transicionarPara(StatusOS.ENTREGUE, EVENTO_VEICULO_ENTREGUE);
+    }
+
+    public void adicionarServico(ItemServico item) {
+        exigirStatus(StatusOS.EM_DIAGNOSTICO, "adicionar serviço");
+        itensServico.add(item);
+    }
+
+    public void adicionarPeca(ItemPeca item) {
+        exigirStatus(StatusOS.EM_DIAGNOSTICO, "adicionar peça");
+        itensPeca.add(item);
+    }
+
+    public boolean possuiItens() {
+        return !itensServico.isEmpty() || !itensPeca.isEmpty();
+    }
+
+    public BigDecimal calcularOrcamento() {
+        BigDecimal totalServicos = itensServico.stream()
+            .map(ItemServico::getSubtotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalPecas = itensPeca.stream()
+            .map(ItemPeca::getSubtotal)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return totalServicos.add(totalPecas);
     }
 
     public List<TransicaoOS> drenarTransicoes() {
@@ -111,83 +156,20 @@ public class OrdemServico {
         return era;
     }
 
-    public void adicionarServico(ItemServico item) {
-        exigirStatus(StatusOS.EM_DIAGNOSTICO, "adicionar serviço");
-        itensServico.add(item);
-    }
+    public List<ItemServico> getItensServico() { return Collections.unmodifiableList(itensServico); }
+    public List<ItemPeca> getItensPeca()       { return Collections.unmodifiableList(itensPeca); }
 
-    public void adicionarPeca(ItemPeca item) {
-        exigirStatus(StatusOS.EM_DIAGNOSTICO, "adicionar peça");
-        itensPeca.add(item);
-    }
+    private void transicionarPara(StatusOS destino, String evento) {
+        status.validarTransicaoPara(destino);
+        var agora = LocalDateTime.now(ZoneOffset.UTC);
+        var referencia = dataUltimaTransicao != null ? dataUltimaTransicao : dataAbertura;
+        var permanencia = referencia != null
+            ? Duration.between(referencia.atOffset(ZoneOffset.UTC), agora.atOffset(ZoneOffset.UTC))
+            : Duration.ZERO;
 
-    public void gerarOrcamento() {
-        gerarOrcamento(VALIDADE_TOKEN_PADRAO);
-    }
-
-    public void gerarOrcamento(Duration validadeToken) {
-        exigirStatus(StatusOS.EM_DIAGNOSTICO, "gerar orçamento");
-        if (itensServico.isEmpty() && itensPeca.isEmpty()) {
-            throw new DomainException("A OS deve ter ao menos um item antes de gerar o orçamento.");
-        }
-        transicionarPara(StatusOS.AGUARDANDO_APROVACAO);
-        this.tokenAprovacaoExterna = TokenAprovacaoExterna.gerar();
-        this.tokenExpiracao = LocalDateTime.now(ZoneOffset.UTC).plus(validadeToken);
-    }
-
-    public void aprovar() {
-        transicionarPara(StatusOS.EM_EXECUCAO);
-        this.dataAprovacao = LocalDateTime.now(ZoneOffset.UTC);
-        this.dataInicio = LocalDateTime.now(ZoneOffset.UTC);
-    }
-
-    public void reprovar() {
-        transicionarPara(StatusOS.CANCELADA);
-    }
-
-    public void aprovarViaTokenExterno(String token) {
-        validarTokenAprovacao(token);
-        aprovar();
-        invalidarTokenAprovacao();
-    }
-
-    public void reprovarViaTokenExterno(String token) {
-        validarTokenAprovacao(token);
-        reprovar();
-        invalidarTokenAprovacao();
-    }
-
-    private void validarTokenAprovacao(String token) {
-        if (tokenAprovacaoExterna == null || !tokenAprovacaoExterna.equals(token)) {
-            throw new TokenAprovacaoInvalidoException("Token de aprovação inválido.");
-        }
-        if (tokenExpiracao == null || tokenExpiracao.isBefore(LocalDateTime.now(ZoneOffset.UTC))) {
-            throw new TokenAprovacaoInvalidoException("Token de aprovação expirado.");
-        }
-    }
-
-    private void invalidarTokenAprovacao() {
-        this.tokenAprovacaoExterna = null;
-        this.tokenExpiracao = null;
-    }
-
-    public void concluir() {
-        transicionarPara(StatusOS.FINALIZADA);
-        this.dataConclusao = LocalDateTime.now(ZoneOffset.UTC);
-    }
-
-    public void entregar() {
-        transicionarPara(StatusOS.ENTREGUE);
-    }
-
-    public BigDecimal calcularOrcamento() {
-        BigDecimal totalServicos = itensServico.stream()
-            .map(ItemServico::getSubtotal)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalPecas = itensPeca.stream()
-            .map(ItemPeca::getSubtotal)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return totalServicos.add(totalPecas);
+        transicoesPendentes.add(new TransicaoOS(id, status, destino, permanencia, evento, agora));
+        this.status = destino;
+        this.dataUltimaTransicao = agora;
     }
 
     private void exigirStatus(StatusOS esperado, String operacao) {
@@ -197,6 +179,7 @@ public class OrdemServico {
         }
     }
 
-    public List<ItemServico> getItensServico() { return Collections.unmodifiableList(itensServico); }
-    public List<ItemPeca> getItensPeca()       { return Collections.unmodifiableList(itensPeca); }
+    private static LocalDateTime emUtc(Instant instante) {
+        return LocalDateTime.ofInstant(instante != null ? instante : Instant.now(), ZoneOffset.UTC);
+    }
 }

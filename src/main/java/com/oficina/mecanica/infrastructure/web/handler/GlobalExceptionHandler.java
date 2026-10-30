@@ -3,7 +3,6 @@ package com.oficina.mecanica.infrastructure.web.handler;
 import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.EstoqueInsuficienteException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
-import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -47,11 +46,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ProblemDetail> handleConcorrencia(OptimisticLockingFailureException ex) {
         return build(HttpStatus.CONFLICT,
             "O recurso foi alterado por outra operação. Consulte o estado atual e repita a requisição.");
-    }
-
-    @ExceptionHandler(TokenAprovacaoInvalidoException.class)
-    public ResponseEntity<ProblemDetail> handleTokenAprovacao(TokenAprovacaoInvalidoException ex) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
     @ExceptionHandler(DomainException.class)

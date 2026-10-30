@@ -50,12 +50,6 @@ public class OrdemServicoJpaEntity {
     @Column(name = "data_exclusao_logica")
     private LocalDateTime dataExclusaoLogica;
 
-    @Column(name = "token_aprovacao_externa", length = 64)
-    private String tokenAprovacaoExterna;
-
-    @Column(name = "token_expiracao")
-    private LocalDateTime tokenExpiracao;
-
     @Column(name = "data_ultima_transicao", nullable = false)
     private LocalDateTime dataUltimaTransicao;
 

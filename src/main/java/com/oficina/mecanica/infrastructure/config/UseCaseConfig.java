@@ -1,6 +1,5 @@
 package com.oficina.mecanica.infrastructure.config;
 
-import com.oficina.mecanica.application.port.NotificacaoService;
 import com.oficina.mecanica.application.port.UnidadeDeTrabalho;
 import com.oficina.mecanica.application.usecase.cliente.ClienteUseCase;
 import com.oficina.mecanica.application.usecase.ordemservico.*;
@@ -9,11 +8,8 @@ import com.oficina.mecanica.application.usecase.relatorio.RelatorioTempoMedioUse
 import com.oficina.mecanica.application.usecase.servico.ServicoUseCase;
 import com.oficina.mecanica.application.usecase.veiculo.VeiculoUseCase;
 import com.oficina.mecanica.domain.repository.*;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.time.Duration;
 
 @Configuration
 public class UseCaseConfig {
@@ -41,11 +37,6 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public IniciarDiagnosticoUseCase iniciarDiagnosticoUseCase(OrdemServicoRepository r, UnidadeDeTrabalho u) {
-        return new IniciarDiagnosticoUseCase(r, u);
-    }
-
-    @Bean
     public AdicionarServicoAOSUseCase adicionarServicoAOSUseCase(OrdemServicoRepository os,
                                                                    ServicoRepository s,
                                                                    UnidadeDeTrabalho u) {
@@ -60,41 +51,8 @@ public class UseCaseConfig {
     }
 
     @Bean
-    public GerarOrcamentoUseCase gerarOrcamentoUseCase(OrdemServicoRepository r,
-                                                        NotificacaoService n,
-                                                        @Value("${app.aprovacao-externa.validade-horas}") long validadeHoras,
-                                                        UnidadeDeTrabalho u) {
-        return new GerarOrcamentoUseCase(r, n, Duration.ofHours(validadeHoras), u);
-    }
-
-    @Bean
-    public AprovarOrcamentoUseCase aprovarOrcamentoUseCase(OrdemServicoRepository r, UnidadeDeTrabalho u) {
-        return new AprovarOrcamentoUseCase(r, u);
-    }
-
-    @Bean
-    public ReprovarOrcamentoUseCase reprovarOrcamentoUseCase(OrdemServicoRepository os,
-                                                               PecaRepository p,
-                                                               UnidadeDeTrabalho u) {
-        return new ReprovarOrcamentoUseCase(os, p, u);
-    }
-
-    @Bean
-    public AprovarOrcamentoExternoUseCase aprovarOrcamentoExternoUseCase(OrdemServicoRepository r,
-                                                                          UnidadeDeTrabalho u) {
-        return new AprovarOrcamentoExternoUseCase(r, u);
-    }
-
-    @Bean
-    public ReprovarOrcamentoExternoUseCase reprovarOrcamentoExternoUseCase(OrdemServicoRepository os,
-                                                                            PecaRepository p,
-                                                                            UnidadeDeTrabalho u) {
-        return new ReprovarOrcamentoExternoUseCase(os, p, u);
-    }
-
-    @Bean
-    public ConcluirServicosUseCase concluirServicosUseCase(OrdemServicoRepository r, UnidadeDeTrabalho u) {
-        return new ConcluirServicosUseCase(r, u);
+    public CompensacaoEstornoEstoque compensacaoEstornoEstoque(PecaRepository p) {
+        return new CompensacaoEstornoEstoque(p);
     }
 
     @Bean

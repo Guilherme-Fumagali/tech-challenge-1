@@ -112,7 +112,7 @@ class UnidadeDeTrabalhoIntegrationTest extends IntegracaoBase {
         var veiculo = veiculoRepository.salvar(new Veiculo(UUID.randomUUID(),
             new Placa(DocumentosDeTeste.placaValida()), "Fiat", "Uno", 2015, cliente.getId()));
         var os = new OrdemServico(UUID.randomUUID(), cliente.getId(), veiculo.getId());
-        os.iniciarDiagnostico();
+        os.registrarInicioDiagnostico();
         osRepository.salvar(os);
         return os.getId();
     }

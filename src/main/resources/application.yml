@@ -20,15 +20,6 @@ spring:
     placeholders:
       funcionario-seed-cpf: ${FUNCIONARIO_SEED_CPF:}
       funcionario-seed-nome: ${FUNCIONARIO_SEED_NOME:}
-  mail:
-    host: ${SMTP_HOST:localhost}
-    port: ${SMTP_PORT:1025}
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls:
-            enable: false
 
 server:
   port: ${PORT:8080}
@@ -43,15 +34,6 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
-
-app:
-  aprovacao-externa:
-    validade-horas: ${APROVACAO_TOKEN_VALIDADE_HORAS:168}
-  notificacao:
-    canal: ${NOTIFICACAO_CANAL:log}
-  mail:
-    from: ${MAIL_FROM:oficina@example.com}
-    base-url: ${MAIL_BASE_URL:http://localhost:8080}
 
 management:
   endpoints:

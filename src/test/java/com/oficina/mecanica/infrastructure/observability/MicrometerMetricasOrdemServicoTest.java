@@ -10,6 +10,7 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +41,8 @@ class MicrometerMetricasOrdemServicoTest {
 
         metricas.registrarAbertura(id);
         metricas.registrarTransicao(new TransicaoOS(
-            id, StatusOS.RECEBIDA, StatusOS.EM_DIAGNOSTICO, Duration.ofMinutes(5)));
+            id, StatusOS.RECEBIDA, StatusOS.EM_DIAGNOSTICO, Duration.ofMinutes(5),
+            "DiagnosticoIniciado", LocalDateTime.now()));
 
         assertThat(saida.getOut())
             .contains("Ordem de serviço " + id + " aberta")
@@ -51,7 +53,7 @@ class MicrometerMetricasOrdemServicoTest {
     void transicaoRegistraContagemEPermanenciaNoStatusAnterior() {
         metricas.registrarTransicao(new TransicaoOS(
             UUID.randomUUID(), StatusOS.EM_DIAGNOSTICO, StatusOS.AGUARDANDO_APROVACAO,
-            Duration.ofMinutes(30)));
+            Duration.ofMinutes(30), "OrcamentoGerado", LocalDateTime.now()));
 
         var contador = registry.counter("oficina.os.transicoes",
             "status_destino", "AGUARDANDO_APROVACAO", "resultado", "sucesso");

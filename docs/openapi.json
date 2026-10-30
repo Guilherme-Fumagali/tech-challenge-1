@@ -16,19 +16,6 @@
         "required" : [ "itemId" ],
         "type" : "object"
       },
-      "AprovarOrcamentoExternoRequest" : {
-        "properties" : {
-          "decisao" : {
-            "enum" : [ "APROVAR", "REPROVAR" ],
-            "type" : "string"
-          },
-          "token" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "decisao", "token" ],
-        "type" : "object"
-      },
       "AtualizarClienteRequest" : {
         "properties" : {
           "email" : {
@@ -291,7 +278,7 @@
             "type" : "number"
           },
           "status" : {
-            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
             "type" : "string"
           },
           "veiculoId" : {
@@ -686,159 +673,6 @@
         "tags" : [ "Ordens de Serviço" ]
       }
     },
-    "/api/ordens/{id}/aprovar" : {
-      "post" : {
-        "operationId" : "aprovar",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
-        "summary" : "Aprovar orçamento — inicia execução dos serviços",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
-      }
-    },
-    "/api/ordens/{id}/aprovar-externo" : {
-      "get" : {
-        "operationId" : "confirmarAprovacao",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "token",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "text/html" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Página de confirmação da aprovação, aberta pelo link do e-mail (público, não altera a OS)",
-        "tags" : [ "Ordens de Serviço — Aprovação Externa" ]
-      },
-      "post" : {
-        "operationId" : "registrarDecisao",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "token",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "decisao",
-          "required" : true,
-          "schema" : {
-            "enum" : [ "APROVAR", "REPROVAR" ],
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AprovarOrcamentoExternoRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              },
-              "text/html" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Aprovar ou reprovar orçamento via token (API — endpoint público, sem autenticação)",
-        "tags" : [ "Ordens de Serviço — Aprovação Externa" ]
-      }
-    },
-    "/api/ordens/{id}/concluir" : {
-      "post" : {
-        "operationId" : "concluir",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
-        "summary" : "Concluir serviços — OS finalizada, aguardando entrega",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
-      }
-    },
     "/api/ordens/{id}/entregar" : {
       "post" : {
         "operationId" : "entregar",
@@ -867,68 +701,6 @@
           "bearerAuth" : [ ]
         } ],
         "summary" : "Registrar entrega do veículo ao cliente",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
-      }
-    },
-    "/api/ordens/{id}/gerar-orcamento" : {
-      "post" : {
-        "operationId" : "gerarOrcamento",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
-        "summary" : "Gerar orçamento e enviar para aprovação do cliente",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
-      }
-    },
-    "/api/ordens/{id}/iniciar-diagnostico" : {
-      "post" : {
-        "operationId" : "iniciarDiagnostico",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
-        "summary" : "Iniciar diagnóstico da OS",
         "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
       }
     },
@@ -971,72 +743,6 @@
         } ],
         "summary" : "Adicionar peça à OS (decrementa estoque atomicamente)",
         "tags" : [ "Ordens de Serviço" ]
-      }
-    },
-    "/api/ordens/{id}/reprovar" : {
-      "post" : {
-        "operationId" : "reprovar",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
-        "summary" : "Reprovar orçamento — cancela a OS e estorna estoque",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
-      }
-    },
-    "/api/ordens/{id}/reprovar-externo" : {
-      "get" : {
-        "operationId" : "confirmarReprovacao",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "token",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "text/html" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Página de confirmação da reprovação, aberta pelo link do e-mail (público, não altera a OS)",
-        "tags" : [ "Ordens de Serviço — Aprovação Externa" ]
       }
     },
     "/api/ordens/{id}/servicos" : {

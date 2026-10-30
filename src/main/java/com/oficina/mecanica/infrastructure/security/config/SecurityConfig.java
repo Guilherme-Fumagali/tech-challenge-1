@@ -29,11 +29,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                // Público sem JWT por decisão de negócio: status de OS e aprovação externa por token de e-mail
                 .requestMatchers(HttpMethod.GET, "/api/ordens/*/status").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/ordens/*/aprovar-externo").permitAll()
-                // Botões do e-mail: links só fazem GET — mesma proteção por token dos endpoints POST
-                .requestMatchers(HttpMethod.GET, "/api/ordens/*/aprovar-externo", "/api/ordens/*/reprovar-externo").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/ordens", "/api/ordens/*", "/api/veiculos", "/api/veiculos/*")
