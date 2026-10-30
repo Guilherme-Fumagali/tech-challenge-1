@@ -2,7 +2,6 @@ package com.oficina.mecanica.application.usecase.ordemservico;
 
 import com.oficina.mecanica.application.port.ConsultaExecucao;
 import com.oficina.mecanica.application.port.ConsultaOrcamento;
-import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.repository.HistoricoStatusRepository;
 
 import java.util.ArrayList;
@@ -24,18 +23,15 @@ public class ConsultarAcompanhamentoUseCase {
     private final HistoricoStatusRepository historicoRepository;
     private final ConsultaOrcamento consultaOrcamento;
     private final ConsultaExecucao consultaExecucao;
-    private final MetricasOrdemServico metricas;
 
     public ConsultarAcompanhamentoUseCase(ConsultarStatusOSUseCase consultarOrdem,
                                           HistoricoStatusRepository historicoRepository,
                                           ConsultaOrcamento consultaOrcamento,
-                                          ConsultaExecucao consultaExecucao,
-                                          MetricasOrdemServico metricas) {
+                                          ConsultaExecucao consultaExecucao) {
         this.consultarOrdem = consultarOrdem;
         this.historicoRepository = historicoRepository;
         this.consultaOrcamento = consultaOrcamento;
         this.consultaExecucao = consultaExecucao;
-        this.metricas = metricas;
     }
 
     public Acompanhamento executar(UUID osId, UUID clienteId, String autorizacao) {
@@ -59,22 +55,13 @@ public class ConsultarAcompanhamentoUseCase {
         }
     }
 
-    private Map<String, Object> aguardar(CompletableFuture<Optional<Map<String, Object>>> consulta, String fonte,
-                                         List<String> indisponiveis) {
+    private static Map<String, Object> aguardar(CompletableFuture<Optional<Map<String, Object>>> consulta, String fonte,
+                                                List<String> indisponiveis) {
         try {
             return consulta.join().orElse(null);
         } catch (CompletionException | CancellationException e) {
             indisponiveis.add(fonte);
-            metricas.registrarFalhaIntegracao(fonte, causa(e).getClass().getSimpleName());
             return null;
         }
-    }
-
-    private static Throwable causa(Throwable erro) {
-        var atual = erro;
-        while (atual instanceof CompletionException && atual.getCause() != null) {
-            atual = atual.getCause();
-        }
-        return atual;
     }
 }

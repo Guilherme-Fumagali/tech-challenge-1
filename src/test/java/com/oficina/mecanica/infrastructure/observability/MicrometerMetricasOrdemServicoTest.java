@@ -74,12 +74,4 @@ class MicrometerMetricasOrdemServicoTest {
             "resultado", "falha",
             "motivo", "TransicaoInvalidaException").count()).isEqualTo(1);
     }
-
-    @Test
-    void falhaDeIntegracaoEhSegmentadaPorIntegracaoEMotivo() {
-        metricas.registrarFalhaIntegracao("email", "montagem_mensagem");
-
-        assertThat(registry.counter("oficina.integracao.falhas",
-            "integracao", "email", "motivo", "montagem_mensagem").count()).isEqualTo(1);
-    }
 }

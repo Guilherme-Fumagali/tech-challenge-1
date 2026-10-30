@@ -2,7 +2,6 @@ package com.oficina.mecanica.application;
 
 import com.oficina.mecanica.application.port.ConsultaExecucao;
 import com.oficina.mecanica.application.port.ConsultaOrcamento;
-import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.application.usecase.ordemservico.ConsultarAcompanhamentoUseCase;
 import com.oficina.mecanica.application.usecase.ordemservico.ConsultarStatusOSUseCase;
 import com.oficina.mecanica.domain.entity.DadosOrdemServico;
@@ -36,7 +35,6 @@ class ConsultarAcompanhamentoUseCaseTest {
     @Mock HistoricoStatusRepository historicoRepository;
     @Mock ConsultaOrcamento consultaOrcamento;
     @Mock ConsultaExecucao consultaExecucao;
-    @Mock MetricasOrdemServico metricas;
 
     ConsultarAcompanhamentoUseCase useCase;
     OrdemServico os;
@@ -44,7 +42,7 @@ class ConsultarAcompanhamentoUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new ConsultarAcompanhamentoUseCase(new ConsultarStatusOSUseCase(osRepository), historicoRepository,
-            consultaOrcamento, consultaExecucao, metricas);
+            consultaOrcamento, consultaExecucao);
         os = OrdemServico.reconstituir(DadosOrdemServico.builder().id(UUID.randomUUID()).clienteId(UUID.randomUUID())
             .veiculoId(UUID.randomUUID()).status(StatusOS.AGUARDANDO_PAGAMENTO).dataAbertura(LocalDateTime.now()).build());
         when(osRepository.buscarPorId(os.getId())).thenReturn(Optional.of(os));
@@ -64,7 +62,6 @@ class ConsultarAcompanhamentoUseCaseTest {
         assertThat(resultado.orcamento()).containsEntry("status", "APROVADO");
         assertThat(resultado.execucao()).isNull();
         assertThat(resultado.fontesIndisponiveis()).isEmpty();
-        verifyNoInteractions(metricas);
     }
 
     @Test
@@ -79,8 +76,6 @@ class ConsultarAcompanhamentoUseCaseTest {
         assertThat(resultado.orcamento()).isNull();
         assertThat(resultado.execucao()).isNull();
         assertThat(resultado.fontesIndisponiveis()).containsExactly("billing", "execution");
-        verify(metricas).registrarFalhaIntegracao("billing", "TimeoutException");
-        verify(metricas).registrarFalhaIntegracao("execution", "IllegalStateException");
     }
 
     @Test

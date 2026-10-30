@@ -7,7 +7,6 @@ import com.oficina.mecanica.infrastructure.web.dto.request.CriarOrdemServicoRequ
 import com.oficina.mecanica.infrastructure.web.dto.request.CriarVeiculoRequest;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ class AcompanhamentoIntegrationTest extends IntegracaoBase {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper mapper;
     @Autowired CircuitBreakerRegistry circuitBreakers;
-    @Autowired MeterRegistry registry;
 
     String funcionario;
     UUID clienteId;
@@ -92,8 +90,6 @@ class AcompanhamentoIntegrationTest extends IntegracaoBase {
         var decorridoMs = (System.nanoTime() - inicio) / 1_000_000;
 
         assertThat(decorridoMs).isLessThan(3_300);
-        assertThat(registry.counter("oficina.integracao.falhas", "integracao", "execution",
-            "motivo", "TimeoutException").count()).isGreaterThanOrEqualTo(1);
     }
 
     @Test
