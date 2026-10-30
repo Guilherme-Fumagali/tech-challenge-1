@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: os-service-config
+data:
+  ENV: prod
+  NEW_RELIC_APP_NAME: oficina-os-service-prod
+  FILA_OS_EVENTOS: oficina-prod-os-eventos
+  FILA_BILLING_COMANDOS: oficina-prod-billing-comandos
+  FILA_EXECUTION_COMANDOS: oficina-prod-execution-comandos
+  FILA_DLQ: oficina-prod-os-eventos-dlq
