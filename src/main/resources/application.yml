@@ -14,6 +14,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:us-east-1}
+      sqs:
+        queue-not-found-strategy: fail
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -34,6 +40,25 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /v3/api-docs
+
+app:
+  mensageria:
+    origem: os-service
+    filas:
+      os-eventos: ${FILA_OS_EVENTOS:oficina-local-os-eventos}
+      billing-comandos: ${FILA_BILLING_COMANDOS:oficina-local-billing-comandos}
+      execution-comandos: ${FILA_EXECUTION_COMANDOS:oficina-local-execution-comandos}
+      entrada: ${app.mensageria.filas.os-eventos}
+    dlq: ${FILA_DLQ:${app.mensageria.filas.os-eventos}-dlq}
+    relay:
+      intervalo: 500
+      lote: 50
+    dlq-intervalo: 60000
+  saga:
+    prazo-resposta: PT2M
+    verificacao-prazos: 30000
+    max-reenvios: 3
+    lote: 20
 
 management:
   endpoints:

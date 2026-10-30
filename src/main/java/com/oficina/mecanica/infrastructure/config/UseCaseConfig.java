@@ -1,18 +1,58 @@
 package com.oficina.mecanica.infrastructure.config;
 
+import com.oficina.mecanica.application.port.MetricasSaga;
+import com.oficina.mecanica.application.port.PublicadorMensagens;
+import com.oficina.mecanica.application.port.RegistroMensagensProcessadas;
 import com.oficina.mecanica.application.port.UnidadeDeTrabalho;
 import com.oficina.mecanica.application.usecase.cliente.ClienteUseCase;
 import com.oficina.mecanica.application.usecase.ordemservico.*;
 import com.oficina.mecanica.application.usecase.peca.PecaUseCase;
 import com.oficina.mecanica.application.usecase.relatorio.RelatorioTempoMedioUseCase;
+import com.oficina.mecanica.application.usecase.saga.ConfiguracaoSaga;
+import com.oficina.mecanica.application.usecase.saga.MontadorDadosComando;
+import com.oficina.mecanica.application.usecase.saga.ProcessarEventoSagaUseCase;
 import com.oficina.mecanica.application.usecase.servico.ServicoUseCase;
 import com.oficina.mecanica.application.usecase.veiculo.VeiculoUseCase;
 import com.oficina.mecanica.domain.repository.*;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Clock;
+
 @Configuration
+@EnableConfigurationProperties(PropriedadesSaga.class)
 public class UseCaseConfig {
+
+    @Bean
+    public Clock relogio() {
+        return Clock.systemUTC();
+    }
+
+    @Bean
+    public ConfiguracaoSaga configuracaoSaga(PropriedadesSaga propriedades) {
+        return new ConfiguracaoSaga(propriedades.prazoResposta(), propriedades.maxReenvios(), propriedades.lote());
+    }
+
+    @Bean
+    public MontadorDadosComando montadorDadosComando(ClienteRepository c, VeiculoRepository v) {
+        return new MontadorDadosComando(c, v);
+    }
+
+    @Bean
+    public ProcessarEventoSagaUseCase processarEventoSagaUseCase(SagaOrdemServicoRepository sagas,
+                                                                 OrdemServicoRepository os,
+                                                                 CompensacaoEstornoEstoque estorno,
+                                                                 MontadorDadosComando montador,
+                                                                 PublicadorMensagens publicador,
+                                                                 RegistroMensagensProcessadas processadas,
+                                                                 MetricasSaga metricas,
+                                                                 UnidadeDeTrabalho u,
+                                                                 ConfiguracaoSaga configuracao,
+                                                                 Clock relogio) {
+        return new ProcessarEventoSagaUseCase(sagas, os, estorno, montador, publicador, processadas, metricas, u,
+            configuracao, relogio);
+    }
 
     @Bean
     public ClienteUseCase clienteUseCase(ClienteRepository r, UnidadeDeTrabalho u) { return new ClienteUseCase(r, u); }

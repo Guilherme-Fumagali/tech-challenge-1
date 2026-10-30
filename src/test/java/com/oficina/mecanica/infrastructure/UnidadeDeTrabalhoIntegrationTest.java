@@ -107,14 +107,16 @@ class UnidadeDeTrabalhoIntegrationTest extends IntegracaoBase {
     }
 
     private UUID ordemEmDiagnostico() {
-        var cliente = clienteRepository.salvar(new Cliente(UUID.randomUUID(),
-            new CpfCnpj(DocumentosDeTeste.cpfValido()), "Cliente da transação", null, null));
-        var veiculo = veiculoRepository.salvar(new Veiculo(UUID.randomUUID(),
-            new Placa(DocumentosDeTeste.placaValida()), "Fiat", "Uno", 2015, cliente.getId()));
-        var os = new OrdemServico(UUID.randomUUID(), cliente.getId(), veiculo.getId());
-        os.registrarInicioDiagnostico();
-        osRepository.salvar(os);
-        return os.getId();
+        return unidadeDeTrabalho.executar(() -> {
+            var cliente = clienteRepository.salvar(new Cliente(UUID.randomUUID(),
+                new CpfCnpj(DocumentosDeTeste.cpfValido()), "Cliente da transação", null, null));
+            var veiculo = veiculoRepository.salvar(new Veiculo(UUID.randomUUID(),
+                new Placa(DocumentosDeTeste.placaValida()), "Fiat", "Uno", 2015, cliente.getId()));
+            var os = new OrdemServico(UUID.randomUUID(), cliente.getId(), veiculo.getId());
+            os.registrarInicioDiagnostico();
+            osRepository.salvar(os);
+            return os.getId();
+        });
     }
 
     private UUID peca(int estoque) {

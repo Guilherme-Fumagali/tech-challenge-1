@@ -6,6 +6,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.lifecycle.Startables;
+import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
@@ -17,8 +20,13 @@ public abstract class IntegracaoBase {
         .withUsername("oficina")
         .withPassword("oficina");
 
+    protected static final LocalStackContainer LOCALSTACK =
+        new LocalStackContainer(DockerImageName.parse("localstack/localstack:3"))
+            .withServices(LocalStackContainer.Service.SQS);
+
     static {
-        POSTGRES.start();
+        Startables.deepStart(POSTGRES, LOCALSTACK).join();
+        FilasDeTeste.inicializar(LOCALSTACK);
     }
 
     @DynamicPropertySource
@@ -26,5 +34,9 @@ public abstract class IntegracaoBase {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
+        registry.add("spring.cloud.aws.sqs.endpoint", () -> LOCALSTACK.getEndpoint().toString());
+        registry.add("spring.cloud.aws.region.static", LOCALSTACK::getRegion);
+        registry.add("spring.cloud.aws.credentials.access-key", LOCALSTACK::getAccessKey);
+        registry.add("spring.cloud.aws.credentials.secret-key", LOCALSTACK::getSecretKey);
     }
 }

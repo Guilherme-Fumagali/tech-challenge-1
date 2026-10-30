@@ -22,6 +22,7 @@ public class OrdemServico {
     static final String EVENTO_ORCAMENTO_GERADO = "OrcamentoGerado";
     static final String EVENTO_ORCAMENTO_APROVADO = "OrcamentoAprovado";
     static final String EVENTO_PAGAMENTO_APROVADO = "PagamentoAprovado";
+    static final String EVENTO_REPARO_INICIADO = "ReparoIniciado";
     static final String EVENTO_EXECUCAO_FINALIZADA = "ExecucaoFinalizada";
     static final String EVENTO_VEICULO_ENTREGUE = "VeiculoEntregue";
 
@@ -98,6 +99,12 @@ public class OrdemServico {
     public void registrarPagamento(Instant pagoEm) {
         transicionarPara(StatusOS.EM_EXECUCAO, EVENTO_PAGAMENTO_APROVADO);
         this.dataInicio = emUtc(pagoEm);
+    }
+
+    public void registrarInicioReparo() {
+        exigirStatus(StatusOS.EM_EXECUCAO, "registrar início do reparo");
+        transicoesPendentes.add(new TransicaoOS(id, status, status, Duration.ZERO, EVENTO_REPARO_INICIADO,
+            LocalDateTime.now(ZoneOffset.UTC)));
     }
 
     public void registrarConclusao(Instant concluidaEm) {
