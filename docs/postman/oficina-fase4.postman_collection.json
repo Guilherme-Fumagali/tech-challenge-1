@@ -1,0 +1,1380 @@
+{
+  "info": {
+    "name": "Oficina — Fase 4 (fluxo completo)",
+    "description": "Fluxo completo da ordem de serviço atravessando OS Service, Execution Service e Billing Service pelo API Gateway (variável baseUrl). O login usa duas etapas: o código de 6 dígitos chega ao e-mail cadastrado e é informado nas variáveis codigoFuncionario e codigoCliente antes das requisições de confirmação. Os eventos entre os serviços trafegam pelas filas SQS; entre um passo e outro, consulte o status da OS ou a saga até a transição aparecer. Selecione o ambiente homologacao.postman_environment.json e preencha baseUrl, cpfFuncionario e cpfCliente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Autenticação do funcionário",
+      "description": "Rotas da função de autenticação no API Gateway.",
+      "item": [
+        {
+          "name": "Solicitar código do funcionário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 202', () => pm.response.to.have.status(202));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.desafioId !== undefined && corpo.desafioId !== null) { pm.environment.set('desafioFuncionario', corpo.desafioId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/funcionarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "funcionarios"
+              ]
+            },
+            "description": "Envia o código de 6 dígitos ao e-mail do funcionário. A resposta é a mesma para CPF desconhecido.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"{{cpfFuncionario}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Confirmar código do funcionário",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.accessToken !== undefined && corpo.accessToken !== null) { pm.environment.set('tokenFuncionario', corpo.accessToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/funcionarios/confirmacao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "funcionarios",
+                "confirmacao"
+              ]
+            },
+            "description": "Troca o desafio e o código recebido por e-mail pelo JWT de funcionário.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"desafioId\": \"{{desafioFuncionario}}\",\n  \"codigo\": \"{{codigoFuncionario}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Cadastro (OS Service)",
+      "description": "Cliente, veículo e catálogo usados no fluxo.",
+      "item": [
+        {
+          "name": "Cadastrar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.id !== undefined && corpo.id !== null) { pm.environment.set('clienteId', corpo.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "clientes"
+              ]
+            },
+            "description": "Cliente com e-mail para receber o orçamento e o código de acesso.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpfCnpj\": \"{{cpfCliente}}\",\n  \"nome\": \"Cliente de demonstração\",\n  \"email\": \"{{emailCliente}}\",\n  \"telefone\": \"11999998888\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cadastrar veículo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.id !== undefined && corpo.id !== null) { pm.environment.set('veiculoId', corpo.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/veiculos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veiculos"
+              ]
+            },
+            "description": "Veículo do cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"ABC1D23\",\n  \"marca\": \"Volkswagen\",\n  \"modelo\": \"Polo\",\n  \"anoFabricacao\": 2021,\n  \"clienteId\": \"{{clienteId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cadastrar serviço",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.id !== undefined && corpo.id !== null) { pm.environment.set('servicoId', corpo.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/servicos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "servicos"
+              ]
+            },
+            "description": "Serviço do catálogo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Troca de pastilhas\",\n  \"descricao\": \"Mão de obra\",\n  \"precoUnitario\": 120.0,\n  \"tempoEstimadoHoras\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cadastrar peça",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.id !== undefined && corpo.id !== null) { pm.environment.set('pecaId', corpo.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pecas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pecas"
+              ]
+            },
+            "description": "Peça com estoque; a inclusão na OS reserva o estoque.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Pastilha de freio\",\n  \"descricao\": \"Jogo dianteiro\",\n  \"precoUnitario\": 120.0,\n  \"quantidadeEstoque\": 20,\n  \"estoqueMinimo\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Abertura da OS (OS Service)",
+      "description": "A abertura cria a saga e envia IniciarDiagnostico ao Execution.",
+      "item": [
+        {
+          "name": "Abrir ordem de serviço",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.id !== undefined && corpo.id !== null) { pm.environment.set('osId', corpo.id); }",
+                  "if (corpo.sagaId !== undefined && corpo.sagaId !== null) { pm.environment.set('sagaId', corpo.sagaId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens"
+              ]
+            },
+            "description": "Responde 201 com o id da OS e o id da saga.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar status público",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "status"
+              ]
+            },
+            "description": "Rota pública: devolve apenas id, status e data da última mudança."
+          }
+        },
+        {
+          "name": "Consultar saga",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/saga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "saga"
+              ]
+            },
+            "description": "Estado da saga e passos trocados com os participantes (funcionário)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Diagnóstico (Execution Service e OS Service)",
+      "description": "O mecânico trabalha no Execution; os itens são lançados no OS Service.",
+      "item": [
+        {
+          "name": "Fila de diagnóstico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/execucoes?status=AGUARDANDO_DIAGNOSTICO",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "execucoes"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "AGUARDANDO_DIAGNOSTICO"
+                }
+              ]
+            },
+            "description": "Fila do Execution por prioridade e ordem de entrada."
+          }
+        },
+        {
+          "name": "Iniciar diagnóstico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/execucoes/{{osId}}/diagnostico/inicio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "execucoes",
+                "{{osId}}",
+                "diagnostico",
+                "inicio"
+              ]
+            },
+            "description": "Gera DiagnosticoIniciado; a OS passa a EM_DIAGNOSTICO."
+          }
+        },
+        {
+          "name": "Incluir serviço na OS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/servicos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "servicos"
+              ]
+            },
+            "description": "Snapshot do preço do catálogo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{servicoId}}\",\n  \"quantidade\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Incluir peça na OS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/pecas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "pecas"
+              ]
+            },
+            "description": "Reserva o estoque na mesma transação.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{pecaId}}\",\n  \"quantidade\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Concluir diagnóstico",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/execucoes/{{osId}}/diagnostico/conclusao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "execucoes",
+                "{{osId}}",
+                "diagnostico",
+                "conclusao"
+              ]
+            },
+            "description": "Gera DiagnosticoConcluido; o OS Service pede o orçamento ao Billing (GerarOrcamento).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observacoes\": \"Pastilhas no limite de desgaste\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar OS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}"
+              ]
+            },
+            "description": "Após OrcamentoGerado, o status é AGUARDANDO_APROVACAO."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Orçamento (Billing Service)",
+      "description": "O cliente entra em duas etapas e aprova o orçamento.",
+      "item": [
+        {
+          "name": "Solicitar código do cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 202', () => pm.response.to.have.status(202));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.desafioId !== undefined && corpo.desafioId !== null) { pm.environment.set('desafioCliente', corpo.desafioId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth"
+              ]
+            },
+            "description": "Envia o código ao e-mail do cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cpf\": \"{{cpfCliente}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Confirmar código do cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.accessToken !== undefined && corpo.accessToken !== null) { pm.environment.set('tokenCliente', corpo.accessToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/confirmacao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "confirmacao"
+              ]
+            },
+            "description": "Troca o código pelo JWT de cliente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"desafioId\": \"{{desafioCliente}}\",\n  \"codigo\": \"{{codigoCliente}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar orçamento da OS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.id !== undefined && corpo.id !== null) { pm.environment.set('orcamentoId', corpo.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamentos?osId={{osId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamentos"
+              ],
+              "query": [
+                {
+                  "key": "osId",
+                  "value": "{{osId}}"
+                }
+              ]
+            },
+            "description": "Orçamento gerado a partir do snapshot dos itens."
+          }
+        },
+        {
+          "name": "Aprovar orçamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamentos/{{orcamentoId}}/aprovacao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamentos",
+                "{{orcamentoId}}",
+                "aprovacao"
+              ]
+            },
+            "description": "Cria a cobrança no Mercado Pago e publica OrcamentoAprovado; a OS passa a AGUARDANDO_PAGAMENTO."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Pagamento (Billing Service)",
+      "description": "Pagamento pelo link do Mercado Pago (sandbox) ou simulado no perfil local do Billing.",
+      "item": [
+        {
+          "name": "Consultar link de pagamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const corpo = pm.response.json();",
+                  "if (corpo.pagamento && corpo.pagamento.linkPagamento !== undefined && corpo.pagamento && corpo.pagamento.linkPagamento !== null) { pm.environment.set('linkPagamento', corpo.pagamento && corpo.pagamento.linkPagamento); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamentos?osId={{osId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamentos"
+              ],
+              "query": [
+                {
+                  "key": "osId",
+                  "value": "{{osId}}"
+                }
+              ]
+            },
+            "description": "O campo pagamento traz o link do checkout; o pagamento no sandbox usa os cartões de teste do Mercado Pago."
+          }
+        },
+        {
+          "name": "Simular pagamento aprovado (Billing local)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billingLocalUrl}}/api/pagamentos/simulacao/{{orcamentoId}}?resultado=aprovado",
+              "host": [
+                "{{billingLocalUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagamentos",
+                "simulacao",
+                "{{orcamentoId}}"
+              ],
+              "query": [
+                {
+                  "key": "resultado",
+                  "value": "aprovado"
+                }
+              ]
+            },
+            "description": "Somente com o Billing no perfil local (billingLocalUrl). Percorre o mesmo caso de uso do webhook."
+          }
+        },
+        {
+          "name": "Consultar status após o pagamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "status"
+              ]
+            },
+            "description": "Após PagamentoAprovado, o status é EM_EXECUCAO e o reparo vai para a fila do Execution."
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Reparo (Execution Service)",
+      "description": "O mecânico executa e finaliza o reparo.",
+      "item": [
+        {
+          "name": "Iniciar reparo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/execucoes/{{osId}}/reparo/inicio",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "execucoes",
+                "{{osId}}",
+                "reparo",
+                "inicio"
+              ]
+            },
+            "description": "Gera ReparoIniciado."
+          }
+        },
+        {
+          "name": "Concluir reparo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/execucoes/{{osId}}/reparo/conclusao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "execucoes",
+                "{{osId}}",
+                "reparo",
+                "conclusao"
+              ]
+            },
+            "description": "Gera ExecucaoFinalizada; a OS passa a FINALIZADA e a saga a CONCLUIDA."
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Entrega e acompanhamento (OS Service)",
+      "description": "Encerramento local e consultas.",
+      "item": [
+        {
+          "name": "Registrar entrega",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/entregar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "entregar"
+              ]
+            },
+            "description": "FINALIZADA → ENTREGUE."
+          }
+        },
+        {
+          "name": "Histórico da OS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/historico",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "historico"
+              ]
+            },
+            "description": "Transições com o evento que causou cada uma."
+          }
+        },
+        {
+          "name": "Acompanhamento composto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/acompanhamento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "acompanhamento"
+              ]
+            },
+            "description": "OS e histórico locais, orçamento e pagamento do Billing e execução do Execution; fonte indisponível vem nula."
+          }
+        },
+        {
+          "name": "Saga concluída",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/saga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "saga"
+              ]
+            },
+            "description": "Passos enviados, recebidos e locais."
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Cenários alternativos",
+      "description": "Executar em uma OS própria para cada cenário, em vez das pastas 6 a 8.",
+      "item": [
+        {
+          "name": "Reprovar orçamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenCliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orcamentos/{{orcamentoId}}/reprovacao",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "orcamentos",
+                "{{orcamentoId}}",
+                "reprovacao"
+              ]
+            },
+            "description": "Compensação REPROVACAO: CancelarExecucao e devolução das peças ao estoque; a OS termina CANCELADA."
+          }
+        },
+        {
+          "name": "Simular pagamento recusado (Billing local)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{billingLocalUrl}}/api/pagamentos/simulacao/{{orcamentoId}}?resultado=recusado",
+              "host": [
+                "{{billingLocalUrl}}"
+              ],
+              "path": [
+                "api",
+                "pagamentos",
+                "simulacao",
+                "{{orcamentoId}}"
+              ],
+              "query": [
+                {
+                  "key": "resultado",
+                  "value": "recusado"
+                }
+              ]
+            },
+            "description": "Compensação PAGAMENTO_RECUSADO: CancelarOrcamento, CancelarExecucao e devolução das peças."
+          }
+        },
+        {
+          "name": "Registrar falha na execução",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/execucoes/{{osId}}/falha",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "execucoes",
+                "{{osId}}",
+                "falha"
+              ]
+            },
+            "description": "Compensação FALHA_EXECUCAO: EstornarPagamento, CancelarOrcamento e devolução das peças.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Disco de freio trincado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Acompanhar a compensação",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenFuncionario}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ordens/{{osId}}/saga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "ordens",
+                "{{osId}}",
+                "saga"
+              ]
+            },
+            "description": "Estado COMPENSANDO e depois COMPENSADA."
+          }
+        }
+      ]
+    }
+  ]
+}
