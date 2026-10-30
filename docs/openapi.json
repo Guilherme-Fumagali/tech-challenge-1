@@ -1111,9 +1111,7 @@
             "description" : "OK"
           }
         },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
+        "security" : [ ],
         "summary" : "Consultar o status de uma OS (público, sem autenticação): apenas id, status e data da última mudança",
         "tags" : [ "Ordens de Serviço" ]
       }

@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -117,5 +118,13 @@ class SegurancaEErrosIntegrationTest extends IntegracaoBase {
             .andExpect(jsonPath("$.status").value("RECEBIDA"))
             .andExpect(jsonPath("$.atualizadoEm").isNotEmpty())
             .andExpect(jsonPath("$.clienteId").doesNotExist());
+    }
+
+    @Test
+    void contratoMarcaOStatusPublicoSemSeguranca() throws Exception {
+        mvc.perform(get("/v3/api-docs"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.paths['/api/ordens/{id}/status'].get.security", hasSize(0)))
+            .andExpect(jsonPath("$.paths['/api/ordens/{id}'].get.security[0].bearerAuth").exists());
     }
 }
