@@ -212,7 +212,7 @@ Ordem de provisionamento: plataforma (`oficina-infra-k8s` base e cluster) → `i
 | Workflow | Job | Quando executa | O que faz |
 |---|---|---|---|
 | [`ci-cd.yml`](.github/workflows/ci-cd.yml) | Build & Test | todo push | `./mvnw -B verify`: unitários, integração com Testcontainers, cenários BDD, contrato OpenAPI e limites de cobertura; publica os relatórios JaCoCo e Cucumber e o resumo de cobertura |
-| | SonarCloud | todo push | análise estática e cobertura, aguardando o quality gate |
+| | SonarCloud | todo push; analisa a branch como pull request quando há PR aberto, e a `main` | análise estática e cobertura, aguardando o quality gate |
 | | Build & push no ECR | push em `develop` ou `main`, com os dois jobs anteriores aprovados | imagem com as tags do commit e `latest` no repositório lido de `/oficina/<env>/os/ecr-repository-url`; sem repositório, conclui com aviso |
 | | Conferir cluster | após a publicação da imagem | verifica se o cluster do ambiente existe |
 | | Deploy no EKS | cluster existente | cria o Secret `os-service-secrets` a partir do SSM, aplica o overlay com a imagem do commit, aguarda o rollout e consulta `/actuator/health/readiness` e `/actuator/info` |
@@ -220,7 +220,7 @@ Ordem de provisionamento: plataforma (`oficina-infra-k8s` base e cluster) → `i
 | | Plan / Apply | disparo manual em `develop` ou `main` | plan, e apply no GitHub Environment do ambiente |
 | [`destroy-aws.yml`](.github/workflows/destroy-aws.yml) | Destroy | disparo manual | `terraform destroy` e conferência de que banco, filas e role foram removidos |
 
-- Os testes e a análise do SonarCloud rodam em todo push, inclusive nas branches de pull request; o deploy só ocorre depois de **Build & Test** e **SonarCloud** aprovados.
+- Os testes rodam em todo push; a análise do SonarCloud roda no pull request e na `main`; o deploy só ocorre depois de **Build & Test** e **SonarCloud** aprovados.
 - As branches `develop` e `main` não aceitam push direto: o merge exige pull request com uma aprovação e as verificações **Build & Test**, **SonarCloud** e **Format & validate (infra)**.
 - A autenticação na AWS usa OIDC com a role `oficina-api-github-actions`, sem chave estática ([ADR-013](docs/tech-challenge-3/adrs/ADR-013-identidade-das-pipelines.md)). Os segredos da aplicação são lidos do SSM no momento do deploy; os dados do funcionário de homologação vêm de segredos do repositório e só são usados em `staging`.
 - O deploy em produção aguarda a revisão obrigatória do GitHub Environment `prod`.
