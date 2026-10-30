@@ -40,6 +40,7 @@ services:
       DB_USER: ${DB_USER:-oficina}
       DB_PASS: ${DB_PASS:?defina DB_PASS no .env}
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+      SPRING_PROFILES_ACTIVE: local
       PORT: 8080
       NOTIFICACAO_CANAL: ${NOTIFICACAO_CANAL:-smtp}
       SMTP_HOST: mailhog

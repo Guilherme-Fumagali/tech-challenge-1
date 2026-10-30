@@ -1,18 +1,16 @@
 package com.oficina.mecanica.infrastructure.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.oficina.mecanica.infrastructure.security.RespostaProblemaJson;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
@@ -42,12 +40,8 @@ public class ChaveInternaFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        var problema = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Credencial interna ausente ou inválida.");
-        problema.setInstance(URI.create(request.getRequestURI()));
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getOutputStream(), problema);
+        RespostaProblemaJson.escrever(objectMapper, request, response, HttpStatus.UNAUTHORIZED,
+            "Credencial interna ausente ou inválida.");
     }
 
     private boolean chaveValida(String recebida) {

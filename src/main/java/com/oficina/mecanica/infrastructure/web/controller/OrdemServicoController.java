@@ -10,9 +10,11 @@ import com.oficina.mecanica.infrastructure.web.dto.response.HistoricoStatusRespo
 import com.oficina.mecanica.infrastructure.web.dto.response.OrdemServicoAbertaResponse;
 import com.oficina.mecanica.infrastructure.web.dto.response.OrdemServicoResponse;
 import com.oficina.mecanica.infrastructure.web.dto.response.SagaResponse;
+import com.oficina.mecanica.infrastructure.web.dto.response.StatusPublicoResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
@@ -81,9 +83,10 @@ public class OrdemServicoController {
     }
 
     @GetMapping("/{id}/status")
-    @Operation(summary = "Consultar status de uma OS (endpoint público — sem autenticação)")
-    public ResponseEntity<OrdemServicoResponse> consultarStatus(@PathVariable UUID id) {
-        return ResponseEntity.ok(OrdemServicoResponse.from(consultar.executar(id)));
+    @SecurityRequirements
+    @Operation(summary = "Consultar o status de uma OS (público, sem autenticação): apenas id, status e data da última mudança")
+    public ResponseEntity<StatusPublicoResponse> consultarStatus(@PathVariable UUID id) {
+        return ResponseEntity.ok(StatusPublicoResponse.from(consultar.executar(id)));
     }
 
     @GetMapping("/{id}/historico")

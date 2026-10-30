@@ -38,7 +38,7 @@ server:
     include-message: always
 
 jwt:
-  secret: ${JWT_SECRET:minha-chave-super-secreta-para-desenvolvimento-local-32chars}
+  secret: ${JWT_SECRET}
 
 springdoc:
   swagger-ui:

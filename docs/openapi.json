@@ -542,6 +542,23 @@
         },
         "type" : "object"
       },
+      "StatusPublicoResponse" : {
+        "properties" : {
+          "atualizadoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "VeiculoResponse" : {
         "properties" : {
           "anoFabricacao" : {
@@ -1087,7 +1104,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
+                  "$ref" : "#/components/schemas/StatusPublicoResponse"
                 }
               }
             },
@@ -1097,7 +1114,7 @@
         "security" : [ {
           "bearerAuth" : [ ]
         } ],
-        "summary" : "Consultar status de uma OS (endpoint público — sem autenticação)",
+        "summary" : "Consultar o status de uma OS (público, sem autenticação): apenas id, status e data da última mudança",
         "tags" : [ "Ordens de Serviço" ]
       }
     },
