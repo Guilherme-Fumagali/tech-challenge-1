@@ -2,1394 +2,347 @@ asyncapi: 2.6.0
 info:
   title: OS Service — mensagens da saga da ordem de serviço
   version: 1.0.0
-  description: 'Comandos publicados pelo orquestrador da saga (OS Service) e eventos que ele consome. Contrato definido na
-    SPEC-08: envelope comum em JSON UTF-8 no corpo da mensagem SQS, atributos `tipo` e `versao` do tipo String, envio por
-    Transactional Outbox e consumo idempotente por `mensagemId`.'
+  description: Comandos publicados pelo orquestrador (OS Service) e eventos que ele consome, conforme a SPEC-08.
 defaultContentType: application/json
 servers:
   aws:
     url: sqs.us-east-1.amazonaws.com
     protocol: sqs
-    description: Filas padrão com SSE-SQS e DLQ (`-dlq`, maxReceiveCount 5), uma por ambiente (staging, prod).
+    description: Filas padrão com SSE-SQS e DLQ, uma por ambiente.
   local:
     url: localhost:4566
     protocol: sqs
-    description: LocalStack do docker-compose; filas criadas por localstack/init/ready.d/criar-filas.sh.
+    description: LocalStack do docker-compose.
 channels:
   oficina-{ambiente}-os-eventos:
-    description: 'Fila de entrada do OS Service: respostas e eventos do Billing e do Execution. Consumida por ConsumidorEventosOs
-      com reconhecimento ON_SUCCESS, até 5 mensagens simultâneas.'
-    parameters:
-      ambiente:
-        $ref: '#/components/parameters/ambiente'
+    description: Eventos e respostas do Billing e do Execution para o OS Service.
+    parameters: { ambiente: { $ref: '#/components/parameters/ambiente' } }
     publish:
       operationId: receberEventoDaSaga
-      summary: Billing e Execution publicam; o OS Service consome e aplica na saga.
+      summary: Billing e Execution publicam; o OS Service consome.
       message:
         oneOf:
-        - $ref: '#/components/messages/ExecucaoEnfileirada'
-        - $ref: '#/components/messages/DiagnosticoIniciado'
-        - $ref: '#/components/messages/DiagnosticoConcluido'
-        - $ref: '#/components/messages/ReparoIniciado'
-        - $ref: '#/components/messages/ExecucaoFinalizada'
-        - $ref: '#/components/messages/ExecucaoFalhou'
-        - $ref: '#/components/messages/ExecucaoCancelada'
-        - $ref: '#/components/messages/OrcamentoGerado'
-        - $ref: '#/components/messages/OrcamentoAprovado'
-        - $ref: '#/components/messages/OrcamentoReprovado'
-        - $ref: '#/components/messages/OrcamentoExpirado'
-        - $ref: '#/components/messages/OrcamentoCancelado'
-        - $ref: '#/components/messages/PagamentoAprovado'
-        - $ref: '#/components/messages/PagamentoRecusado'
-        - $ref: '#/components/messages/PagamentoEstornado'
-        - $ref: '#/components/messages/ComandoRejeitado'
+          - $ref: '#/components/messages/ExecucaoEnfileirada'
+          - $ref: '#/components/messages/DiagnosticoIniciado'
+          - $ref: '#/components/messages/DiagnosticoConcluido'
+          - $ref: '#/components/messages/ReparoIniciado'
+          - $ref: '#/components/messages/ExecucaoFinalizada'
+          - $ref: '#/components/messages/ExecucaoFalhou'
+          - $ref: '#/components/messages/ExecucaoCancelada'
+          - $ref: '#/components/messages/OrcamentoGerado'
+          - $ref: '#/components/messages/OrcamentoAprovado'
+          - $ref: '#/components/messages/OrcamentoReprovado'
+          - $ref: '#/components/messages/OrcamentoExpirado'
+          - $ref: '#/components/messages/OrcamentoCancelado'
+          - $ref: '#/components/messages/PagamentoAprovado'
+          - $ref: '#/components/messages/PagamentoRecusado'
+          - $ref: '#/components/messages/PagamentoEstornado'
+          - $ref: '#/components/messages/ComandoRejeitado'
   oficina-{ambiente}-execution-comandos:
-    description: Fila de comandos do Execution Service.
-    parameters:
-      ambiente:
-        $ref: '#/components/parameters/ambiente'
+    description: Comandos do OS Service para o Execution Service.
+    parameters: { ambiente: { $ref: '#/components/parameters/ambiente' } }
     subscribe:
       operationId: enviarComandoAoExecution
-      summary: O OS Service publica pelo relay do outbox; o Execution consome.
+      summary: O OS Service publica pelo outbox; o Execution consome.
       message:
         oneOf:
-        - $ref: '#/components/messages/IniciarDiagnostico'
-        - $ref: '#/components/messages/ReabrirDiagnostico'
-        - $ref: '#/components/messages/IniciarReparo'
-        - $ref: '#/components/messages/CancelarExecucao'
+          - $ref: '#/components/messages/IniciarDiagnostico'
+          - $ref: '#/components/messages/ReabrirDiagnostico'
+          - $ref: '#/components/messages/IniciarReparo'
+          - $ref: '#/components/messages/CancelarExecucao'
   oficina-{ambiente}-billing-comandos:
-    description: Fila de comandos do Billing Service.
-    parameters:
-      ambiente:
-        $ref: '#/components/parameters/ambiente'
+    description: Comandos do OS Service para o Billing Service.
+    parameters: { ambiente: { $ref: '#/components/parameters/ambiente' } }
     subscribe:
       operationId: enviarComandoAoBilling
-      summary: O OS Service publica pelo relay do outbox; o Billing consome.
+      summary: O OS Service publica pelo outbox; o Billing consome.
       message:
         oneOf:
-        - $ref: '#/components/messages/GerarOrcamento'
-        - $ref: '#/components/messages/CancelarOrcamento'
-        - $ref: '#/components/messages/EstornarPagamento'
+          - $ref: '#/components/messages/GerarOrcamento'
+          - $ref: '#/components/messages/CancelarOrcamento'
+          - $ref: '#/components/messages/EstornarPagamento'
 components:
-  schemas:
-    Envelope:
-      type: object
-      required:
-      - mensagemId
-      - tipo
-      - versao
-      - sagaId
-      - osId
-      - causadaPor
-      - origem
-      - ocorridoEm
-      - dados
-      properties:
-        mensagemId:
-          type: string
-          format: uuid
-          description: Novo a cada envio; reenvio por prazo vencido gera outro.
-        tipo:
-          type: string
-          description: Nome do catálogo da SPEC-08, em PascalCase.
-        versao:
-          type: integer
-          minimum: 1
-        sagaId:
-          type: string
-          format: uuid
-          description: Id da saga no OS Service; copiado pelos participantes.
-        osId:
-          type: string
-          format: uuid
-          description: Chave de negócio em todos os serviços.
-        causadaPor:
-          type:
-          - string
-          - 'null'
-          format: uuid
-          description: mensagemId que originou a mensagem; nulo em ação de pessoa.
-        origem:
-          type: string
-          enum:
-          - os-service
-          - billing-service
-          - execution-service
-        ocorridoEm:
-          type: string
-          format: date-time
-          description: Instante UTC com sufixo Z.
-        dados:
-          type: object
-    DadosIniciarDiagnostico:
-      type: object
-      required:
-      - clienteId
-      - veiculo
-      - abertaEm
-      properties:
-        clienteId:
-          type: string
-          format: uuid
-        veiculo:
-          type: object
-          required:
-          - placa
-          - marca
-          - modelo
-          - anoFabricacao
-          properties:
-            placa:
-              type: string
-            marca:
-              type: string
-            modelo:
-              type: string
-            anoFabricacao:
-              type: integer
-        abertaEm:
-          type: string
-          format: date-time
-    DadosReabrirDiagnostico:
-      type: object
-      required:
-      - motivo
-      properties:
-        motivo:
-          type: string
-    DadosIniciarReparo:
-      type: object
-      required:
-      - itens
-      properties:
-        itens:
-          type: array
-          items:
-            type: object
-            required:
-            - tipo
-            - descricao
-            - quantidade
-            properties:
-              tipo:
-                type: string
-                enum:
-                - SERVICO
-                - PECA
-              descricao:
-                type: string
-              quantidade:
-                type: integer
-                minimum: 1
-    DadosCancelarExecucao:
-      type: object
-      required:
-      - motivo
-      properties:
-        motivo:
-          type: string
-    DadosGerarOrcamento:
-      type: object
-      required:
-      - clienteId
-      - cliente
-      - veiculo
-      - itens
-      properties:
-        clienteId:
-          type: string
-          format: uuid
-        cliente:
-          type: object
-          required:
-          - nome
-          - email
-          properties:
-            nome:
-              type: string
-            email:
-              type: string
-        veiculo:
-          type: object
-          required:
-          - placa
-          - modelo
-          properties:
-            placa:
-              type: string
-            modelo:
-              type: string
-        itens:
-          type: array
-          items:
-            type: object
-            required:
-            - tipo
-            - referenciaId
-            - descricao
-            - quantidade
-            - precoUnitario
-            properties:
-              tipo:
-                type: string
-                enum:
-                - SERVICO
-                - PECA
-              referenciaId:
-                type: string
-                format: uuid
-              descricao:
-                type: string
-              quantidade:
-                type: integer
-                minimum: 1
-              precoUnitario:
-                type: number
-                multipleOf: 0.01
-    DadosCancelarOrcamento:
-      type: object
-      required:
-      - motivo
-      properties:
-        motivo:
-          type: string
-    DadosEstornarPagamento:
-      type: object
-      required:
-      - motivo
-      properties:
-        motivo:
-          type: string
-    DadosExecucaoEnfileirada:
-      type: object
-      required:
-      - etapa
-      - enfileiradaEm
-      properties:
-        etapa:
-          type: string
-          enum:
-          - DIAGNOSTICO
-          - REPARO
-        enfileiradaEm:
-          type: string
-          format: date-time
-    DadosDiagnosticoIniciado:
-      type: object
-      required:
-      - mecanicoId
-      - iniciadoEm
-      properties:
-        mecanicoId:
-          type: string
-          format: uuid
-        iniciadoEm:
-          type: string
-          format: date-time
-    DadosDiagnosticoConcluido:
-      type: object
-      required:
-      - mecanicoId
-      - concluidoEm
-      properties:
-        mecanicoId:
-          type: string
-          format: uuid
-        concluidoEm:
-          type: string
-          format: date-time
-        observacoes:
-          type: string
-    DadosReparoIniciado:
-      type: object
-      required:
-      - mecanicoId
-      - iniciadoEm
-      properties:
-        mecanicoId:
-          type: string
-          format: uuid
-        iniciadoEm:
-          type: string
-          format: date-time
-    DadosExecucaoFinalizada:
-      type: object
-      required:
-      - mecanicoId
-      - finalizadaEm
-      properties:
-        mecanicoId:
-          type: string
-          format: uuid
-        finalizadaEm:
-          type: string
-          format: date-time
-    DadosExecucaoFalhou:
-      type: object
-      required:
-      - mecanicoId
-      - motivo
-      - ocorridaEm
-      properties:
-        mecanicoId:
-          type: string
-          format: uuid
-        motivo:
-          type: string
-        ocorridaEm:
-          type: string
-          format: date-time
-    DadosExecucaoCancelada:
-      type: object
-      required:
-      - canceladaEm
-      properties:
-        motivo:
-          type: string
-        canceladaEm:
-          type: string
-          format: date-time
-    DadosOrcamentoGerado:
-      type: object
-      required:
-      - orcamentoId
-      - total
-      - validoAte
-      properties:
-        orcamentoId:
-          type: string
-          format: uuid
-        total:
-          type: number
-          multipleOf: 0.01
-        validoAte:
-          type: string
-          format: date-time
-    DadosOrcamentoAprovado:
-      type: object
-      required:
-      - orcamentoId
-      - aprovadoEm
-      - canal
-      properties:
-        orcamentoId:
-          type: string
-          format: uuid
-        aprovadoEm:
-          type: string
-          format: date-time
-        canal:
-          type: string
-          enum:
-          - CLIENTE
-          - LINK
-          - BALCAO
-        linkPagamento:
-          type: string
-    DadosOrcamentoReprovado:
-      type: object
-      required:
-      - orcamentoId
-      - reprovadoEm
-      - canal
-      properties:
-        orcamentoId:
-          type: string
-          format: uuid
-        reprovadoEm:
-          type: string
-          format: date-time
-        canal:
-          type: string
-          enum:
-          - CLIENTE
-          - LINK
-          - BALCAO
-    DadosOrcamentoExpirado:
-      type: object
-      required:
-      - orcamentoId
-      - expiradoEm
-      properties:
-        orcamentoId:
-          type: string
-          format: uuid
-        expiradoEm:
-          type: string
-          format: date-time
-    DadosOrcamentoCancelado:
-      type: object
-      required:
-      - motivo
-      properties:
-        orcamentoId:
-          type:
-          - string
-          - 'null'
-          format: uuid
-        motivo:
-          type: string
-    DadosPagamentoAprovado:
-      type: object
-      required:
-      - orcamentoId
-      - pagamentoId
-      - valor
-      - aprovadoEm
-      properties:
-        orcamentoId:
-          type: string
-          format: uuid
-        pagamentoId:
-          type: string
-          format: uuid
-        valor:
-          type: number
-          multipleOf: 0.01
-        aprovadoEm:
-          type: string
-          format: date-time
-        meio:
-          type: string
-    DadosPagamentoRecusado:
-      type: object
-      required:
-      - orcamentoId
-      - motivo
-      properties:
-        orcamentoId:
-          type: string
-          format: uuid
-        pagamentoId:
-          type:
-          - string
-          - 'null'
-          format: uuid
-        motivo:
-          type: string
-    DadosPagamentoEstornado:
-      type: object
-      required:
-      - valor
-      - estornadoEm
-      properties:
-        orcamentoId:
-          type:
-          - string
-          - 'null'
-          format: uuid
-        pagamentoId:
-          type:
-          - string
-          - 'null'
-          format: uuid
-        valor:
-          type: number
-          multipleOf: 0.01
-        estornadoEm:
-          type: string
-          format: date-time
-    DadosComandoRejeitado:
-      type: object
-      required:
-      - comando
-      - motivo
-      - codigo
-      properties:
-        comando:
-          type: string
-        motivo:
-          type: string
-        codigo:
-          type: string
-          enum:
-          - DADOS_INVALIDOS
-          - ORCAMENTO_NAO_ENCONTRADO
-          - EXECUCAO_INEXISTENTE
-          - ESTADO_INVALIDO
-          - COMANDO_DESCONHECIDO
   messages:
     IniciarDiagnostico:
       name: IniciarDiagnostico
-      title: IniciarDiagnostico
-      summary: Pede ao Execution que coloque a OS na fila de diagnóstico.
-      description: 'Quando é enviado: Enviado na abertura da OS, na mesma transação que cria a saga. Exige resposta ExecucaoEnfileirada{DIAGNOSTICO};
-        sem resposta no prazo, é reenviado com novo mensagemId.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - IniciarDiagnostico
-            dados:
-              $ref: '#/components/schemas/DadosIniciarDiagnostico'
-      examples:
-      - name: IniciarDiagnostico
-        headers:
-          tipo: IniciarDiagnostico
-          versao: '1'
-        payload:
-          mensagemId: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          tipo: IniciarDiagnostico
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: os-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            clienteId: 0b9a3c7e-6d2f-4e41-9a8b-5c1d2e3f4a5b
-            veiculo:
-              placa: ABC1D23
-              marca: Volkswagen
-              modelo: Polo
-              anoFabricacao: 2021
-            abertaEm: '2026-10-30T14:05:11.482Z'
+      summary: Coloca a OS na fila de diagnóstico; responde ExecucaoEnfileirada.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: IniciarDiagnostico }, dados: { $ref: '#/components/schemas/DadosIniciarDiagnostico' } } }] }
     ReabrirDiagnostico:
       name: ReabrirDiagnostico
-      title: ReabrirDiagnostico
-      summary: Devolve a execução ao diagnóstico.
-      description: 'Quando é enviado: Enviado quando DiagnosticoConcluido chega e a OS não tem serviço nem peça. Não exige
-        resposta.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - ReabrirDiagnostico
-            dados:
-              $ref: '#/components/schemas/DadosReabrirDiagnostico'
-      examples:
-      - name: ReabrirDiagnostico
-        headers:
-          tipo: ReabrirDiagnostico
-          versao: '1'
-        payload:
-          mensagemId: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          tipo: ReabrirDiagnostico
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          origem: os-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            motivo: Diagnóstico concluído sem serviços ou peças na ordem de serviço.
+      summary: Devolve ao diagnóstico a OS sem serviços nem peças.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ReabrirDiagnostico }, dados: { $ref: '#/components/schemas/DadosMotivo' } } }] }
     IniciarReparo:
       name: IniciarReparo
-      title: IniciarReparo
-      summary: Pede ao Execution que coloque a OS na fila de reparo.
-      description: 'Quando é enviado: Enviado após PagamentoAprovado. Exige resposta ExecucaoEnfileirada{REPARO}.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - IniciarReparo
-            dados:
-              $ref: '#/components/schemas/DadosIniciarReparo'
-      examples:
-      - name: IniciarReparo
-        headers:
-          tipo: IniciarReparo
-          versao: '1'
-        payload:
-          mensagemId: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          tipo: IniciarReparo
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          origem: os-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            itens:
-            - tipo: SERVICO
-              descricao: Troca de pastilhas
-              quantidade: 1
-            - tipo: PECA
-              descricao: Pastilha de freio
-              quantidade: 2
+      summary: Coloca a OS na fila de reparo após o pagamento.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: IniciarReparo }, dados: { $ref: '#/components/schemas/DadosIniciarReparo' } } }] }
     CancelarExecucao:
       name: CancelarExecucao
-      title: CancelarExecucao
       summary: 'Compensação: cancela a execução da OS.'
-      description: 'Quando é enviado: Primeira compensação de REPROVACAO e REJEICAO e segunda de PAGAMENTO_RECUSADO. A resposta
-        ExecucaoCancelada libera a próxima compensação.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - CancelarExecucao
-            dados:
-              $ref: '#/components/schemas/DadosCancelarExecucao'
-      examples:
-      - name: CancelarExecucao
-        headers:
-          tipo: CancelarExecucao
-          versao: '1'
-        payload:
-          mensagemId: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          tipo: CancelarExecucao
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          origem: os-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            motivo: REPROVACAO
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: CancelarExecucao }, dados: { $ref: '#/components/schemas/DadosMotivo' } } }] }
     GerarOrcamento:
       name: GerarOrcamento
-      title: GerarOrcamento
-      summary: Pede ao Billing o orçamento a partir do snapshot dos itens da OS.
-      description: 'Quando é enviado: Enviado quando DiagnosticoConcluido chega e a OS tem itens. Exige resposta OrcamentoGerado
-        ou ComandoRejeitado.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - GerarOrcamento
-            dados:
-              $ref: '#/components/schemas/DadosGerarOrcamento'
-      examples:
-      - name: GerarOrcamento
-        headers:
-          tipo: GerarOrcamento
-          versao: '1'
-        payload:
-          mensagemId: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          tipo: GerarOrcamento
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          origem: os-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            clienteId: 0b9a3c7e-6d2f-4e41-9a8b-5c1d2e3f4a5b
-            cliente:
-              nome: Maria Souza
-              email: cliente@example.com
-            veiculo:
-              placa: ABC1D23
-              modelo: Polo
-            itens:
-            - tipo: SERVICO
-              referenciaId: 9f8e7d6c-5b4a-4321-8fed-cba987654321
-              descricao: Troca de pastilhas
-              quantidade: 1
-              precoUnitario: 120.0
-            - tipo: PECA
-              referenciaId: 1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
-              descricao: Pastilha de freio
-              quantidade: 2
-              precoUnitario: 120.0
+      summary: Pede o orçamento a partir do snapshot dos itens da OS.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: GerarOrcamento }, dados: { $ref: '#/components/schemas/DadosGerarOrcamento' } } }] }
     CancelarOrcamento:
       name: CancelarOrcamento
-      title: CancelarOrcamento
       summary: 'Compensação: cancela o orçamento da OS.'
-      description: 'Quando é enviado: Primeira compensação de PAGAMENTO_RECUSADO e segunda de FALHA_EXECUCAO. A resposta OrcamentoCancelado
-        libera a próxima compensação.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - CancelarOrcamento
-            dados:
-              $ref: '#/components/schemas/DadosCancelarOrcamento'
-      examples:
-      - name: CancelarOrcamento
-        headers:
-          tipo: CancelarOrcamento
-          versao: '1'
-        payload:
-          mensagemId: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          tipo: CancelarOrcamento
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          origem: os-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            motivo: PAGAMENTO_RECUSADO
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: CancelarOrcamento }, dados: { $ref: '#/components/schemas/DadosMotivo' } } }] }
     EstornarPagamento:
       name: EstornarPagamento
-      title: EstornarPagamento
       summary: 'Compensação: estorna o pagamento aprovado.'
-      description: 'Quando é enviado: Primeira compensação de FALHA_EXECUCAO. A resposta PagamentoEstornado libera a próxima
-        compensação.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - EstornarPagamento
-            dados:
-              $ref: '#/components/schemas/DadosEstornarPagamento'
-      examples:
-      - name: EstornarPagamento
-        headers:
-          tipo: EstornarPagamento
-          versao: '1'
-        payload:
-          mensagemId: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          tipo: EstornarPagamento
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          origem: os-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            motivo: FALHA_EXECUCAO
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: EstornarPagamento }, dados: { $ref: '#/components/schemas/DadosMotivo' } } }] }
     ExecucaoEnfileirada:
       name: ExecucaoEnfileirada
-      title: ExecucaoEnfileirada
-      summary: A OS entrou na fila do Execution.
-      description: 'Efeito no orquestrador: DIAGNOSTICO: saga AGUARDANDO_FILA_DIAGNOSTICO → AGUARDANDO_DIAGNOSTICO. REPARO:
-        AGUARDANDO_FILA_REPARO → EM_EXECUCAO.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - ExecucaoEnfileirada
-            dados:
-              $ref: '#/components/schemas/DadosExecucaoEnfileirada'
-      examples:
-      - name: ExecucaoEnfileirada
-        headers:
-          tipo: ExecucaoEnfileirada
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: ExecucaoEnfileirada
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          origem: execution-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            etapa: DIAGNOSTICO
-            enfileiradaEm: '2026-10-30T14:05:12.010Z'
+      summary: A OS entrou na fila de diagnóstico ou de reparo.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ExecucaoEnfileirada }, dados: { $ref: '#/components/schemas/DadosExecucaoEnfileirada' } } }] }
     DiagnosticoIniciado:
       name: DiagnosticoIniciado
-      title: DiagnosticoIniciado
       summary: O mecânico iniciou o diagnóstico.
-      description: 'Efeito no orquestrador: OS RECEBIDA → EM_DIAGNOSTICO; saga → EM_DIAGNOSTICO.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - DiagnosticoIniciado
-            dados:
-              $ref: '#/components/schemas/DadosDiagnosticoIniciado'
-      examples:
-      - name: DiagnosticoIniciado
-        headers:
-          tipo: DiagnosticoIniciado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: DiagnosticoIniciado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: execution-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            mecanicoId: 3c2b1a09-8f7e-4d6c-b5a4-938271605f4e
-            iniciadoEm: '2026-10-30T14:20:00.000Z'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: DiagnosticoIniciado }, dados: { $ref: '#/components/schemas/DadosMecanicoIniciou' } } }] }
     DiagnosticoConcluido:
       name: DiagnosticoConcluido
-      title: DiagnosticoConcluido
       summary: O mecânico concluiu o diagnóstico.
-      description: 'Efeito no orquestrador: Com itens na OS: GerarOrcamento e saga AGUARDANDO_ORCAMENTO. Sem itens: ReabrirDiagnostico.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - DiagnosticoConcluido
-            dados:
-              $ref: '#/components/schemas/DadosDiagnosticoConcluido'
-      examples:
-      - name: DiagnosticoConcluido
-        headers:
-          tipo: DiagnosticoConcluido
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: DiagnosticoConcluido
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: execution-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            mecanicoId: 3c2b1a09-8f7e-4d6c-b5a4-938271605f4e
-            concluidoEm: '2026-10-30T14:50:00.000Z'
-            observacoes: Pastilhas no limite de desgaste
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: DiagnosticoConcluido }, dados: { $ref: '#/components/schemas/DadosDiagnosticoConcluido' } } }] }
     ReparoIniciado:
       name: ReparoIniciado
-      title: ReparoIniciado
       summary: O mecânico iniciou o reparo.
-      description: 'Efeito no orquestrador: Registrado no histórico da OS; saga → EM_EXECUCAO.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - ReparoIniciado
-            dados:
-              $ref: '#/components/schemas/DadosReparoIniciado'
-      examples:
-      - name: ReparoIniciado
-        headers:
-          tipo: ReparoIniciado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: ReparoIniciado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: execution-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            mecanicoId: 3c2b1a09-8f7e-4d6c-b5a4-938271605f4e
-            iniciadoEm: '2026-10-31T09:00:00.000Z'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ReparoIniciado }, dados: { $ref: '#/components/schemas/DadosMecanicoIniciou' } } }] }
     ExecucaoFinalizada:
       name: ExecucaoFinalizada
-      title: ExecucaoFinalizada
       summary: O mecânico finalizou o reparo.
-      description: 'Efeito no orquestrador: OS EM_EXECUCAO → FINALIZADA; saga → CONCLUIDA.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - ExecucaoFinalizada
-            dados:
-              $ref: '#/components/schemas/DadosExecucaoFinalizada'
-      examples:
-      - name: ExecucaoFinalizada
-        headers:
-          tipo: ExecucaoFinalizada
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: ExecucaoFinalizada
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: execution-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            mecanicoId: 3c2b1a09-8f7e-4d6c-b5a4-938271605f4e
-            finalizadaEm: '2026-10-31T11:30:00.000Z'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ExecucaoFinalizada }, dados: { $ref: '#/components/schemas/DadosExecucaoFinalizada' } } }] }
     ExecucaoFalhou:
       name: ExecucaoFalhou
-      title: ExecucaoFalhou
       summary: O mecânico registrou falha no reparo.
-      description: 'Efeito no orquestrador: Inicia a compensação FALHA_EXECUCAO: EstornarPagamento, CancelarOrcamento e estorno
-        local do estoque.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - ExecucaoFalhou
-            dados:
-              $ref: '#/components/schemas/DadosExecucaoFalhou'
-      examples:
-      - name: ExecucaoFalhou
-        headers:
-          tipo: ExecucaoFalhou
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: ExecucaoFalhou
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: execution-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            mecanicoId: 3c2b1a09-8f7e-4d6c-b5a4-938271605f4e
-            motivo: Disco de freio trincado, peça indisponível
-            ocorridaEm: '2026-10-31T10:00:00.000Z'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ExecucaoFalhou }, dados: { $ref: '#/components/schemas/DadosExecucaoFalhou' } } }] }
     ExecucaoCancelada:
       name: ExecucaoCancelada
-      title: ExecucaoCancelada
       summary: Resposta a CancelarExecucao.
-      description: 'Efeito no orquestrador: Libera a próxima compensação; quando a seguinte é o estorno do estoque, a OS fica
-        CANCELADA e a saga COMPENSADA.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - ExecucaoCancelada
-            dados:
-              $ref: '#/components/schemas/DadosExecucaoCancelada'
-      examples:
-      - name: ExecucaoCancelada
-        headers:
-          tipo: ExecucaoCancelada
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: ExecucaoCancelada
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          origem: execution-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            motivo: REPROVACAO
-            canceladaEm: '2026-10-30T16:00:05.000Z'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ExecucaoCancelada }, dados: { $ref: '#/components/schemas/DadosExecucaoCancelada' } } }] }
     OrcamentoGerado:
       name: OrcamentoGerado
-      title: OrcamentoGerado
       summary: Resposta a GerarOrcamento.
-      description: 'Efeito no orquestrador: OS EM_DIAGNOSTICO → AGUARDANDO_APROVACAO; saga → AGUARDANDO_APROVACAO.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - OrcamentoGerado
-            dados:
-              $ref: '#/components/schemas/DadosOrcamentoGerado'
-      examples:
-      - name: OrcamentoGerado
-        headers:
-          tipo: OrcamentoGerado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: OrcamentoGerado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            orcamentoId: 5e2d7c1a-9b3f-4a6e-8d0c-1f2e3a4b5c6d
-            total: 360.0
-            validoAte: '2026-11-06T14:51:00.000Z'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoGerado }, dados: { $ref: '#/components/schemas/DadosOrcamentoGerado' } } }] }
     OrcamentoAprovado:
       name: OrcamentoAprovado
-      title: OrcamentoAprovado
-      summary: O cliente ou o funcionário aprovou o orçamento.
-      description: 'Efeito no orquestrador: OS → AGUARDANDO_PAGAMENTO com dataAprovacao; saga → AGUARDANDO_PAGAMENTO.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - OrcamentoAprovado
-            dados:
-              $ref: '#/components/schemas/DadosOrcamentoAprovado'
-      examples:
-      - name: OrcamentoAprovado
-        headers:
-          tipo: OrcamentoAprovado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: OrcamentoAprovado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            orcamentoId: 5e2d7c1a-9b3f-4a6e-8d0c-1f2e3a4b5c6d
-            aprovadoEm: '2026-10-30T15:10:00.000Z'
-            canal: LINK
-            linkPagamento: https://pagamento.example/checkout/abc
+      summary: O orçamento foi aprovado.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoAprovado }, dados: { $ref: '#/components/schemas/DadosOrcamentoAprovado' } } }] }
     OrcamentoReprovado:
       name: OrcamentoReprovado
-      title: OrcamentoReprovado
-      summary: O cliente ou o funcionário reprovou o orçamento.
-      description: 'Efeito no orquestrador: Inicia a compensação REPROVACAO: CancelarExecucao e estorno local do estoque.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - OrcamentoReprovado
-            dados:
-              $ref: '#/components/schemas/DadosOrcamentoReprovado'
-      examples:
-      - name: OrcamentoReprovado
-        headers:
-          tipo: OrcamentoReprovado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: OrcamentoReprovado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            orcamentoId: 5e2d7c1a-9b3f-4a6e-8d0c-1f2e3a4b5c6d
-            reprovadoEm: '2026-10-30T15:10:00.000Z'
-            canal: CLIENTE
+      summary: O orçamento foi reprovado.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoReprovado }, dados: { $ref: '#/components/schemas/DadosOrcamentoReprovado' } } }] }
     OrcamentoExpirado:
       name: OrcamentoExpirado
-      title: OrcamentoExpirado
       summary: O orçamento venceu sem decisão.
-      description: 'Efeito no orquestrador: Mesmo tratamento da reprovação (compensação REPROVACAO).'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - OrcamentoExpirado
-            dados:
-              $ref: '#/components/schemas/DadosOrcamentoExpirado'
-      examples:
-      - name: OrcamentoExpirado
-        headers:
-          tipo: OrcamentoExpirado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: OrcamentoExpirado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            orcamentoId: 5e2d7c1a-9b3f-4a6e-8d0c-1f2e3a4b5c6d
-            expiradoEm: '2026-11-06T14:51:00.000Z'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoExpirado }, dados: { $ref: '#/components/schemas/DadosOrcamentoExpirado' } } }] }
     OrcamentoCancelado:
       name: OrcamentoCancelado
-      title: OrcamentoCancelado
       summary: Resposta a CancelarOrcamento.
-      description: 'Efeito no orquestrador: Libera a próxima compensação. orcamentoId é nulo quando não havia orçamento.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - OrcamentoCancelado
-            dados:
-              $ref: '#/components/schemas/DadosOrcamentoCancelado'
-      examples:
-      - name: OrcamentoCancelado
-        headers:
-          tipo: OrcamentoCancelado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: OrcamentoCancelado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            orcamentoId: 5e2d7c1a-9b3f-4a6e-8d0c-1f2e3a4b5c6d
-            motivo: PAGAMENTO_RECUSADO
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoCancelado }, dados: { $ref: '#/components/schemas/DadosOrcamentoCancelado' } } }] }
     PagamentoAprovado:
       name: PagamentoAprovado
-      title: PagamentoAprovado
-      summary: O pagamento foi confirmado pelo gateway.
-      description: 'Efeito no orquestrador: OS → EM_EXECUCAO com dataInicio, IniciarReparo e saga AGUARDANDO_FILA_REPARO.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - PagamentoAprovado
-            dados:
-              $ref: '#/components/schemas/DadosPagamentoAprovado'
-      examples:
-      - name: PagamentoAprovado
-        headers:
-          tipo: PagamentoAprovado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: PagamentoAprovado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            orcamentoId: 5e2d7c1a-9b3f-4a6e-8d0c-1f2e3a4b5c6d
-            pagamentoId: 8a7b6c5d-4e3f-4210-9abc-def012345678
-            valor: 360.0
-            aprovadoEm: '2026-10-30T15:20:00.000Z'
-            meio: credit_card
+      summary: O pagamento foi confirmado.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: PagamentoAprovado }, dados: { $ref: '#/components/schemas/DadosPagamentoAprovado' } } }] }
     PagamentoRecusado:
       name: PagamentoRecusado
-      title: PagamentoRecusado
       summary: O pagamento foi recusado ou expirou.
-      description: 'Efeito no orquestrador: Inicia a compensação PAGAMENTO_RECUSADO: CancelarOrcamento, CancelarExecucao e
-        estorno local do estoque.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - PagamentoRecusado
-            dados:
-              $ref: '#/components/schemas/DadosPagamentoRecusado'
-      examples:
-      - name: PagamentoRecusado
-        headers:
-          tipo: PagamentoRecusado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: PagamentoRecusado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: null
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            orcamentoId: 5e2d7c1a-9b3f-4a6e-8d0c-1f2e3a4b5c6d
-            pagamentoId: 8a7b6c5d-4e3f-4210-9abc-def012345678
-            motivo: cc_rejected_other_reason
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: PagamentoRecusado }, dados: { $ref: '#/components/schemas/DadosPagamentoRecusado' } } }] }
     PagamentoEstornado:
       name: PagamentoEstornado
-      title: PagamentoEstornado
       summary: Resposta a EstornarPagamento.
-      description: 'Efeito no orquestrador: Libera a próxima compensação. valor é 0 e pagamentoId nulo quando não havia pagamento
-        aprovado.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - PagamentoEstornado
-            dados:
-              $ref: '#/components/schemas/DadosPagamentoEstornado'
-      examples:
-      - name: PagamentoEstornado
-        headers:
-          tipo: PagamentoEstornado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: PagamentoEstornado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            orcamentoId: 5e2d7c1a-9b3f-4a6e-8d0c-1f2e3a4b5c6d
-            pagamentoId: 8a7b6c5d-4e3f-4210-9abc-def012345678
-            valor: 360.0
-            estornadoEm: '2026-10-31T10:00:30.000Z'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: PagamentoEstornado }, dados: { $ref: '#/components/schemas/DadosPagamentoEstornado' } } }] }
     ComandoRejeitado:
       name: ComandoRejeitado
-      title: ComandoRejeitado
       summary: O participante recusou um comando por regra de negócio.
-      description: 'Efeito no orquestrador: Para GerarOrcamento: compensação REJEICAO. Para comando de compensação, IniciarDiagnostico
-        ou IniciarReparo: saga em FALHA. Nos demais casos é ignorado.'
-      traits:
-      - $ref: '#/components/messageTraits/atributosSqs'
-      payload:
-        allOf:
-        - $ref: '#/components/schemas/Envelope'
-        - type: object
-          properties:
-            tipo:
-              type: string
-              enum:
-              - ComandoRejeitado
-            dados:
-              $ref: '#/components/schemas/DadosComandoRejeitado'
-      examples:
-      - name: ComandoRejeitado
-        headers:
-          tipo: ComandoRejeitado
-          versao: '1'
-        payload:
-          mensagemId: 6b1f0a2e-3c4d-4e5f-8a9b-0c1d2e3f4a5b
-          tipo: ComandoRejeitado
-          versao: 1
-          sagaId: 7f1c2e0a-1d5b-4c7e-8a51-3f0e2a9b6c44
-          osId: c3a1d8a2-5e8f-4b3a-9d1c-2b7e6f4a9e10
-          causadaPor: 0d6f6f0e-8b0a-4d39-9a4e-9c8a5f3a1b11
-          origem: billing-service
-          ocorridoEm: '2026-10-30T14:05:11.482Z'
-          dados:
-            comando: GerarOrcamento
-            motivo: Cliente sem e-mail cadastrado
-            codigo: DADOS_INVALIDOS
-  messageTraits:
-    atributosSqs:
-      headers:
-        type: object
-        required:
-        - tipo
-        - versao
-        properties:
-          tipo:
-            type: string
-            description: Atributo SQS String com o tipo da mensagem.
-          versao:
-            type: string
-            description: Atributo SQS String com a versão do contrato.
-          newrelic:
-            type: string
-            description: Cabeçalho de rastreamento distribuído do agente New Relic.
-          traceparent:
-            type: string
-            description: W3C Trace Context.
-          tracestate:
-            type: string
-            description: W3C Trace Context.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ComandoRejeitado }, dados: { $ref: '#/components/schemas/DadosComandoRejeitado' } } }] }
   parameters:
     ambiente:
       description: Ambiente da fila.
-      schema:
-        type: string
-        enum:
-        - local
-        - staging
-        - prod
+      schema: { type: string, enum: [local, staging, prod] }
+  messageTraits:
+    sqs:
+      headers:
+        type: object
+        required: [tipo, versao]
+        properties:
+          tipo: { type: string }
+          versao: { type: string }
+          newrelic: { type: string }
+          traceparent: { type: string }
+          tracestate: { type: string }
+  schemas:
+    Uuid: { type: string, format: uuid }
+    UuidOuNulo: { type: [string, 'null'], format: uuid }
+    Instante: { type: string, format: date-time }
+    Valor: { type: number, multipleOf: 0.01 }
+    TipoItem: { type: string, enum: [SERVICO, PECA] }
+    Canal: { type: string, enum: [CLIENTE, LINK, BALCAO] }
+    Envelope:
+      type: object
+      required: [mensagemId, tipo, versao, sagaId, osId, causadaPor, origem, ocorridoEm, dados]
+      properties:
+        mensagemId: { $ref: '#/components/schemas/Uuid' }
+        tipo: { type: string }
+        versao: { type: integer, minimum: 1 }
+        sagaId: { $ref: '#/components/schemas/Uuid' }
+        osId: { $ref: '#/components/schemas/Uuid' }
+        causadaPor: { $ref: '#/components/schemas/UuidOuNulo' }
+        origem: { type: string, enum: [os-service, billing-service, execution-service] }
+        ocorridoEm: { $ref: '#/components/schemas/Instante' }
+        dados: { type: object }
+    DadosMotivo:
+      type: object
+      required: [motivo]
+      properties: { motivo: { type: string } }
+    DadosIniciarDiagnostico:
+      type: object
+      required: [clienteId, veiculo, abertaEm]
+      properties:
+        clienteId: { $ref: '#/components/schemas/Uuid' }
+        veiculo:
+          type: object
+          required: [placa, marca, modelo, anoFabricacao]
+          properties:
+            placa: { type: string }
+            marca: { type: string }
+            modelo: { type: string }
+            anoFabricacao: { type: integer }
+        abertaEm: { $ref: '#/components/schemas/Instante' }
+    DadosIniciarReparo:
+      type: object
+      required: [itens]
+      properties:
+        itens:
+          type: array
+          items:
+            type: object
+            required: [tipo, descricao, quantidade]
+            properties:
+              tipo: { $ref: '#/components/schemas/TipoItem' }
+              descricao: { type: string }
+              quantidade: { type: integer, minimum: 1 }
+    DadosGerarOrcamento:
+      type: object
+      required: [clienteId, cliente, veiculo, itens]
+      properties:
+        clienteId: { $ref: '#/components/schemas/Uuid' }
+        cliente:
+          type: object
+          required: [nome, email]
+          properties: { nome: { type: string }, email: { type: string } }
+        veiculo:
+          type: object
+          required: [placa, modelo]
+          properties: { placa: { type: string }, modelo: { type: string } }
+        itens:
+          type: array
+          items:
+            type: object
+            required: [tipo, referenciaId, descricao, quantidade, precoUnitario]
+            properties:
+              tipo: { $ref: '#/components/schemas/TipoItem' }
+              referenciaId: { $ref: '#/components/schemas/Uuid' }
+              descricao: { type: string }
+              quantidade: { type: integer, minimum: 1 }
+              precoUnitario: { $ref: '#/components/schemas/Valor' }
+    DadosExecucaoEnfileirada:
+      type: object
+      required: [etapa, enfileiradaEm]
+      properties: { etapa: { type: string, enum: [DIAGNOSTICO, REPARO] }, enfileiradaEm: { $ref: '#/components/schemas/Instante' } }
+    DadosMecanicoIniciou:
+      type: object
+      required: [mecanicoId, iniciadoEm]
+      properties: { mecanicoId: { $ref: '#/components/schemas/Uuid' }, iniciadoEm: { $ref: '#/components/schemas/Instante' } }
+    DadosDiagnosticoConcluido:
+      type: object
+      required: [mecanicoId, concluidoEm]
+      properties: { mecanicoId: { $ref: '#/components/schemas/Uuid' }, concluidoEm: { $ref: '#/components/schemas/Instante' }, observacoes: { type: string } }
+    DadosExecucaoFinalizada:
+      type: object
+      required: [mecanicoId, finalizadaEm]
+      properties: { mecanicoId: { $ref: '#/components/schemas/Uuid' }, finalizadaEm: { $ref: '#/components/schemas/Instante' } }
+    DadosExecucaoFalhou:
+      type: object
+      required: [mecanicoId, motivo, ocorridaEm]
+      properties: { mecanicoId: { $ref: '#/components/schemas/Uuid' }, motivo: { type: string }, ocorridaEm: { $ref: '#/components/schemas/Instante' } }
+    DadosExecucaoCancelada:
+      type: object
+      required: [canceladaEm]
+      properties: { motivo: { type: string }, canceladaEm: { $ref: '#/components/schemas/Instante' } }
+    DadosOrcamentoGerado:
+      type: object
+      required: [orcamentoId, total, validoAte]
+      properties: { orcamentoId: { $ref: '#/components/schemas/Uuid' }, total: { $ref: '#/components/schemas/Valor' }, validoAte: { $ref: '#/components/schemas/Instante' } }
+    DadosOrcamentoAprovado:
+      type: object
+      required: [orcamentoId, aprovadoEm, canal]
+      properties:
+        orcamentoId: { $ref: '#/components/schemas/Uuid' }
+        aprovadoEm: { $ref: '#/components/schemas/Instante' }
+        canal: { $ref: '#/components/schemas/Canal' }
+        linkPagamento: { type: string }
+    DadosOrcamentoReprovado:
+      type: object
+      required: [orcamentoId, reprovadoEm, canal]
+      properties: { orcamentoId: { $ref: '#/components/schemas/Uuid' }, reprovadoEm: { $ref: '#/components/schemas/Instante' }, canal: { $ref: '#/components/schemas/Canal' } }
+    DadosOrcamentoExpirado:
+      type: object
+      required: [orcamentoId, expiradoEm]
+      properties: { orcamentoId: { $ref: '#/components/schemas/Uuid' }, expiradoEm: { $ref: '#/components/schemas/Instante' } }
+    DadosOrcamentoCancelado:
+      type: object
+      required: [motivo]
+      properties: { orcamentoId: { $ref: '#/components/schemas/UuidOuNulo' }, motivo: { type: string } }
+    DadosPagamentoAprovado:
+      type: object
+      required: [orcamentoId, pagamentoId, valor, aprovadoEm]
+      properties:
+        orcamentoId: { $ref: '#/components/schemas/Uuid' }
+        pagamentoId: { $ref: '#/components/schemas/Uuid' }
+        valor: { $ref: '#/components/schemas/Valor' }
+        aprovadoEm: { $ref: '#/components/schemas/Instante' }
+        meio: { type: string }
+    DadosPagamentoRecusado:
+      type: object
+      required: [orcamentoId, motivo]
+      properties: { orcamentoId: { $ref: '#/components/schemas/Uuid' }, pagamentoId: { $ref: '#/components/schemas/UuidOuNulo' }, motivo: { type: string } }
+    DadosPagamentoEstornado:
+      type: object
+      required: [valor, estornadoEm]
+      properties:
+        orcamentoId: { $ref: '#/components/schemas/UuidOuNulo' }
+        pagamentoId: { $ref: '#/components/schemas/UuidOuNulo' }
+        valor: { $ref: '#/components/schemas/Valor' }
+        estornadoEm: { $ref: '#/components/schemas/Instante' }
+    DadosComandoRejeitado:
+      type: object
+      required: [comando, motivo, codigo]
+      properties:
+        comando: { type: string }
+        motivo: { type: string }
+        codigo:
+          type: string
+          enum: [DADOS_INVALIDOS, ORCAMENTO_NAO_ENCONTRADO, EXECUCAO_INEXISTENTE, ESTADO_INVALIDO, COMANDO_DESCONHECIDO]
