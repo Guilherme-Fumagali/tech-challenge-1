@@ -28,6 +28,7 @@ Serviço de ordens de serviço da oficina mecânica, desenvolvido no Tech Challe
 | Carga de dados de demonstração | [`scripts/preparar-demo.sh`](scripts/preparar-demo.sh): autentica o funcionário em duas etapas (pede o código no terminal), cadastra cliente, veículo e catálogo e abre ordens de serviço. Uso: `CPF_FUNCIONARIO=... ./scripts/preparar-demo.sh` (requer `curl`, `jq` e credenciais AWS para ler a URL do SSM, ou `API_URL`) |
 | Testes | [`docs/testes.md`](docs/testes.md) |
 | Runbooks dos alertas | [`docs/runbooks`](docs/runbooks) |
+| Documentação da Fase 4: ADRs 016 a 025, diagramas, Domain Storytelling, débitos técnicos, relatório e slides | [`docs/tech-challenge-4`](docs/tech-challenge-4/README.md) |
 | Documentação das fases anteriores | [`docs/tech-challenge-3`](docs/tech-challenge-3), [`docs/tech-challenge-2`](docs/tech-challenge-2), [`docs/tech-challenge-1`](docs/tech-challenge-1) |
 | Vídeo de demonstração | a publicar |
 
@@ -373,6 +374,8 @@ Dashboards e alertas são criados por Terraform no `oficina-infra-k8s`; cada ale
 | Contratos | [`docs/openapi.json`](docs/openapi.json), [`docs/asyncapi.yaml`](docs/asyncapi.yaml), [`docs/postman`](docs/postman) |
 | Testes | [`docs/testes.md`](docs/testes.md) |
 | Runbooks | [`docs/runbooks`](docs/runbooks) |
+| Fase 4: ADRs 016 a 025, arquitetura geral, sequências e estados da saga, modelos de dados, débitos técnicos, relatório e slides | [`docs/tech-challenge-4`](docs/tech-challenge-4/README.md) |
+| Domain Storytelling do fluxo distribuído (Fase 4) | [`docs/tech-challenge-4/diagramas/domain-storytelling.md`](docs/tech-challenge-4/diagramas/domain-storytelling.md) |
 | DDD: Event Storming, Context Map, Domain Storytelling, linguagem ubíqua | [`docs/ddd`](docs/ddd) |
 | Anti-Corruption Layer e notificação | [`docs/ddd/notificacao-acl.md`](docs/ddd/notificacao-acl.md) |
 | Fase 3: RFCs, ADRs, diagramas, débitos técnicos, relatório e slides | [`docs/tech-challenge-3`](docs/tech-challenge-3) |
