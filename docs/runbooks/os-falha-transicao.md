@@ -1,20 +1,23 @@
 # Runbook — Falha na transição de status de OS
 
-**Alerta:** `AWS-OficinaAPI-<Amb>-OS-FalhaTransicao-Critical`
+**Alerta:** `AWS-Oficina-<Amb>-OS-FalhaTransicao-Critical`
 **Dispara quando:** mais de 5 falhas de transição em 5 minutos.
 
 ## O que significa
 
 A métrica `oficina.os.transicoes` com `resultado = 'falha'` é incrementada pelo
-`GlobalExceptionHandler` sempre que uma `TransicaoInvalidaException` é lançada — alguém
+`GlobalExceptionHandler` sempre que uma `TransicaoInvalidaException` chega à API — alguém
 tentou mover uma OS para um status que a máquina de estados não permite a partir do
-estado atual.
+estado atual. Na Fase 4 a única transição pedida por HTTP é a entrega; as demais vêm dos
+eventos da saga, e uma transição recusada no consumo faz a mensagem voltar para a fila
+(ver [mensageria-dlq.md](./mensageria-dlq.md)).
 
 Transições válidas:
 
 ```
-RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → EM_EXECUCAO → FINALIZADA → ENTREGUE
-                                       └──────────→ CANCELADA
+RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → AGUARDANDO_PAGAMENTO → EM_EXECUCAO → FINALIZADA → ENTREGUE
+                 │                   │                      │                  │
+                 └───────────────────┴──────────────────────┴──────────────────┴──→ CANCELADA
 ```
 
 ## Impacto
@@ -54,14 +57,14 @@ SELECT id, status, data_ultima_transicao FROM ordens_servico WHERE id = '<ordem.
 | Muitas falhas na **mesma** ordem | Retentativa de cliente ou duplo clique na UI | Verificar idempotência do endpoint; não é bug de servidor |
 | Falhas espalhadas em ordens diferentes, mesmo `status_destino` | Regressão na máquina de estados após deploy | Conferir o último deploy e considerar rollback |
 | Pico logo após deploy | Migration incompleta ou dado inconsistente | Conferir Flyway: `SELECT * FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 5;` |
-| Falhas concentradas em `aprovar-externo` | Token de aprovação expirado sendo reusado | Esperado — validar se o volume justifica ajustar `APROVACAO_TOKEN_VALIDADE_HORAS` |
+| Falhas concentradas em `entregar` | Entrega pedida antes de `FINALIZADA` | Conferir a saga em `GET /api/ordens/{id}/saga`; a OS só finaliza com `ExecucaoFinalizada` |
 
 ## Mitigação
 
 - **Regressão confirmada:** rollback do deploy.
   ```bash
-  kubectl rollout undo deployment/oficina-api -n oficina
-  kubectl rollout status deployment/oficina-api -n oficina
+  kubectl rollout undo deployment/os-service -n oficina
+  kubectl rollout status deployment/os-service -n oficina
   ```
 - **Dado inconsistente numa ordem específica:** corrigir o status com registro do motivo,
   nunca em massa.

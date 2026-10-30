@@ -1,79 +1,44 @@
-# Runbook — Falhas de integração
+# Procedimento — Fontes indisponíveis no acompanhamento
 
-**Alerta:** `AWS-OficinaAPI-<Amb>-Integracao-Falhas-Warning`
-**Dispara quando:** mais de 10 falhas em 15 minutos.
+**Sinal:** métrica `oficina.integracao.falhas` do OS Service, atributos `integracao`
+(`billing` ou `execution`) e `motivo` (classe da exceção). Na Fase 4 este sinal aparece no
+dashboard técnico e não tem condição de alerta própria; a condição da Fase 3 sobre o envio de
+e-mail deixou de existir porque o e-mail saiu do OS Service.
 
 ## O que significa
 
-A métrica `oficina.integracao.falhas` é segmentada por `integracao` e `motivo`. Duas
-integrações são instrumentadas:
+O `GET /api/ordens/{id}/acompanhamento` compõe a resposta com chamadas ao Billing
+(`GET /api/orcamentos?osId=`) e ao Execution (`GET /api/execucoes/{osId}`). Cada chamada tem
+limite de 2 s, circuit breaker (janela de 10 chamadas, 50% de falhas, 30 s aberto) e bulkhead
+de 10 chamadas simultâneas. Quando uma fonte falha, a resposta sai com o campo nulo e o nome
+da fonte em `fontesIndisponiveis`; o contador registra o motivo.
 
-| `integracao` | O que é |
+| `motivo` | Origem |
 |---|---|
-| `email` | Envio do orçamento por SMTP, com os links de aprovação |
-| `aprovacao_externa` | Recebimento da decisão do cliente pelo link do e-mail |
+| `TimeoutException` | Participante acima de 2 s |
+| `CallNotPermittedException` | Circuito aberto após falhas seguidas |
+| `BulkheadFullException` | Mais de 10 consultas simultâneas ao mesmo participante |
+| `HttpServerErrorException...` | Participante respondeu 5xx |
 
 ## Impacto
 
-**O orçamento não chega ao cliente, ou a resposta dele não chega ao sistema.** A OS fica
-parada em `AGUARDANDO_APROVACAO` sem que ninguém perceba pelo fluxo normal.
+O acompanhamento continua respondendo com os dados locais da OS e do histórico. A saga não
+depende dessas chamadas.
 
 ## Diagnóstico
 
-1. **Qual integração e qual motivo:**
-
 ```sql
 SELECT sum(oficina.integracao.falhas) FROM Metric
-FACET integracao, motivo TIMESERIES AUTO SINCE 1 hour ago
+WHERE env = '<env>' FACET integracao, motivo TIMESERIES AUTO SINCE 1 hour ago
 ```
-
-2. **Se for `email`:**
 
 ```bash
-kubectl logs -n oficina -l app=oficina-api --tail=200 | grep -i 'mail\|smtp'
-kubectl get pods -n oficina -l app=oficina-mailhog
+kubectl get pods -n oficina -l app.kubernetes.io/name=billing-service
+kubectl get pods -n oficina -l app.kubernetes.io/name=execution-service
+kubectl exec -n oficina deploy/os-service -- wget -qO- http://billing-service/actuator/health
 ```
-
-Conferir `SMTP_HOST` e `SMTP_PORT` no ConfigMap — em produção real, apontam para SMTP
-externo, e aí a saída depende da **NAT instance**.
-
-3. **Se for `aprovacao_externa`:** o motivo mais comum é token expirado ou já usado. Não é
-   falha de sistema — é o cliente clicando num link antigo.
-
-```sql
-SELECT count(*) FROM Log
-WHERE message LIKE '%Token de aprovação%' FACET message SINCE 1 hour ago
-```
-
-4. **Quantas OS estão paradas esperando:**
-
-```sql
-SELECT id, data_ultima_transicao FROM ordens_servico
-WHERE status = 'AGUARDANDO_APROVACAO'
-  AND data_ultima_transicao < NOW() - INTERVAL '48 hours';
-```
-
-## Causas mais prováveis
-
-| `integracao` / `motivo` | Causa provável | Ação |
-|---|---|---|
-| `email` / `montagem_mensagem` | Cliente sem e-mail cadastrado | Corrigir o cadastro; validar o campo na entrada |
-| `email`, todas falhando | SMTP fora, ou NAT sem saída | Ver [DT-04](../tech-challenge-3/debitos-tecnicos.md) |
-| `aprovacao_externa` / token expirado | Cliente demorou mais que a validade (168 h padrão) | Reenviar o orçamento |
-| Pico súbito em `aprovacao_externa` | Possível varredura de tokens | Verificar origem no access log do gateway |
 
 ## Mitigação
 
-- **SMTP fora:** as ordens não se perdem — ficam em `AGUARDANDO_APROVACAO`. Reenviar o
-  orçamento após restabelecer.
-- **Token expirado legítimo:** gerar novo orçamento, o que emite token novo.
-- **NAT sem saída:** conferir a instância.
-  ```bash
-  aws ec2 describe-instances --filters "Name=tag:Name,Values=oficina-api-nat" \
-    --query 'Reservations[0].Instances[0].[State.Name,InstanceId]' --output text
-  ```
-
-## Quando escalar
-
-Se OS ficarem paradas por mais de 48 h em `AGUARDANDO_APROVACAO` em volume, ou se o pico
-de `aprovacao_externa` vier de um único IP.
+Recuperar o participante. O circuito fecha sozinho: depois de 30 s aberto, deixa passar duas
+chamadas de teste e volta ao estado fechado se elas tiverem sucesso.
