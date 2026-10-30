@@ -1,8 +1,6 @@
-# oficina-api
+# tech-challenge-1 — OS Service
 
-Aplicação backend do sistema de gestão de ordens de serviço de uma oficina mecânica, desenvolvida no Tech Challenge da PosTech FIAP (Arquitetura de Software).
-
-Este repositório contém a aplicação Spring Boot. Infraestrutura e autenticação estão em repositórios próprios, conforme a organização exigida na Fase 3.
+Serviço de ordens de serviço da oficina mecânica, desenvolvido no Tech Challenge da PosTech FIAP (Arquitetura de Software). Na Fase 4 o monólito das fases anteriores foi dividido em três serviços; este repositório mantém clientes, veículos, funcionários, catálogo de serviços e peças, estoque e ordens de serviço, e orquestra a saga que coordena o Billing Service (orçamento e pagamento) e o Execution Service (diagnóstico e reparo).
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=alert_status&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Guilherme-Fumagali_tech-challenge-1&metric=coverage&token=7eca46d63f91469baf821034a54bb15eeb6341fc)](https://sonarcloud.io/summary/new_code?id=Guilherme-Fumagali_tech-challenge-1)
@@ -12,40 +10,182 @@ Este repositório contém a aplicação Spring Boot. Infraestrutura e autentica�
 
 | Repositório | Conteúdo |
 |---|---|
-| [tech-challenge-1](https://github.com/Guilherme-Fumagali/tech-challenge-1) | Aplicação (este repositório) |
-| [oficina-auth-lambda](https://github.com/Guilherme-Fumagali/oficina-auth-lambda) | Função serverless de autenticação por CPF |
-| [oficina-infra-k8s](https://github.com/Guilherme-Fumagali/oficina-infra-k8s) | Rede, EKS, ECR, API Gateway e New Relic (Terraform) |
-| [oficina-infra-db](https://github.com/Guilherme-Fumagali/oficina-infra-db) | RDS PostgreSQL (Terraform) |
+| [tech-challenge-1](https://github.com/Guilherme-Fumagali/tech-challenge-1) | OS Service e orquestrador da saga (este repositório) |
+| [oficina-billing-service](https://github.com/Guilherme-Fumagali/oficina-billing-service) | Orçamento, aprovação, pagamento no Mercado Pago e estorno |
+| [oficina-execution-service](https://github.com/Guilherme-Fumagali/oficina-execution-service) | Fila de execução, diagnóstico e reparo |
+| [oficina-auth-lambda](https://github.com/Guilherme-Fumagali/oficina-auth-lambda) | Autenticação por CPF com segundo fator e authorizer JWT |
+| [oficina-infra-k8s](https://github.com/Guilherme-Fumagali/oficina-infra-k8s) | Rede, EKS, API Gateway, ECR e New Relic (Terraform) |
+| [oficina-infra-db](https://github.com/Guilherme-Fumagali/oficina-infra-db) | RDS da Fase 3; na Fase 4 o banco do OS Service passou para `infra/` deste repositório |
 
 ## Links
 
 | Artefato | Local |
 |---|---|
-| Contrato OpenAPI | [`docs/openapi.json`](docs/openapi.json), visualizável no [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/Guilherme-Fumagali/tech-challenge-1/main/docs/openapi.json) |
+| Contrato OpenAPI | [`docs/openapi.json`](docs/openapi.json), no [Redoc](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/Guilherme-Fumagali/tech-challenge-1/develop/docs/openapi.json) e no [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/Guilherme-Fumagali/tech-challenge-1/develop/docs/openapi.json) |
+| Contrato das mensagens | [`docs/asyncapi.yaml`](docs/asyncapi.yaml) (AsyncAPI 2.6), no [AsyncAPI Studio](https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/Guilherme-Fumagali/tech-challenge-1/develop/docs/asyncapi.yaml) |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` na execução local |
-| Coleção de requisições | [`docs/demo.http`](docs/demo.http) (formato HTTP Client, compatível com IntelliJ e VS Code REST Client) |
-| Carga de dados de demonstração | [`scripts/preparar-demo.sh`](scripts/preparar-demo.sh): cadastra cliente, veículo e catálogo e cria ordens de serviço em todos os status, via API Gateway. Uso: `CPF_FUNCIONARIO=... ./scripts/preparar-demo.sh` (requer `curl`, `jq` e credenciais AWS para ler a URL do SSM, ou `API_URL`) |
-| Documentação de arquitetura | [`docs/tech-challenge-3`](docs/tech-challenge-3): RFCs, ADRs, diagramas e débitos técnicos |
+| Coleção Postman | [`docs/postman/oficina-fase4.postman_collection.json`](docs/postman/oficina-fase4.postman_collection.json): fluxo completo pelos três serviços via API Gateway, login em duas etapas; ambiente em [`docs/postman/homologacao.postman_environment.json`](docs/postman/homologacao.postman_environment.json) |
+| Carga de dados de demonstração | [`scripts/preparar-demo.sh`](scripts/preparar-demo.sh): autentica o funcionário em duas etapas (pede o código no terminal), cadastra cliente, veículo e catálogo e abre ordens de serviço. Uso: `CPF_FUNCIONARIO=... ./scripts/preparar-demo.sh` (requer `curl`, `jq` e credenciais AWS para ler a URL do SSM, ou `API_URL`) |
 | Testes | [`docs/testes.md`](docs/testes.md) |
 | Runbooks dos alertas | [`docs/runbooks`](docs/runbooks) |
+| Documentação das fases anteriores | [`docs/tech-challenge-3`](docs/tech-challenge-3), [`docs/tech-challenge-2`](docs/tech-challenge-2), [`docs/tech-challenge-1`](docs/tech-challenge-1) |
 | Vídeo de demonstração | a publicar |
 
 ## Arquitetura
 
-A aplicação roda no EKS, em subnets privadas, atrás do API Gateway. O gateway autentica as rotas protegidas com um Lambda authorizer e encaminha as requisições por VPC Link e Network Load Balancer. A aplicação valida novamente o JWT, persiste no RDS PostgreSQL e envia telemetria ao New Relic.
+O OS Service roda no EKS, atrás do API Gateway (VPC Link, NLB e NodePort 30080). O gateway valida o JWT com o Lambda authorizer; o serviço valida o token de novo, persiste no RDS PostgreSQL próprio (`oficina-os-db-<env>`) e conversa com os outros dois serviços por filas SQS. A única chamada síncrona entre serviços é a composição do acompanhamento da OS.
 
-![Diagrama de contêineres](docs/tech-challenge-3/diagramas/png/c2-containers.png)
+```mermaid
+flowchart LR
+    cliente[Cliente / Funcionário] --> gw[API Gateway + Lambda authorizer]
+    gw --> api[Controllers REST]
+    lambda[oficina-auth-lambda] -- "GET /internal/identidades (X-Chave-Interna)" --> api
+    subgraph os[OS Service]
+        api --> uc[Casos de uso + UnidadeDeTrabalho]
+        uc --> dom[Domínio: OrdemServico, Peca, SagaOrdemServico]
+        uc --> repo[(PostgreSQL: OS, catálogo, estoque, saga, histórico, outbox, inbox)]
+        relay[RelayOutbox] --> repo
+        consumidor[ConsumidorEventosOs] --> uc
+        prazos[AgendadorPrazosSaga] --> uc
+        composicao[BillingRestClient / ExecutionRestClient + Resilience4j] 
+        uc --> composicao
+    end
+    relay -- "comandos" --> qb[[oficina-env-billing-comandos]]
+    relay -- "comandos" --> qe[[oficina-env-execution-comandos]]
+    qo[[oficina-env-os-eventos]] -- "eventos" --> consumidor
+    qb --> billing[Billing Service]
+    qe --> execution[Execution Service]
+    billing -- "eventos" --> qo
+    execution -- "eventos" --> qo
+    composicao -- "GET /api/orcamentos?osId" --> billing
+    composicao -- "GET /api/execucoes/{osId}" --> execution
+```
 
 Internamente, o código segue Clean Architecture:
 
 ```
 src/main/java/com/oficina/mecanica/
-├── domain/          entidades, value objects, exceções e portas de repositório (sem dependência de framework)
-├── application/     casos de uso
-└── infrastructure/  Spring Boot, JPA, REST, segurança, notificação e métricas
+├── domain/          entidades, value objects, máquina de estados da saga (domain/saga), exceções e portas de repositório, sem framework
+├── application/     casos de uso, porta UnidadeDeTrabalho e portas de mensageria, métricas e consulta aos participantes
+└── infrastructure/  Spring Boot, JPA, REST, segurança, mensageria SQS (outbox, relay, inbox, consumidor), clientes REST e métricas
 ```
 
-Diagramas completos: [contexto](docs/tech-challenge-3/diagramas/c1-contexto.md), [contêineres](docs/tech-challenge-3/diagramas/c2-containers.md), [componentes](docs/tech-challenge-3/diagramas/c3-componentes.md), [sequência de autenticação](docs/tech-challenge-3/diagramas/sequencia-autenticacao.md), [sequência de abertura de OS](docs/tech-challenge-3/diagramas/sequencia-abertura-os.md) e [modelo relacional](docs/tech-challenge-3/diagramas/der-modelo-relacional.md).
+Toda escrita passa pela porta `UnidadeDeTrabalho` (adaptador `TransacaoSpring`, `TransactionTemplate` com `PROPAGATION_REQUIRED`): leitura, validação, gravação, histórico e registro das mensagens no outbox acontecem na mesma transação. `ordens_servico` e `pecas` têm `@Version`; a OS incrementa a versão também quando só os itens mudam, e uma gravação com versão desatualizada responde 409.
+
+## Papel na saga
+
+O OS Service é o orquestrador da saga da ordem de serviço. A coordenação é orquestrada, e não coreografada, porque o fluxo envolve três serviços, quatro caminhos de compensação e prazos de resposta: com um orquestrador, o estado de cada saga fica em um só lugar (`sagas_ordem_servico` e `saga_passos`), pode ser consultado em `GET /api/ordens/{id}/saga` e é retomado após reinício de pod. A coreografia foi descartada porque espalharia essa lógica pelos participantes, sem um ponto único para saber em que etapa uma OS está. A decisão está registrada na ADR-017 da documentação da Fase 4.
+
+A lógica de transição está em uma classe de domínio sem Spring (`domain/saga/SagaOrdemServico`): recebe o evento e devolve a decisão (ação na OS, comandos a enviar, compensação local e resultado `APLICADO` ou `IGNORADO`). O caso de uso `ProcessarEventoSagaUseCase` executa a decisão na mesma transação que registra a mensagem na inbox.
+
+```mermaid
+stateDiagram-v2
+    [*] --> AGUARDANDO_FILA_DIAGNOSTICO: abertura da OS / IniciarDiagnostico
+    AGUARDANDO_FILA_DIAGNOSTICO --> AGUARDANDO_DIAGNOSTICO: ExecucaoEnfileirada(DIAGNOSTICO)
+    AGUARDANDO_FILA_DIAGNOSTICO --> EM_DIAGNOSTICO: DiagnosticoIniciado
+    AGUARDANDO_DIAGNOSTICO --> EM_DIAGNOSTICO: DiagnosticoIniciado
+    EM_DIAGNOSTICO --> EM_DIAGNOSTICO: DiagnosticoConcluido sem itens / ReabrirDiagnostico
+    EM_DIAGNOSTICO --> AGUARDANDO_ORCAMENTO: DiagnosticoConcluido com itens / GerarOrcamento
+    AGUARDANDO_ORCAMENTO --> AGUARDANDO_APROVACAO: OrcamentoGerado
+    AGUARDANDO_ORCAMENTO --> COMPENSANDO: ComandoRejeitado (REJEICAO)
+    AGUARDANDO_APROVACAO --> AGUARDANDO_PAGAMENTO: OrcamentoAprovado
+    AGUARDANDO_APROVACAO --> COMPENSANDO: OrcamentoReprovado ou OrcamentoExpirado (REPROVACAO)
+    AGUARDANDO_PAGAMENTO --> AGUARDANDO_FILA_REPARO: PagamentoAprovado / IniciarReparo
+    AGUARDANDO_PAGAMENTO --> COMPENSANDO: PagamentoRecusado (PAGAMENTO_RECUSADO)
+    AGUARDANDO_FILA_REPARO --> EM_EXECUCAO: ExecucaoEnfileirada(REPARO) ou ReparoIniciado
+    AGUARDANDO_FILA_REPARO --> COMPENSANDO: ExecucaoFalhou (FALHA_EXECUCAO)
+    EM_EXECUCAO --> CONCLUIDA: ExecucaoFinalizada
+    EM_EXECUCAO --> COMPENSANDO: ExecucaoFalhou (FALHA_EXECUCAO)
+    COMPENSANDO --> COMPENSANDO: resposta da compensação corrente
+    COMPENSANDO --> COMPENSADA: estorno local do estoque
+    COMPENSANDO --> FALHA: compensação rejeitada ou prazo esgotado
+```
+
+| Estado da saga | Status da OS | Espera | Prazo de resposta |
+|---|---|---|---|
+| `AGUARDANDO_FILA_DIAGNOSTICO` | `RECEBIDA` | `ExecucaoEnfileirada{DIAGNOSTICO}` | sim |
+| `AGUARDANDO_DIAGNOSTICO` | `RECEBIDA` | `DiagnosticoIniciado` | não (pessoa) |
+| `EM_DIAGNOSTICO` | `EM_DIAGNOSTICO` | `DiagnosticoConcluido` | não |
+| `AGUARDANDO_ORCAMENTO` | `EM_DIAGNOSTICO` | `OrcamentoGerado` | sim |
+| `AGUARDANDO_APROVACAO` | `AGUARDANDO_APROVACAO` | decisão do cliente | não (validade no Billing) |
+| `AGUARDANDO_PAGAMENTO` | `AGUARDANDO_PAGAMENTO` | resultado do pagamento | não (prazo no Billing) |
+| `AGUARDANDO_FILA_REPARO` | `EM_EXECUCAO` | `ExecucaoEnfileirada{REPARO}` | sim |
+| `EM_EXECUCAO` | `EM_EXECUCAO` | `ExecucaoFinalizada` ou `ExecucaoFalhou` | não |
+| `COMPENSANDO` | inalterado até o fim | resposta da compensação corrente | sim |
+| `CONCLUIDA` | `FINALIZADA` (depois `ENTREGUE`, local) | — | — |
+| `COMPENSADA` | `CANCELADA` | — | — |
+| `FALHA` | inalterado | intervenção manual ([runbook](docs/runbooks/saga-falha.md)) | — |
+
+Compensações, na ordem em que primeiro se impede trabalho novo e por último se devolve recurso:
+
+| Motivo | Gatilho | Ordem |
+|---|---|---|
+| `REPROVACAO` | `OrcamentoReprovado` ou `OrcamentoExpirado` | `CancelarExecucao` → estorno do estoque |
+| `REJEICAO` | `ComandoRejeitado` para `GerarOrcamento` | `CancelarExecucao` → estorno do estoque |
+| `PAGAMENTO_RECUSADO` | `PagamentoRecusado` | `CancelarOrcamento` → `CancelarExecucao` → estorno do estoque |
+| `FALHA_EXECUCAO` | `ExecucaoFalhou` | `EstornarPagamento` → `CancelarOrcamento` → estorno do estoque |
+
+O estorno do estoque é a compensação local: devolve as peças de cada item à `Peca` correspondente, cancela a OS e só ocorre se a OS ainda não estiver `CANCELADA`.
+
+Classificação dos passos:
+
+| Passo | Tipo |
+|---|---|
+| Abrir a OS, enfileirar o diagnóstico, reservar estoque, gerar orçamento, criar cobrança | compensáveis |
+| Pagamento aprovado | pivô: a partir daqui a OS segue para a execução, e voltar exige estorno no gateway |
+| Enfileirar reparo, finalizar | retentáveis: falha técnica é repetida; falha de negócio do reparo aciona `FALHA_EXECUCAO` |
+
+Garantias:
+
+- **Prazos e reenvio:** comandos que exigem resposta gravam `prazo_resposta` (padrão 2 minutos, `app.saga.prazo-resposta`). O `AgendadorPrazosSaga` reivindica as sagas vencidas com `FOR UPDATE SKIP LOCKED` e reenvia o último comando com `mensagemId` novo; após 3 reenvios (`app.saga.max-reenvios`) a saga vai para `FALHA`.
+- **Eventos fora de ordem:** um evento que chega antes do estado esperado lança `EventoForaDeOrdemException`; a mensagem volta para a fila após a visibilidade e é reprocessada.
+- **Eventos já aplicados:** um evento cujo efeito já está no estado é registrado como `IGNORADO` no log da saga.
+- **Rejeições:** `ComandoRejeitado` para `IniciarDiagnostico`, `IniciarReparo` ou um comando de compensação leva a saga a `FALHA`.
+
+## Mensagens
+
+O contrato completo, com exemplos, está em [`docs/asyncapi.yaml`](docs/asyncapi.yaml).
+
+| Direção | Fila | Tipos |
+|---|---|---|
+| Publica | `oficina-<env>-execution-comandos` | `IniciarDiagnostico`, `ReabrirDiagnostico`, `IniciarReparo`, `CancelarExecucao` |
+| Publica | `oficina-<env>-billing-comandos` | `GerarOrcamento`, `CancelarOrcamento`, `EstornarPagamento` |
+| Consome | `oficina-<env>-os-eventos` | `ExecucaoEnfileirada`, `DiagnosticoIniciado`, `DiagnosticoConcluido`, `ReparoIniciado`, `ExecucaoFinalizada`, `ExecucaoFalhou`, `ExecucaoCancelada`, `OrcamentoGerado`, `OrcamentoAprovado`, `OrcamentoReprovado`, `OrcamentoExpirado`, `OrcamentoCancelado`, `PagamentoAprovado`, `PagamentoRecusado`, `PagamentoEstornado`, `ComandoRejeitado` |
+
+Toda mensagem é um envelope JSON com `mensagemId`, `tipo`, `versao`, `sagaId`, `osId`, `causadaPor`, `origem` (`os-service`), `ocorridoEm` (UTC) e `dados`, e leva os atributos SQS `tipo` e `versao` do tipo String. O agente do New Relic usa até três atributos adicionais (`newrelic`, `traceparent`, `tracestate`); o atributo `JavaType` do Spring não é enviado e é ignorado no consumo.
+
+| Mecanismo | Implementação |
+|---|---|
+| Transactional Outbox | `PublicadorOutbox` grava o envelope na tabela `outbox` na transação do caso de uso; nenhum caso de uso chama a SQS |
+| Relay | `RelayOutbox`, a cada 500 ms, reivindica até 50 linhas com `FOR UPDATE SKIP LOCKED`, envia com `SqsTemplate` e marca `publicada_em`; erro incrementa `tentativas` e a linha volta no ciclo seguinte |
+| Consumo | `ConsumidorEventosOs` com `@SqsListener`, reconhecimento `ON_SUCCESS`, até 5 mensagens simultâneas |
+| Idempotência | `mensagens_processadas` recebe o `mensagemId` na mesma transação do efeito (`INSERT ... ON CONFLICT DO NOTHING`); duplicata é descartada e contada com `resultado=duplicada` |
+| Falha técnica | exceção → a mensagem volta após 30 s → após 5 recebimentos vai para `oficina-<env>-os-eventos-dlq`, medida pelo gauge `oficina.mensageria.dlq.mensagens` |
+
+## Banco e justificativa
+
+PostgreSQL 16 em RDS (`oficina-os-db-<env>`, banco `oficina`, `db.t4g.micro`, `rds.force_ssl=1`), provisionado pelo Terraform de [`infra/`](infra) e acessível apenas pelo security group dos nós do EKS. Na Fase 3 a mesma instância era lida também pela função de autenticação; na Fase 4 a função consulta o endpoint interno `/internal/identidades` e nenhum outro serviço tem credencial deste banco.
+
+Motivos da escolha:
+
+- O domínio tem entidades relacionadas com invariantes que o banco garante: estoque não negativo (`chk_estoque_nao_negativo`), CPF/CNPJ e placa únicos, status válidos, chaves estrangeiras entre OS, itens, peças e serviços.
+- A reserva de estoque e o item da OS são gravados na mesma transação ACID; a compensação devolve as peças e cancela a OS também em uma transação.
+- O Transactional Outbox e a inbox só são atômicos se a mudança de estado e o registro da mensagem estiverem no mesmo banco transacional.
+- `SELECT ... FOR UPDATE SKIP LOCKED` permite que várias réplicas executem o relay e o job de prazos sem processar a mesma linha.
+- O relatório de tempo médio e a listagem por prioridade são consultas relacionais.
+
+Um banco NoSQL perderia as constraints e a transação entre várias tabelas no núcleo do domínio. O Billing usa outra instância PostgreSQL e o Execution usa DocumentDB; a justificativa de cada um está no repositório do serviço.
+
+| Migration | Conteúdo |
+|---|---|
+| V1 a V9 | esquema das fases 1 a 3 e funcionário de homologação |
+| V10 | coluna `versao` em `ordens_servico` e `pecas` |
+| V11 | status `AGUARDANDO_PAGAMENTO`; remoção do token de aprovação externa |
+| V12 | `sagas_ordem_servico` e `saga_passos` |
+| V13 | `historico_status_os` |
+| V14 | `outbox` e `mensagens_processadas` |
+| V15 (Java) | e-mail do funcionário de homologação a partir de `FUNCIONARIO_SEED_EMAIL` |
+| V16 | remoção de `refresh_tokens` (DT-07) |
 
 ## Tecnologias
 
@@ -53,15 +193,17 @@ Diagramas completos: [contexto](docs/tech-challenge-3/diagramas/c1-contexto.md),
 |---|---|
 | Linguagem e framework | Java 21, Spring Boot 3.4 |
 | Persistência | PostgreSQL 16, Spring Data JPA, Flyway, MapStruct |
-| Segurança | Spring Security, JJWT 0.12 (validação de JWT HMAC) |
-| Documentação da API | SpringDoc OpenAPI (Swagger UI) |
-| Observabilidade | agente Java do New Relic, Micrometer com OTLP, logs estruturados em formato ECS |
-| Testes | JUnit 5, Mockito, AssertJ, Testcontainers, JaCoCo |
-| Build e implantação | Maven, Docker, GitHub Actions, Amazon ECR, Amazon EKS |
+| Mensageria | Amazon SQS, Spring Cloud AWS 3.3.1 (AWS SDK v2) |
+| Resiliência | Resilience4j 2.2.0 (TimeLimiter, CircuitBreaker, Bulkhead) |
+| Segurança | Spring Security, JJWT 0.12 (validação de JWT HMAC), chave interna para `/internal/**` |
+| Documentação | SpringDoc OpenAPI, AsyncAPI 2.6 |
+| Observabilidade | agente Java do New Relic 9.4.0 com `newrelic-api`, Micrometer com OTLP, logs em formato ECS |
+| Testes | JUnit 5, Mockito, AssertJ, Testcontainers (PostgreSQL e LocalStack), WireMock, Cucumber 7, JaCoCo |
+| Build e implantação | Maven, Docker, GitHub Actions, Amazon ECR, Amazon EKS com Kustomize, Terraform |
 
 ## Execução local
 
-Pré-requisitos: Docker e Docker Compose, com as portas `8080`, `5432`, `1025` e `8025` livres.
+Pré-requisitos: Docker e Docker Compose, com as portas `8080`, `5432` e `4566` livres.
 
 ```bash
 cp .env.example .env
@@ -72,12 +214,14 @@ docker compose up --build
 |---|---|
 | API | `http://localhost:8080` |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` |
-| MailHog (e-mails enviados, com os links de aprovação) | `http://localhost:8025` |
+| LocalStack (SQS) | `http://localhost:4566`, filas `oficina-local-*` criadas por [`localstack/init/ready.d/criar-filas.sh`](localstack/init/ready.d/criar-filas.sh) |
 
-Sem Docker, com um PostgreSQL local já criado:
+O contêiner `api` sobe com o perfil `local`, que aponta o SQS para o LocalStack com credenciais estáticas. Billing e Execution podem rodar nas portas 8081 e 8082 da máquina; sem eles, a abertura da OS funciona, os comandos ficam nas filas e o acompanhamento informa as fontes indisponíveis.
+
+Sem Docker para a aplicação, com PostgreSQL e LocalStack já em execução:
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.arguments="--DB_URL=jdbc:postgresql://localhost:5432/oficina --DB_USER=oficina --DB_PASS=oficina --JWT_SECRET=chave-local-com-pelo-menos-32-caracteres"
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 ### Variáveis de ambiente
@@ -86,174 +230,171 @@ Sem Docker, com um PostgreSQL local já criado:
 |---|---|---|
 | `DB_URL` | `jdbc:postgresql://localhost:5432/oficina` | URL do banco |
 | `DB_USER` / `DB_PASS` | `oficina` | Credenciais do banco |
-| `JWT_SECRET` | valor de desenvolvimento | Chave HMAC usada para validar os tokens; deve ser a mesma da Lambda de autenticação |
-| `NOTIFICACAO_CANAL` | `log` | `smtp` envia e-mail; `log` apenas registra (uso em desenvolvimento) |
-| `FUNCIONARIO_SEED_CPF` | — | CPF do funcionário cadastrado pela migration `V9`; definido apenas em homologação |
-| `APROVACAO_TOKEN_VALIDADE_HORAS` | `168` | Validade do token de aprovação externa |
-| `ENV` | `local` | Ambiente, usado como tag nas métricas |
-| `SPRING_PROFILES_ACTIVE` | — | `k8s` ativa o log estruturado em JSON |
-| `NEW_RELIC_LICENSE_KEY` | — | Ativa o agente de APM |
+| `JWT_SECRET` | valor padrão só nos perfis `local` e `test` | Chave HMAC dos tokens; sem ela a aplicação não sobe nos demais perfis |
+| `CHAVE_INTERNA` | `chave-interna-local` no perfil `local` | Valor esperado no cabeçalho `X-Chave-Interna` das rotas `/internal/**` |
+| `FILA_OS_EVENTOS` | `oficina-local-os-eventos` | Fila consumida |
+| `FILA_BILLING_COMANDOS` | `oficina-local-billing-comandos` | Fila de comandos do Billing |
+| `FILA_EXECUTION_COMANDOS` | `oficina-local-execution-comandos` | Fila de comandos do Execution |
+| `FILA_DLQ` | `<fila de eventos>-dlq` | DLQ medida pelo gauge |
+| `AWS_REGION` | `us-east-1` | Região do SQS |
+| `SQS_ENDPOINT` | `http://localhost:4566` no perfil `local` | Endpoint do LocalStack |
+| `BILLING_URL` / `EXECUTION_URL` | `http://localhost:8081` / `http://localhost:8082` | Participantes consultados no acompanhamento |
+| `FUNCIONARIO_SEED_CPF`, `FUNCIONARIO_SEED_NOME`, `FUNCIONARIO_SEED_EMAIL` | — | Funcionário cadastrado pelas migrations V9 e V15; definidos apenas em homologação |
+| `ENV` | `local` | Atributo `env` das métricas |
+| `SPRING_PROFILES_ACTIVE` | — | `local` para o compose; `k8s` ativa o log estruturado em JSON |
+| `NEW_RELIC_APP_NAME`, `NEW_RELIC_LICENSE_KEY` | vazio (agente desligado) | Agente de APM |
 | `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | `http://localhost:4318/v1/metrics` | Destino das métricas de negócio |
 
 ## Implantação
 
-A implantação é feita pelo pipeline, nos ambientes definidos na [ADR-012](docs/tech-challenge-3/adrs/ADR-012-ambientes-segregados.md):
+Os ambientes seguem a [ADR-012](docs/tech-challenge-3/adrs/ADR-012-ambientes-segregados.md):
 
-| Branch | Ambiente | Cluster | Aprovação |
-|---|---|---|---|
-| `develop` | homologação | `oficina-api-staging` | não |
-| `main` | produção | `oficina-api-prod` | sim, no GitHub Environment `prod` |
+| Branch | Ambiente | Aprovação |
+|---|---|---|
+| `develop` | homologação (`staging`) | não |
+| `main` | produção (`prod`) | sim, no GitHub Environment `prod` |
 
-Os ambientes são segregados, com cluster, banco, ECR, parâmetros e segredos próprios. O cluster e o banco são provisionados pelos repositórios de infraestrutura; a ordem de provisionamento está no README do [oficina-infra-k8s](https://github.com/Guilherme-Fumagali/oficina-infra-k8s).
+| Pasta | Conteúdo |
+|---|---|
+| [`infra/`](infra) | Terraform do serviço: RDS `oficina-os-db-<env>` (migrado do `oficina-infra-db`, sem a regra de entrada da função de autenticação), filas `oficina-<env>-os-eventos` e `-dlq` (SSE-SQS, `maxReceiveCount` 5), role de pod `oficina-os-pod-<env>` com o boundary `oficina-pod-boundary` e associação Pod Identity ao ServiceAccount `os-service`, e os parâmetros `/oficina/<env>/os/db-*` no SSM. State em `os/<env>/terraform.tfstate` |
+| [`k8s/`](k8s) | Kustomize: Deployment, Service NodePort 30080, HPA (CPU 70%, 2 a 3 réplicas), PDB, ServiceAccount e ConfigMap na base; overlays `staging` e `prod` com nomes de fila e de aplicação do ambiente |
+
+O Deployment roda com usuário 1001, sistema de arquivos somente leitura (com `emptyDir` em `/tmp`), sem escalonamento de privilégio e sem capabilities; as sondas usam `/actuator/health/liveness` e `/actuator/health/readiness`, e o encerramento é gracioso (`server.shutdown=graceful`). A aplicação recebe credenciais AWS pela Pod Identity, sem chave estática.
+
+Ordem de provisionamento: plataforma (`oficina-infra-k8s` base e cluster) → `infra/` dos três serviços → função de autenticação → segunda passada da plataforma → pipelines dos serviços. A destruição segue a ordem inversa.
 
 ## CI/CD
 
-Workflow: [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml).
+| Workflow | Job | Quando executa | O que faz |
+|---|---|---|---|
+| [`ci-cd.yml`](.github/workflows/ci-cd.yml) | Build & Test | todo push e todo pull request | `./mvnw -B verify`: unitários, integração com Testcontainers, cenários BDD, contrato OpenAPI e limites de cobertura; publica os relatórios JaCoCo e Cucumber e o resumo de cobertura |
+| | SonarCloud | pull request e push em `develop` ou `main` | análise estática e cobertura, aguardando o quality gate |
+| | Build & push no ECR | push em `develop` ou `main`, com os dois jobs anteriores aprovados | imagem com as tags do commit e `latest` no repositório lido de `/oficina/<env>/os/ecr-repository-url`; sem repositório, conclui com aviso |
+| | Conferir cluster | após a publicação da imagem | verifica se o cluster do ambiente existe |
+| | Deploy no EKS | cluster existente | cria o Secret `os-service-secrets` a partir do SSM, aplica o overlay com a imagem do commit, aguarda o rollout e consulta `/actuator/health/readiness` e `/actuator/info` |
+| [`infra.yml`](.github/workflows/infra.yml) | Format & validate (infra) | push que altera `infra/` e todo pull request | `terraform fmt`, `validate`, tflint e checkov |
+| | Plan / Apply | disparo manual em `develop` ou `main` | plan, e apply no GitHub Environment do ambiente |
+| [`destroy-aws.yml`](.github/workflows/destroy-aws.yml) | Destroy | disparo manual | `terraform destroy` e conferência de que banco, filas e role foram removidos |
 
-| Job | Quando executa | O que faz |
-|---|---|---|
-| Build & Test | todo push, em qualquer branch | `mvn -B verify`: compila, executa **todos os testes** (unitários e de integração com Testcontainers), confere o contrato `docs/openapi.json`, aplica os limites mínimos de cobertura do JaCoCo e publica o relatório |
-| SonarCloud | push na `main` | análise estática, cobertura e quality gate |
-| Build & push no ECR | push em `develop` ou `main`, após os testes | constrói a imagem Docker e publica no ECR do ambiente; se o ECR não existir, o job é concluído com aviso |
-| Conferir cluster | após o push da imagem | verifica se o cluster do ambiente existe |
-| Deploy no EKS | cluster existente | atualiza a imagem do Deployment e aguarda o rollout; em produção, aguarda aprovação |
-
-Regras das branches `develop` e `main`: sem push direto, merge somente por Pull Request com uma aprovação e com o job **Build & Test** concluído com sucesso. A autenticação na AWS usa OIDC, com uma role exclusiva deste repositório ([ADR-013](docs/tech-challenge-3/adrs/ADR-013-identidade-das-pipelines.md)).
+- Os testes rodam em todo push e em todo pull request; o deploy só ocorre depois de **Build & Test** e **SonarCloud** aprovados.
+- As branches `develop` e `main` não aceitam push direto: o merge exige pull request com uma aprovação e as verificações **Build & Test**, **SonarCloud** e **Format & validate (infra)**.
+- A autenticação na AWS usa OIDC com a role `oficina-api-github-actions`, sem chave estática ([ADR-013](docs/tech-challenge-3/adrs/ADR-013-identidade-das-pipelines.md)). Os segredos da aplicação são lidos do SSM no momento do deploy; os dados do funcionário de homologação vêm de segredos do repositório e só são usados em `staging`.
+- O deploy em produção aguarda a revisão obrigatória do GitHub Environment `prod`.
 
 ## Testes
 
-| Camada | Classes | Métodos | Tipo |
-|---|---|---|---|
-| Domínio | 5 | 34 | unitário, Java puro |
-| Aplicação | 8 | 71 | unitário, com Mockito |
-| Infraestrutura | 3 | 15 | unitário (JWT, métricas, notificação) |
-| Integração | 1 | 12 | Spring completo com PostgreSQL via Testcontainers |
+| Tipo | Classes | Casos |
+|---|---|---|
+| Domínio (Java puro) | 7 | 129 |
+| Aplicação (Mockito) | 13 | 99 |
+| Infraestrutura, unitários | 11 | 55 |
+| Integração (Spring, PostgreSQL e LocalStack via Testcontainers, WireMock) | 8 | 43 |
+| BDD (Cucumber, Gherkin em português) | 1 funcionalidade | 7 cenários |
+| **Total** | | **333** |
 
-São 147 casos executados (parte dos métodos é parametrizada). O build falha se a cobertura ficar abaixo de 85% das linhas e 70% dos branches no projeto, ou de 80% das instruções no domínio. Todos os testes rodam a cada push. A descrição por classe está em [`docs/testes.md`](docs/testes.md).
+A tabela de transições da SPEC-08 tem um teste por linha em `SagaOrdemServicoTest`. Os cenários BDD cobrem o fluxo completo até a entrega, a reprovação, o pagamento recusado, a falha na execução com estorno, o diagnóstico sem itens, a mensagem duplicada e o reenvio por prazo vencido. A descrição por classe está em [`docs/testes.md`](docs/testes.md).
 
 ```bash
 ./mvnw test      # requer Docker para o Testcontainers
-./mvnw verify    # inclui o relatório de cobertura em target/site/jacoco/index.html
+./mvnw verify    # inclui os relatórios em target/site/jacoco/index.html e target/cucumber/relatorio.html
 ```
+
+### Evidência de cobertura
+
+Execução de `./mvnw -B verify` em 30/10/2026 (JaCoCo 0.8.12):
+
+| Pacotes | Linhas | Cobertura de linhas | Ramos | Cobertura de ramos |
+|---|---|---|---|---|
+| `domain` | 523 | 99,8% | 199 | 92,5% |
+| `application` | 422 | 100,0% | 66 | 93,9% |
+| `infrastructure` | 1.104 | 91,8% | 225 | 77,8% |
+| `db.migration` (migrations Java) | 26 | 84,6% | 12 | 50,0% |
+| `OficinaMecanicaApplication` | 3 | 33,3% | 0 | — |
+| **Total** | **2.078** | **95,3%** | **502** | **85,1%** |
+
+O build falha abaixo de 85% de linhas e 70% de ramos no projeto ou de 80% de instruções nos pacotes de domínio. No CI, o relatório completo é publicado como artefato `jacoco-report` e o resumo de linhas e ramos aparece no sumário da execução; o SonarCloud recebe o `jacoco.xml` (badge de cobertura no topo deste documento).
 
 ## Autenticação e papéis
 
-A aplicação não emite tokens. A autenticação é feita pelo CPF nas rotas do API Gateway atendidas pela Lambda do repositório `oficina-auth-lambda` ([ADR-003](docs/tech-challenge-3/adrs/ADR-003-autenticacao-cpf-lambda.md)):
+A aplicação não emite tokens. A função `oficina-auth-lambda` autentica pelo CPF em duas etapas: a primeira rota envia um código de seis dígitos ao e-mail cadastrado e devolve um desafio; a segunda troca o desafio e o código pelo JWT.
 
-| Rota | Consulta | Papel no token |
+| Rota (API Gateway) | Identidade consultada no OS Service | Papel no token |
 |---|---|---|
-| `POST /auth` | tabela `clientes` | `CLIENTE` |
-| `POST /auth/funcionarios` | tabela `funcionarios` | `FUNCIONARIO` |
+| `POST /auth` e `POST /auth/confirmacao` | `GET /internal/identidades/clientes/{cpfCnpj}` | `CLIENTE` |
+| `POST /auth/funcionarios` e `POST /auth/funcionarios/confirmacao` | `GET /internal/identidades/funcionarios/{cpf}` | `FUNCIONARIO` |
 
-```bash
-curl -X POST "$API_URL/auth/funcionarios" -H "Content-Type: application/json" -d '{"cpf":"<cpf-do-funcionario>"}'
-# 200 {"accessToken":"eyJ...","tokenType":"Bearer","expiresIn":900}
-# 400 CPF inválido; 401 com resposta idêntica para CPF não cadastrado ou inativo
-
-curl "$API_URL/api/ordens" -H "Authorization: Bearer eyJ..."
-```
-
-Permissões por papel ([ADR-014](docs/tech-challenge-3/adrs/ADR-014-papeis-cliente-funcionario.md)):
+As rotas `/internal/**` não têm rota no API Gateway; a função chega a elas pelo NLB e envia o cabeçalho `X-Chave-Interna`, comparado em tempo constante pelo `ChaveInternaFilter`. Sem chave ou com chave diferente, a resposta é 401 genérico; documento inexistente responde 404 sem repetir o documento.
 
 | Papel | Acesso |
 |---|---|
-| `FUNCIONARIO` | todas as rotas `/api/**`: clientes, veículos, catálogo, estoque, ciclo da OS e relatório |
-| `CLIENTE` | somente leitura das próprias ordens (`GET /api/ordens`, `GET /api/ordens/{id}`) e dos próprios veículos (`GET /api/veiculos`, `GET /api/veiculos/{id}`); recurso de outro cliente retorna `404` |
+| `FUNCIONARIO` | todas as rotas `/api/**`: clientes, veículos, catálogo, estoque, ordens de serviço, saga e relatório |
+| `CLIENTE` | leitura das próprias ordens (`GET /api/ordens`, `/{id}`, `/{id}/historico`, `/{id}/acompanhamento`) e dos próprios veículos; recurso de outro cliente retorna `404` |
 
-O token é validado duas vezes: pelo Lambda authorizer, no gateway, e pelo `JwtService`, na aplicação. A aplicação aceita apenas tokens com emissor `oficina-auth`, assinatura válida, dentro da validade e com papel conhecido (`CLIENTE` ou `FUNCIONARIO`). O `sub` do token é o UUID do cliente ou do funcionário.
-
-O primeiro funcionário de homologação é cadastrado pela migration `V9__SeedFuncionarioHomologacao`, com o CPF informado em `FUNCIONARIO_SEED_CPF`. O valor vem de um secret do repositório `oficina-infra-k8s` e não é versionado; em produção, a variável não é definida e a migration não insere registros.
-
-Para desenvolvimento local sem a Lambda, o token pode ser assinado com a mesma `JWT_SECRET` e emissor `oficina-auth`, como faz o `OrdemServicoIntegrationTest`.
-
-A autenticação apenas por CPF é uma limitação conhecida, registrada no [DT-06](docs/tech-challenge-3/debitos-tecnicos.md), com mitigações aplicadas e segundo fator previsto para uma etapa futura.
-
-## Aprovação externa de orçamento
-
-Ao gerar o orçamento, a aplicação cria um token para a OS e envia ao cliente um e-mail com os links de aprovação e reprovação. As rotas abaixo não exigem JWT e são protegidas pelo token:
-
-| Rota | Uso |
-|---|---|
-| `POST /api/ordens/{id}/aprovar-externo` | integração por API, corpo `{"token": "...", "decisao": "APROVAR" \| "REPROVAR"}` |
-| `GET /api/ordens/{id}/aprovar-externo?token=...` | link de aprovação do e-mail: exibe a página de confirmação |
-| `GET /api/ordens/{id}/reprovar-externo?token=...` | link de reprovação do e-mail: exibe a página de confirmação |
-| `POST /api/ordens/{id}/aprovar-externo` (formulário) | enviado pela página de confirmação, com o token e a decisão |
-
-Proteção do token:
-
-| Aspecto | Implementação |
-|---|---|
-| Geração | 32 bytes de `SecureRandom` codificados em Base64 URL-safe (256 bits), em `TokenAprovacaoExterna` |
-| Vínculo | armazenado na própria OS; só é aceito na rota da OS à qual pertence |
-| Validade | 168 horas a partir da geração do orçamento, configurável por `APROVACAO_TOKEN_VALIDADE_HORAS` |
-| Uso único | removido da OS após a aprovação ou a reprovação; uma segunda tentativa é recusada |
-| Estado da OS | a decisão só é aplicada se a transição de status for válida para a OS |
-| Resposta de erro | token divergente, expirado ou já utilizado: `401` na rota `POST` e página de erro nos links do e-mail; token ausente: `400` |
-| Distribuição | enviado somente no e-mail do cliente; o access log do API Gateway não registra a query string |
-| Links do e-mail | o `GET` não altera a OS; a decisão só é registrada pelo `POST` da página de confirmação, o que evita aprovações por ferramentas que abrem links automaticamente |
-| Página de confirmação | o token é inserido com escape de HTML |
-| Borda | rotas públicas no API Gateway, sujeitas ao throttling do stage |
-
-A regra fica no agregado `OrdemServico` (`aprovarViaTokenExterno` e `reprovarViaTokenExterno`). Os casos de token válido, inválido, expirado e já utilizado são cobertos em `OrdemServicoTest`, `OrdemServicoUseCasesTest`, `ReprovarOrcamentoUseCaseTest` e `OrdemServicoIntegrationTest`.
+O token é validado pelo Lambda authorizer e pelo `JwtService`: emissor `oficina-auth`, assinatura válida, dentro da validade e papel conhecido. Requisição sem token ou com token inválido recebe 401 em JSON (ProblemDetail); papel sem permissão recebe 403 em JSON.
 
 ## Endpoints
 
-| Grupo | Rotas | Autenticação |
+| Grupo | Rotas | Acesso |
 |---|---|---|
-| Autenticação | `POST /auth` (API Gateway, atendida pela Lambda) | pública |
-| Autenticação de funcionário | `POST /auth/funcionarios` (API Gateway, atendida pela Lambda) | pública |
 | Clientes | `GET/POST/PUT/DELETE /api/clientes` | funcionário |
 | Veículos | `POST/PUT/DELETE /api/veiculos`, `GET /api/veiculos/cliente/{clienteId}` | funcionário |
 | Veículos (leitura) | `GET /api/veiculos`, `GET /api/veiculos/{id}` | funcionário; cliente, apenas os próprios |
 | Serviços | `GET/POST/PUT/DELETE /api/servicos` | funcionário |
-| Peças e estoque | `GET/POST/PUT/DELETE /api/pecas` | funcionário |
-| Ordens de serviço (leitura) | `GET /api/ordens`, `GET /api/ordens/{id}` | funcionário; cliente, apenas as próprias |
-| Ordens de serviço | `POST /api/ordens` e ações do ciclo de vida | funcionário |
+| Peças e estoque | `GET/POST/PUT/DELETE /api/pecas`, `POST /api/pecas/{id}/estoque/incrementar`, `GET /api/pecas/alerta-estoque` | funcionário |
+| Abertura da OS | `POST /api/ordens` (201 com `id` e `sagaId`) | funcionário |
+| Itens da OS | `POST /api/ordens/{id}/servicos`, `POST /api/ordens/{id}/pecas` (somente em `EM_DIAGNOSTICO`) | funcionário |
+| Entrega | `POST /api/ordens/{id}/entregar` | funcionário |
+| Consulta da OS | `GET /api/ordens`, `GET /api/ordens/{id}`, `GET /api/ordens/{id}/historico`, `GET /api/ordens/{id}/acompanhamento` | funcionário; cliente, apenas as próprias |
+| Saga | `GET /api/ordens/{id}/saga` | funcionário |
 | Relatório | `GET /api/ordens/relatorio/tempo-medio` | funcionário |
-| Status da OS | `GET /api/ordens/{id}/status` | pública |
-| Aprovação externa | `POST /api/ordens/{id}/aprovar-externo` e links `GET` | token da OS |
+| Status público | `GET /api/ordens/{id}/status` (somente `id`, `status` e `atualizadoEm`) | pública |
+| Identidades | `GET /internal/identidades/clientes/{cpfCnpj}`, `GET /internal/identidades/funcionarios/{cpf}` | cabeçalho `X-Chave-Interna` |
+| Saúde e versão | `GET /actuator/health`, `/actuator/health/{liveness,readiness}`, `/actuator/info` (commit em execução) | pública |
 
-Ciclo de vida da ordem de serviço:
-
-```
-POST /api/ordens                           abre a OS (RECEBIDA)
-POST /api/ordens/{id}/iniciar-diagnostico  EM_DIAGNOSTICO
-POST /api/ordens/{id}/servicos             adiciona serviço (preço registrado no item)
-POST /api/ordens/{id}/pecas                adiciona peça (baixa no estoque)
-POST /api/ordens/{id}/gerar-orcamento      AGUARDANDO_APROVACAO (gera token e envia e-mail)
-POST /api/ordens/{id}/aprovar              EM_EXECUCAO
-POST /api/ordens/{id}/reprovar             CANCELADA (estorno do estoque)
-POST /api/ordens/{id}/concluir             FINALIZADA
-POST /api/ordens/{id}/entregar             ENTREGUE
-```
+As transições de status deixaram de ter endpoint: vêm dos eventos da saga. O acompanhamento compõe a OS e o histórico locais com o orçamento e o pagamento do Billing e a execução do Execution, consultados em paralelo com limite de 2 s, circuit breaker (janela de 10 chamadas, 50% de falhas, 30 s aberto) e bulkhead de 10 chamadas, repassando o `Authorization` recebido. Uma fonte indisponível vem nula e listada em `fontesIndisponiveis`; uma fonte sem dados (404) vem nula sem ser listada.
 
 ## Observabilidade
 
-Métricas de negócio (`oficina.os.abertas`, `oficina.os.duracao_status`, `oficina.os.transicoes`, `oficina.integracao.falhas`), logs estruturados com `trace.id` e `span.id` e dados de APM são enviados ao New Relic. Dashboards e alertas são criados por Terraform no `oficina-infra-k8s`, e cada alerta aponta para um procedimento em [`docs/runbooks`](docs/runbooks).
+| Sinal | Implementação |
+|---|---|
+| Métricas da OS | `oficina.os.abertas`, `oficina.os.transicoes`, `oficina.os.duracao_status`, `oficina.integracao.falhas` |
+| Métricas da saga | `oficina.saga.iniciadas`, `oficina.saga.concluidas`, `oficina.saga.compensadas{motivo}`, `oficina.saga.falhas{estado}`, `oficina.saga.reenvios{comando}`, `oficina.saga.etapa.duracao{estado}` |
+| Métricas de mensageria | `oficina.mensageria.publicadas{tipo}`, `oficina.mensageria.consumidas{tipo, resultado}`, `oficina.mensageria.dlq.mensagens{fila}` (lido da DLQ a cada 60 s) |
+| Rastreamento pela fila | cabeçalhos do New Relic gravados no outbox, aceitos pelo relay e enviados como atributos da mensagem; o consumo aceita os cabeçalhos recebidos (`@Trace(dispatcher = true)`) |
+| Correlação | atributos `os.id`, `saga.id` e `mensagem.tipo` nas transações de mensagem e MDC `os.id`, `saga.id` e `mensagem.id` nos logs ECS |
+| Aplicação no New Relic | `oficina-os-service-<env>`, label `fase: tech-challenge-4` |
+
+Dashboards e alertas são criados por Terraform no `oficina-infra-k8s`; cada alerta aponta para um procedimento em [`docs/runbooks`](docs/runbooks).
 
 ## Documentação
 
 | Tema | Local |
 |---|---|
-| Fase 3: RFCs, ADRs, diagramas, débitos técnicos, relatório e slides | [`docs/tech-challenge-3`](docs/tech-challenge-3) |
-| Fase 2: relatório, arquitetura e débitos técnicos | [`docs/tech-challenge-2`](docs/tech-challenge-2) |
-| Fase 1 | [`docs/tech-challenge-1`](docs/tech-challenge-1) |
+| Contratos | [`docs/openapi.json`](docs/openapi.json), [`docs/asyncapi.yaml`](docs/asyncapi.yaml), [`docs/postman`](docs/postman) |
+| Testes | [`docs/testes.md`](docs/testes.md) |
+| Runbooks | [`docs/runbooks`](docs/runbooks) |
 | DDD: Event Storming, Context Map, Domain Storytelling, linguagem ubíqua | [`docs/ddd`](docs/ddd) |
-| Serviço de notificação e Anti-Corruption Layer | [`docs/ddd/notificacao-acl.md`](docs/ddd/notificacao-acl.md) |
+| Anti-Corruption Layer e notificação | [`docs/ddd/notificacao-acl.md`](docs/ddd/notificacao-acl.md) |
+| Fase 3: RFCs, ADRs, diagramas, débitos técnicos, relatório e slides | [`docs/tech-challenge-3`](docs/tech-challenge-3) |
+| Fases 1 e 2 | [`docs/tech-challenge-1`](docs/tech-challenge-1), [`docs/tech-challenge-2`](docs/tech-challenge-2) |
 
 Vulnerabilidades em dependências são verificadas com OWASP Dependency-Check (`./mvnw dependency-check:check`, relatório em `target/dependency-check-report.html`). As supressões e a justificativa de cada CVE estão em `owasp-suppressions.xml`.
 
 ## Estrutura do repositório
 
 ```
-├── src/main/java/com/oficina/mecanica/   domain, application e infrastructure
-├── src/main/resources/db/migration/      migrations Flyway em SQL (V1 a V8)
-├── src/main/java/db/migration/           migration Java de seed do funcionário de homologação (V9)
-├── src/test/                             testes (ver docs/testes.md)
-├── docs/                                 arquitetura, DDD, runbooks e entregas por fase
+├── src/main/java/com/oficina/mecanica/   domain (inclui domain/saga), application e infrastructure
+├── src/main/resources/db/migration/      migrations Flyway em SQL (V1 a V8, V10 a V14, V16)
+├── src/main/java/db/migration/           migrations Java de seed do funcionário de homologação (V9 e V15)
+├── src/test/                             testes e cenários BDD (ver docs/testes.md)
+├── infra/                                Terraform: RDS, filas, role de pod e parâmetros SSM do serviço
+├── k8s/                                  Kustomize: base e overlays staging e prod
+├── localstack/init/ready.d/              criação das filas no LocalStack
+├── docs/                                 contratos, DDD, runbooks, testes e entregas por fase
+├── scripts/                              carga de dados de demonstração
 ├── observability/                        Tempo e Grafana para execução local
-├── .github/workflows/ci-cd.yml           pipeline
+├── .github/workflows/                    ci-cd.yml, infra.yml e destroy-aws.yml
 ├── Dockerfile                            build multi-stage com o agente New Relic
-├── docker-compose.yml
+├── docker-compose.yml                    PostgreSQL, LocalStack e a API
 └── pom.xml
 ```
