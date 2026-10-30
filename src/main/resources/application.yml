@@ -1,6 +1,8 @@
 spring:
   application:
-    name: oficina-mecanica-api
+    name: os-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/oficina}
     username: ${DB_USER:oficina}
@@ -34,6 +36,7 @@ spring:
 
 server:
   port: ${PORT:8080}
+  shutdown: graceful
   error:
     include-message: always
 
@@ -118,6 +121,9 @@ management:
     web:
       exposure:
         include: health,info
+  info:
+    git:
+      mode: simple
   endpoint:
     health:
       probes:

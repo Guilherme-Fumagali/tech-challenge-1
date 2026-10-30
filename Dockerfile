@@ -3,6 +3,7 @@ FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
+COPY .git ./.git
 RUN mvn package -DskipTests -q
 
 # ── etapa 2: agente APM ───────────────────────────────────────────────────────
