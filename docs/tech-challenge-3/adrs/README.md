@@ -6,7 +6,7 @@ Registros de decisão arquitetural no formato apresentado na Aula 05 da discipli
 
 | ADR | Decisão | Status |
 |---|---|---|
-| [001](./ADR-001-quatro-repositorios.md) | Quatro repositórios, `oficina-api` preservado | Aceita |
+| [001](./ADR-001-quatro-repositorios.md) | Quatro repositórios, `oficina-api` preservado | Superada por [ADR-022](../../tech-challenge-4/adrs/ADR-022-infra-por-servico-pod-identity.md) (Fase 4), em parte |
 | [002](./ADR-002-nuvem-aws.md) | AWS como provedor de nuvem | Aceita |
 | [003](./ADR-003-autenticacao-cpf-lambda.md) | Emissão de JWT migra da aplicação para a Lambda | Aceita |
 | [004](./ADR-004-api-gateway-http-api.md) | AWS API Gateway em modo HTTP API | Aceita |

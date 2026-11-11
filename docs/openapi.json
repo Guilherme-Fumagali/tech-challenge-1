@@ -1,6 +1,38 @@
 {
   "components" : {
     "schemas" : {
+      "AcompanhamentoResponse" : {
+        "properties" : {
+          "execucao" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "fontesIndisponiveis" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "historico" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HistoricoStatusResponse"
+            },
+            "type" : "array"
+          },
+          "orcamento" : {
+            "additionalProperties" : {
+              "type" : "object"
+            },
+            "type" : "object"
+          },
+          "ordemServico" : {
+            "$ref" : "#/components/schemas/OrdemServicoResponse"
+          }
+        },
+        "type" : "object"
+      },
       "AdicionarItemRequest" : {
         "properties" : {
           "itemId" : {
@@ -14,19 +46,6 @@
           }
         },
         "required" : [ "itemId" ],
-        "type" : "object"
-      },
-      "AprovarOrcamentoExternoRequest" : {
-        "properties" : {
-          "decisao" : {
-            "enum" : [ "APROVAR", "REPROVAR" ],
-            "type" : "string"
-          },
-          "token" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "decisao", "token" ],
         "type" : "object"
       },
       "AtualizarClienteRequest" : {
@@ -191,6 +210,44 @@
         "required" : [ "clienteId", "marca", "modelo", "placa" ],
         "type" : "object"
       },
+      "HistoricoStatusResponse" : {
+        "properties" : {
+          "evento" : {
+            "type" : "string"
+          },
+          "ocorridoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "statusDestino" : {
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "type" : "string"
+          },
+          "statusOrigem" : {
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "IdentidadeResponse" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "IncrementarEstoqueRequest" : {
         "properties" : {
           "quantidade" : {
@@ -253,6 +310,35 @@
         },
         "type" : "object"
       },
+      "OrdemServicoAbertaResponse" : {
+        "properties" : {
+          "clienteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "dataAbertura" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "sagaId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "type" : "string"
+          },
+          "veiculoId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "OrdemServicoResponse" : {
         "properties" : {
           "clienteId" : {
@@ -291,11 +377,42 @@
             "type" : "number"
           },
           "status" : {
-            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
             "type" : "string"
           },
           "veiculoId" : {
             "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PassoResponse" : {
+        "properties" : {
+          "detalhe" : {
+            "type" : "string"
+          },
+          "direcao" : {
+            "enum" : [ "ENVIADO", "RECEBIDO", "LOCAL" ],
+            "type" : "string"
+          },
+          "mensagemId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "ocorridoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "resultado" : {
+            "enum" : [ "APLICADO", "IGNORADO", "REJEITADO" ],
+            "type" : "string"
+          },
+          "sequencia" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "tipo" : {
             "type" : "string"
           }
         },
@@ -351,6 +468,59 @@
         },
         "type" : "object"
       },
+      "SagaResponse" : {
+        "properties" : {
+          "atualizadaEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "compensacoesPendentes" : {
+            "items" : {
+              "enum" : [ "CANCELAR_EXECUCAO", "CANCELAR_ORCAMENTO", "ESTORNAR_PAGAMENTO", "ESTORNAR_ESTOQUE" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "criadaEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "estado" : {
+            "enum" : [ "AGUARDANDO_FILA_DIAGNOSTICO", "AGUARDANDO_DIAGNOSTICO", "EM_DIAGNOSTICO", "AGUARDANDO_ORCAMENTO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "AGUARDANDO_FILA_REPARO", "EM_EXECUCAO", "COMPENSANDO", "CONCLUIDA", "COMPENSADA", "FALHA" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "motivoCompensacao" : {
+            "enum" : [ "REPROVACAO", "REJEICAO", "PAGAMENTO_RECUSADO", "FALHA_EXECUCAO" ],
+            "type" : "string"
+          },
+          "osId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "passos" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PassoResponse"
+            },
+            "type" : "array"
+          },
+          "prazoResposta" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "tentativasReenvio" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "ultimoComando" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ServicoResponse" : {
         "properties" : {
           "descricao" : {
@@ -368,6 +538,23 @@
           },
           "tempoEstimadoHoras" : {
             "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "StatusPublicoResponse" : {
+        "properties" : {
+          "atualizadoEm" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "RECEBIDA", "EM_DIAGNOSTICO", "AGUARDANDO_APROVACAO", "AGUARDANDO_PAGAMENTO", "EM_EXECUCAO", "FINALIZADA", "ENTREGUE", "CANCELADA" ],
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -404,13 +591,18 @@
         "bearerFormat" : "JWT",
         "scheme" : "bearer",
         "type" : "http"
+      },
+      "chaveInterna" : {
+        "in" : "header",
+        "name" : "X-Chave-Interna",
+        "type" : "apiKey"
       }
     }
   },
   "info" : {
-    "description" : "Sistema de gestão de Ordens de Serviço para oficina mecânica — Tech Challenge Fase 1 PosTech FIAP",
-    "title" : "Oficina Mecânica API",
-    "version" : "1.0"
+    "description" : "Clientes, veículos, catálogo, estoque e ordens de serviço; orquestra a saga da ordem de serviço com o Billing Service e o Execution Service. Tech Challenge Fase 4 — PosTech FIAP",
+    "title" : "OS Service — Oficina Mecânica",
+    "version" : "4.0"
   },
   "openapi" : "3.0.1",
   "paths" : {
@@ -602,7 +794,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
+                  "$ref" : "#/components/schemas/OrdemServicoAbertaResponse"
                 }
               }
             },
@@ -612,7 +804,7 @@
         "security" : [ {
           "bearerAuth" : [ ]
         } ],
-        "summary" : "Abrir nova Ordem de Serviço",
+        "summary" : "Abrir nova Ordem de Serviço e iniciar a saga (pedido de diagnóstico ao Execution)",
         "tags" : [ "Ordens de Serviço" ]
       }
     },
@@ -686,131 +878,9 @@
         "tags" : [ "Ordens de Serviço" ]
       }
     },
-    "/api/ordens/{id}/aprovar" : {
-      "post" : {
-        "operationId" : "aprovar",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
-        "summary" : "Aprovar orçamento — inicia execução dos serviços",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
-      }
-    },
-    "/api/ordens/{id}/aprovar-externo" : {
+    "/api/ordens/{id}/acompanhamento" : {
       "get" : {
-        "operationId" : "confirmarAprovacao",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "token",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "text/html" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Página de confirmação da aprovação, aberta pelo link do e-mail (público, não altera a OS)",
-        "tags" : [ "Ordens de Serviço — Aprovação Externa" ]
-      },
-      "post" : {
-        "operationId" : "registrarDecisao",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "token",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "decisao",
-          "required" : true,
-          "schema" : {
-            "enum" : [ "APROVAR", "REPROVAR" ],
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AprovarOrcamentoExternoRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              },
-              "text/html" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Aprovar ou reprovar orçamento via token (API — endpoint público, sem autenticação)",
-        "tags" : [ "Ordens de Serviço — Aprovação Externa" ]
-      }
-    },
-    "/api/ordens/{id}/concluir" : {
-      "post" : {
-        "operationId" : "concluir",
+        "operationId" : "acompanhamento",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -825,7 +895,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
+                  "$ref" : "#/components/schemas/AcompanhamentoResponse"
                 }
               }
             },
@@ -835,8 +905,8 @@
         "security" : [ {
           "bearerAuth" : [ ]
         } ],
-        "summary" : "Concluir serviços — OS finalizada, aguardando entrega",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
+        "summary" : "Acompanhamento composto: OS e histórico locais, orçamento e pagamento (Billing) e execução (Execution); fonte indisponível vem nula e listada em fontesIndisponiveis (cliente: apenas as próprias)",
+        "tags" : [ "Ordens de Serviço" ]
       }
     },
     "/api/ordens/{id}/entregar" : {
@@ -870,9 +940,9 @@
         "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
       }
     },
-    "/api/ordens/{id}/gerar-orcamento" : {
-      "post" : {
-        "operationId" : "gerarOrcamento",
+    "/api/ordens/{id}/historico" : {
+      "get" : {
+        "operationId" : "historico",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -887,7 +957,10 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
+                  "items" : {
+                    "$ref" : "#/components/schemas/HistoricoStatusResponse"
+                  },
+                  "type" : "array"
                 }
               }
             },
@@ -897,39 +970,8 @@
         "security" : [ {
           "bearerAuth" : [ ]
         } ],
-        "summary" : "Gerar orçamento e enviar para aprovação do cliente",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
-      }
-    },
-    "/api/ordens/{id}/iniciar-diagnostico" : {
-      "post" : {
-        "operationId" : "iniciarDiagnostico",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
-        "summary" : "Iniciar diagnóstico da OS",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
+        "summary" : "Histórico de status da OS, com o evento que causou cada transição (cliente: apenas as próprias)",
+        "tags" : [ "Ordens de Serviço" ]
       }
     },
     "/api/ordens/{id}/pecas" : {
@@ -973,9 +1015,9 @@
         "tags" : [ "Ordens de Serviço" ]
       }
     },
-    "/api/ordens/{id}/reprovar" : {
-      "post" : {
-        "operationId" : "reprovar",
+    "/api/ordens/{id}/saga" : {
+      "get" : {
+        "operationId" : "saga",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -990,7 +1032,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
+                  "$ref" : "#/components/schemas/SagaResponse"
                 }
               }
             },
@@ -1000,43 +1042,8 @@
         "security" : [ {
           "bearerAuth" : [ ]
         } ],
-        "summary" : "Reprovar orçamento — cancela a OS e estorna estoque",
-        "tags" : [ "Ordens de Serviço — Ciclo de Vida" ]
-      }
-    },
-    "/api/ordens/{id}/reprovar-externo" : {
-      "get" : {
-        "operationId" : "confirmarReprovacao",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "uuid",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "token",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "text/html" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "summary" : "Página de confirmação da reprovação, aberta pelo link do e-mail (público, não altera a OS)",
-        "tags" : [ "Ordens de Serviço — Aprovação Externa" ]
+        "summary" : "Estado da saga da OS e passos trocados com os participantes",
+        "tags" : [ "Ordens de Serviço" ]
       }
     },
     "/api/ordens/{id}/servicos" : {
@@ -1097,17 +1104,15 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/OrdemServicoResponse"
+                  "$ref" : "#/components/schemas/StatusPublicoResponse"
                 }
               }
             },
             "description" : "OK"
           }
         },
-        "security" : [ {
-          "bearerAuth" : [ ]
-        } ],
-        "summary" : "Consultar status de uma OS (endpoint público — sem autenticação)",
+        "security" : [ ],
+        "summary" : "Consultar o status de uma OS (público, sem autenticação): apenas id, status e data da última mudança",
         "tags" : [ "Ordens de Serviço" ]
       }
     },
@@ -1650,6 +1655,66 @@
         } ],
         "summary" : "Atualizar veículo",
         "tags" : [ "Veículos" ]
+      }
+    },
+    "/internal/identidades/clientes/{cpfCnpj}" : {
+      "get" : {
+        "operationId" : "cliente",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "cpfCnpj",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IdentidadeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "chaveInterna" : [ ]
+        } ],
+        "summary" : "Identidade do cliente por CPF ou CNPJ, consultada pela função de autenticação",
+        "tags" : [ "Identidades (uso interno)" ]
+      }
+    },
+    "/internal/identidades/funcionarios/{cpf}" : {
+      "get" : {
+        "operationId" : "funcionario",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "cpf",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IdentidadeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "chaveInterna" : [ ]
+        } ],
+        "summary" : "Identidade do funcionário por CPF, consultada pela função de autenticação",
+        "tags" : [ "Identidades (uso interno)" ]
       }
     }
   }

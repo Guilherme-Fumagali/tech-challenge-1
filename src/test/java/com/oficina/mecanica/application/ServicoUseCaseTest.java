@@ -28,7 +28,7 @@ class ServicoUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new ServicoUseCase(repository);
+        useCase = new ServicoUseCase(repository, new UnidadeDeTrabalhoImediata());
     }
 
     private Servico servico(UUID id) {

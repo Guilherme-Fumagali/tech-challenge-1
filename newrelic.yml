@@ -1,7 +1,8 @@
 # Configuração do agente Java do New Relic.
 common: &default_settings
   license_key: ${NEW_RELIC_LICENSE_KEY}
-  app_name: ${NEW_RELIC_APP_NAME:oficina-api}
+  app_name: ${NEW_RELIC_APP_NAME:oficina-os-service-local}
+  log_file_name: STDOUT
   distributed_tracing:
     enabled: true
 
@@ -29,7 +30,8 @@ common: &default_settings
     ignore_status_codes: 401,403,404,422
 
   labels:
-    fase: tech-challenge-3
+    fase: tech-challenge-4
+    servico: os-service
 
 production:
   <<: *default_settings
