@@ -207,6 +207,16 @@ O Deployment roda com usuário 1001, sistema de arquivos somente leitura (com `e
 
 Ordem de provisionamento: plataforma (`oficina-infra-k8s` base e cluster) → `infra/` dos três serviços → função de autenticação → segunda passada da plataforma → pipelines dos serviços. A destruição segue a ordem inversa.
 
+O checkov falha o job **Format & validate (infra)** para qualquer verificação não listada em [`infra/.checkov.yaml`](infra/.checkov.yaml):
+
+| Verificação | Motivo |
+|---|---|
+| `CKV_AWS_157`, `CKV_AWS_118`, `CKV_AWS_353`, `CKV_AWS_354` | Multi-AZ, monitoramento avançado e Performance Insights têm custo e não são necessários no ambiente de estudo |
+| `CKV_AWS_129` | os logs de consultas lentas e de conexões ficam no parameter group, consultáveis no console do RDS, sem custo de exportação para o CloudWatch |
+| `CKV_AWS_293` | o ambiente é destruído ao final de cada sessão |
+| `CKV2_AWS_73` | filas com SSE-SQS, sem chave KMS própria |
+| `CKV_AWS_337`, `CKV2_AWS_34` | parâmetros com a chave gerenciada pela AWS; somente a senha é `SecureString` |
+
 ## CI/CD
 
 | Workflow | Job | Quando executa | O que faz |
