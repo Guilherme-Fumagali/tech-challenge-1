@@ -1,6 +1,6 @@
 # Runbook — Taxa de erro 5xx acima de 2%
 
-**Alerta:** `AWS-OficinaAPI-<Amb>-API-TaxaErro5xx-Critical`
+**Alerta:** `AWS-Oficina-<Amb>-<Serviço>-TaxaErro5xx-Critical` (`<Serviço>` é `OsService`, `BillingService` ou `ExecutionService`)
 **Dispara quando:** mais de 2% das transações com erro por 5 minutos.
 
 ## O que significa
@@ -20,7 +20,7 @@ Apdex, independentemente da velocidade.
 
 ```sql
 SELECT count(*) FROM TransactionError
-WHERE appName LIKE 'oficina-api%' FACET error.class, transactionName SINCE 30 minutes ago
+WHERE appName LIKE 'oficina-%-service-%' FACET error.class, transactionName SINCE 30 minutes ago
 ```
 
 2. **Errors Inbox** do New Relic agrupa por assinatura e mostra se o tipo é **novo** —
@@ -37,7 +37,7 @@ WHERE `log.level` = 'ERROR' SINCE 30 minutes ago LIMIT 50
 
 ```bash
 kubectl get pods -n oficina -o wide
-kubectl describe deployment/oficina-api -n oficina
+kubectl describe deployment/os-service -n oficina
 kubectl get events -n oficina --sort-by=.lastTimestamp | tail -20
 ```
 
@@ -49,15 +49,15 @@ kubectl get events -n oficina --sort-by=.lastTimestamp | tail -20
 | `CannotGetJdbcConnectionException` | Pool esgotado ou RDS indisponível | Ver conexões no RDS; a Lambda executa no máximo 10 instâncias simultâneas |
 | `OutOfMemoryError` | Heap insuficiente | Ver [k8s-memoria-pod.md](./k8s-memoria-pod.md) |
 | Pods em `CrashLoopBackOff` | Falha de startup — migration, secret ausente | `kubectl logs --previous` |
-| Erro só em `/api/ordens/*/aprovar-externo` | Integração externa | Ver [integracao-falhas.md](./integracao-falhas.md) |
+| Erro só nas transações `Mensageria/Consumo/*` | Evento que não pode ser aplicado e volta para a fila | Ver [mensageria-dlq.md](./mensageria-dlq.md) |
 
 ## Mitigação
 
 **Primeira ação em erro novo após deploy é rollback**, não investigação:
 
 ```bash
-kubectl rollout undo deployment/oficina-api -n oficina
-kubectl rollout status deployment/oficina-api -n oficina --timeout=180s
+kubectl rollout undo deployment/os-service -n oficina
+kubectl rollout status deployment/os-service -n oficina --timeout=180s
 ```
 
 Investigar depois, com o serviço estável.
@@ -65,7 +65,7 @@ Investigar depois, com o serviço estável.
 Se for o banco:
 
 ```bash
-aws rds describe-db-instances --db-instance-identifier oficina-api-db-prod \
+aws rds describe-db-instances --db-instance-identifier oficina-os-db-prod \
   --query 'DBInstances[0].DBInstanceStatus'
 ```
 

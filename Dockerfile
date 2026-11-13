@@ -3,6 +3,7 @@ FROM maven:3.9-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
+COPY .git ./.git
 RUN mvn package -DskipTests -q
 
 # ── etapa 2: agente APM ───────────────────────────────────────────────────────
@@ -11,11 +12,11 @@ FROM newrelic/newrelic-java-init:9.4.0 AS newrelic
 # ── etapa 3: runtime ──────────────────────────────────────────────────────────
 FROM eclipse-temurin:21.0.11_10-jre-alpine
 WORKDIR /app
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN addgroup -S -g 1001 spring && adduser -S -u 1001 -G spring spring
 COPY --from=builder --chown=spring:spring /app/target/*.jar app.jar
 COPY --from=newrelic --chown=spring:spring /newrelic-agent.jar /newrelic/newrelic.jar
 COPY --chown=spring:spring newrelic.yml /newrelic/newrelic.yml
-USER spring
+USER 1001:1001
 EXPOSE 8080
 
 ENV JAVA_TOOL_OPTIONS=""

@@ -1,18 +1,22 @@
-### Coleção de requisições — oficina-api (Fase 3)
+### Coleção de requisições — Fase 4 (OS, Billing e Execution)
 # Formato HTTP Client (IntelliJ) e VS Code REST Client.
 # api: URL do API Gateway do ambiente (output api_gateway_url do oficina-infra-k8s).
 # cpfFuncionario: CPF do funcionário de homologação (secret FUNCIONARIO_SEED_CPF).
-# cpfCliente: CPF do cliente cadastrado no passo 4 ou por scripts/preparar-demo.sh.
+# cpfCliente e emailCliente: cliente de demonstração; o e-mail precisa estar verificado no SES.
+# Os códigos de login chegam por e-mail e são preenchidos à mão em codigoFuncionario e codigoCliente.
 @api = https://SEU-API-GATEWAY.execute-api.us-east-1.amazonaws.com
 @cpfFuncionario = CPF_DO_FUNCIONARIO
 @cpfCliente = 529.982.247-25
+@emailCliente = EMAIL_DO_CLIENTE
+@codigoFuncionario = CODIGO_DO_EMAIL
+@codigoCliente = CODIGO_DO_EMAIL
 
 
 ### 1. Chamada protegida sem token (esperado: 401 no gateway)
 GET {{api}}/api/ordens
 
 
-### 2. Autenticação do funcionário por CPF
+### 2. Login do funcionário, passo 1: envia o código por e-mail
 POST {{api}}/auth/funcionarios
 Content-Type: application/json
 
@@ -21,28 +25,33 @@ Content-Type: application/json
 }
 
 > {%
+client.global.set("desafioFuncionario", response.body.desafioId);
+%}
+
+
+### 3. Login do funcionário, passo 2: confirma o código
+POST {{api}}/auth/funcionarios/confirmacao
+Content-Type: application/json
+
+{
+  "desafioId": "{{desafioFuncionario}}",
+  "codigo": "{{codigoFuncionario}}"
+}
+
+> {%
 client.global.set("tokenFuncionario", response.body.accessToken);
 %}
 
 
-### 3. CPF com dígito verificador inválido (esperado: 400)
-POST {{api}}/auth
-Content-Type: application/json
-
-{
-  "cpf": "529.982.247-26"
-}
-
-
-### 4. Cadastrar cliente (funcionário)
+### 4. Cadastrar cliente
 POST {{api}}/api/clientes
 Content-Type: application/json
 Authorization: Bearer {{tokenFuncionario}}
 
 {
   "cpfCnpj": "{{cpfCliente}}",
-  "nome": "João da Silva",
-  "email": "joao@email.com",
+  "nome": "Cliente de demonstração",
+  "email": "{{emailCliente}}",
   "telefone": "11999998888"
 }
 
@@ -51,16 +60,16 @@ client.global.set("clienteId", response.body.id);
 %}
 
 
-### 5. Cadastrar veículo do cliente (funcionário)
+### 5. Cadastrar veículo
 POST {{api}}/api/veiculos
 Content-Type: application/json
 Authorization: Bearer {{tokenFuncionario}}
 
 {
   "placa": "ABC1D23",
-  "marca": "Toyota",
-  "modelo": "Corolla",
-  "anoFabricacao": 2022,
+  "marca": "Volkswagen",
+  "modelo": "Polo",
+  "anoFabricacao": 2021,
   "clienteId": "{{clienteId}}"
 }
 
@@ -69,15 +78,15 @@ client.global.set("veiculoId", response.body.id);
 %}
 
 
-### 6. Cadastrar serviço no catálogo (funcionário)
+### 6. Cadastrar serviço
 POST {{api}}/api/servicos
 Content-Type: application/json
 Authorization: Bearer {{tokenFuncionario}}
 
 {
-  "nome": "Troca de óleo",
-  "descricao": "Troca de óleo e filtro",
-  "precoUnitario": 150.00,
+  "nome": "Troca de pastilhas",
+  "descricao": "Mão de obra",
+  "precoUnitario": 120.0,
   "tempoEstimadoHoras": 1
 }
 
@@ -86,16 +95,16 @@ client.global.set("servicoId", response.body.id);
 %}
 
 
-### 7. Cadastrar peça no catálogo (funcionário)
+### 7. Cadastrar peça
 POST {{api}}/api/pecas
 Content-Type: application/json
 Authorization: Bearer {{tokenFuncionario}}
 
 {
-  "nome": "Filtro de óleo",
-  "descricao": "Filtro de óleo Mann W712",
-  "precoUnitario": 35.00,
-  "quantidadeEstoque": 10,
+  "nome": "Pastilha de freio",
+  "descricao": "Jogo dianteiro",
+  "precoUnitario": 120.0,
+  "quantidadeEstoque": 20,
   "estoqueMinimo": 2
 }
 
@@ -104,7 +113,7 @@ client.global.set("pecaId", response.body.id);
 %}
 
 
-### 8. Abrir ordem de serviço (funcionário)
+### 8. Abrir ordem de serviço (inicia a saga)
 POST {{api}}/api/ordens
 Content-Type: application/json
 Authorization: Bearer {{tokenFuncionario}}
@@ -119,12 +128,22 @@ client.global.set("osId", response.body.id);
 %}
 
 
-### 9. Iniciar diagnóstico
-POST {{api}}/api/ordens/{{osId}}/iniciar-diagnostico
+### 9. Estado da saga
+GET {{api}}/api/ordens/{{osId}}/saga
 Authorization: Bearer {{tokenFuncionario}}
 
 
-### 10. Adicionar serviço
+### 10. Fila de diagnóstico (Execution)
+GET {{api}}/api/execucoes?status=AGUARDANDO_DIAGNOSTICO
+Authorization: Bearer {{tokenFuncionario}}
+
+
+### 11. Iniciar diagnóstico (Execution)
+POST {{api}}/api/execucoes/{{osId}}/diagnostico/inicio
+Authorization: Bearer {{tokenFuncionario}}
+
+
+### 12. Incluir serviço na OS
 POST {{api}}/api/ordens/{{osId}}/servicos
 Content-Type: application/json
 Authorization: Bearer {{tokenFuncionario}}
@@ -135,23 +154,28 @@ Authorization: Bearer {{tokenFuncionario}}
 }
 
 
-### 11. Adicionar peça
+### 13. Incluir peça na OS (reserva o estoque)
 POST {{api}}/api/ordens/{{osId}}/pecas
 Content-Type: application/json
 Authorization: Bearer {{tokenFuncionario}}
 
 {
   "itemId": "{{pecaId}}",
-  "quantidade": 1
+  "quantidade": 2
 }
 
 
-### 12. Gerar orçamento (envia o e-mail com os links de aprovação)
-POST {{api}}/api/ordens/{{osId}}/gerar-orcamento
+### 14. Concluir diagnóstico (Execution; o Billing gera o orçamento e envia o e-mail)
+POST {{api}}/api/execucoes/{{osId}}/diagnostico/conclusao
+Content-Type: application/json
 Authorization: Bearer {{tokenFuncionario}}
 
+{
+  "observacoes": "Pastilhas no limite de desgaste"
+}
 
-### 13. Autenticação do cliente por CPF
+
+### 15. Login do cliente, passo 1
 POST {{api}}/auth
 Content-Type: application/json
 
@@ -160,55 +184,81 @@ Content-Type: application/json
 }
 
 > {%
+client.global.set("desafioCliente", response.body.desafioId);
+%}
+
+
+### 16. Login do cliente, passo 2
+POST {{api}}/auth/confirmacao
+Content-Type: application/json
+
+{
+  "desafioId": "{{desafioCliente}}",
+  "codigo": "{{codigoCliente}}"
+}
+
+> {%
 client.global.set("tokenCliente", response.body.accessToken);
 %}
 
 
-### 14. Cliente lista as próprias ordens
-GET {{api}}/api/ordens
+### 17. Orçamento da OS (Billing)
+GET {{api}}/api/orcamentos?osId={{osId}}
+Authorization: Bearer {{tokenCliente}}
+
+> {%
+client.global.set("orcamentoId", response.body.id);
+%}
+
+
+### 18. Aprovar orçamento (Billing cria a cobrança no Mercado Pago)
+POST {{api}}/api/orcamentos/{{orcamentoId}}/aprovacao
 Authorization: Bearer {{tokenCliente}}
 
 
-### 15. Cliente tenta acessar rota de gestão (esperado: 403)
-GET {{api}}/api/clientes
+### 19. Link de pagamento: abrir no navegador e pagar com o titular APRO (ou OTHE para recusar)
+GET {{api}}/api/orcamentos?osId={{osId}}
 Authorization: Bearer {{tokenCliente}}
 
 
-### 16. Link do e-mail: página de confirmação (não altera a OS)
-@tokenAprovacao = TOKEN_DO_EMAIL
-GET {{api}}/api/ordens/{{osId}}/aprovar-externo?token={{tokenAprovacao}}
-
-
-### 17. Confirmação enviada pela página
-POST {{api}}/api/ordens/{{osId}}/aprovar-externo
-Content-Type: application/x-www-form-urlencoded
-
-token={{tokenAprovacao}}&decisao=APROVAR
-
-
-### 18. Reutilização do mesmo token pela API (esperado: 401)
-POST {{api}}/api/ordens/{{osId}}/aprovar-externo
-Content-Type: application/json
-
-{
-  "token": "{{tokenAprovacao}}",
-  "decisao": "APROVAR"
-}
-
-
-### 19. Consulta pública de status, sem JWT
+### 20. Status público após o pagamento, sem JWT
 GET {{api}}/api/ordens/{{osId}}/status
 
 
-### 20. Concluir e entregar (funcionário)
-POST {{api}}/api/ordens/{{osId}}/concluir
+### 21. Iniciar reparo (Execution)
+POST {{api}}/api/execucoes/{{osId}}/reparo/inicio
 Authorization: Bearer {{tokenFuncionario}}
 
-###
+
+### 22. Concluir reparo (Execution; a OS vai para FINALIZADA)
+POST {{api}}/api/execucoes/{{osId}}/reparo/conclusao
+Authorization: Bearer {{tokenFuncionario}}
+
+
+### 23. Registrar entrega
 POST {{api}}/api/ordens/{{osId}}/entregar
 Authorization: Bearer {{tokenFuncionario}}
 
 
-### 21. Relatório de tempo médio de execução (funcionário)
-GET {{api}}/api/ordens/relatorio/tempo-medio?inicio=2026-09-01T00:00:00&fim=2026-12-31T23:59:59
+### 24. Histórico e acompanhamento composto (OS + Billing + Execution)
+GET {{api}}/api/ordens/{{osId}}/historico
 Authorization: Bearer {{tokenFuncionario}}
+
+###
+GET {{api}}/api/ordens/{{osId}}/acompanhamento
+Authorization: Bearer {{tokenFuncionario}}
+
+
+### 25. Alternativa: reprovar orçamento (compensação: cancela a execução e devolve as peças)
+POST {{api}}/api/orcamentos/{{orcamentoId}}/reprovacao
+Authorization: Bearer {{tokenCliente}}
+
+
+### 26. Alternativa: falha na execução depois do pagamento (compensação com estorno)
+POST {{api}}/api/execucoes/{{osId}}/falha
+Content-Type: application/json
+Authorization: Bearer {{tokenFuncionario}}
+
+{
+  "motivo": "Disco de freio trincado"
+}

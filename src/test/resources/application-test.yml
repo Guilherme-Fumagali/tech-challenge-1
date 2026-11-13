@@ -6,6 +6,18 @@ spring:
     placeholders:
       funcionario-seed-cpf: 390.533.447-05
       funcionario-seed-nome: Funcionária de Teste
+      funcionario-seed-email: funcionaria.teste@example.com
 
 jwt:
   secret: chave-de-teste-super-longa-para-hmac-sha-256-minimo-32-chars
+
+app:
+  seguranca:
+    chave-interna: chave-interna-de-teste
+  mensageria:
+    relay:
+      intervalo: 200
+    dlq-intervalo: 600000
+    dlq-atraso-inicial: 600000
+  saga:
+    verificacao-prazos: 1000

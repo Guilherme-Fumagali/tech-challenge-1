@@ -8,6 +8,7 @@ public enum StatusOS {
     RECEBIDA,
     EM_DIAGNOSTICO,
     AGUARDANDO_APROVACAO,
+    AGUARDANDO_PAGAMENTO,
     EM_EXECUCAO,
     FINALIZADA,
     ENTREGUE,
@@ -16,9 +17,10 @@ public enum StatusOS {
     public void validarTransicaoPara(StatusOS destino) {
         boolean permitida = switch (this) {
             case RECEBIDA             -> destino == EM_DIAGNOSTICO;
-            case EM_DIAGNOSTICO       -> destino == AGUARDANDO_APROVACAO;
-            case AGUARDANDO_APROVACAO -> Set.of(EM_EXECUCAO, CANCELADA).contains(destino);
-            case EM_EXECUCAO          -> destino == FINALIZADA;
+            case EM_DIAGNOSTICO       -> Set.of(AGUARDANDO_APROVACAO, CANCELADA).contains(destino);
+            case AGUARDANDO_APROVACAO -> Set.of(AGUARDANDO_PAGAMENTO, CANCELADA).contains(destino);
+            case AGUARDANDO_PAGAMENTO -> Set.of(EM_EXECUCAO, CANCELADA).contains(destino);
+            case EM_EXECUCAO          -> Set.of(FINALIZADA, CANCELADA).contains(destino);
             case FINALIZADA           -> destino == ENTREGUE;
             case ENTREGUE, CANCELADA  -> false;
         };

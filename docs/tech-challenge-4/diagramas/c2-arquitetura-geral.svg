@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1230" height="1160" viewBox="0 0 1230 1160">
+<title>Arquitetura geral — Fase 4</title>
+<defs><marker id="seta-linha" viewBox="0 0 12 10" refX="0" refY="5" markerWidth="12" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L12,5 L0,10 Z" fill="#3E4C59"/></marker><marker id="seta-aux" viewBox="0 0 12 10" refX="0" refY="5" markerWidth="12" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L12,5 L0,10 Z" fill="#5F6B7A"/></marker><marker id="seta-os" viewBox="0 0 12 10" refX="0" refY="5" markerWidth="12" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L12,5 L0,10 Z" fill="#2B5C9E"/></marker><marker id="seta-billing" viewBox="0 0 12 10" refX="0" refY="5" markerWidth="12" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L12,5 L0,10 Z" fill="#A9561A"/></marker><marker id="seta-execution" viewBox="0 0 12 10" refX="0" refY="5" markerWidth="12" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M0,0 L12,5 L0,10 Z" fill="#2E7A4C"/></marker></defs>
+<rect x="0" y="0" width="1230" height="1160" fill="#FFFFFF"/>
+<rect x="24" y="20" width="424" height="100" rx="8" fill="#FFFFFF" stroke="#A7B1BC" stroke-width="1.2"/>
+<path d="M40,44 L82.0,44.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<text x="110" y="50" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="start">síncrono</text>
+<path d="M40,72 L82.0,72.0" fill="none" stroke="#5F6B7A" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#seta-aux)"/>
+<text x="110" y="78" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="start">auxiliar · observabilidade</text>
+<rect x="42" y="89" width="6" height="18" rx="2" fill="#2B5C9E" opacity="0.45"/>
+<rect x="51" y="89" width="6" height="18" rx="2" fill="#2B5C9E" opacity="0.7"/>
+<rect x="60" y="89" width="6" height="18" rx="2" fill="#2B5C9E" opacity="0.95"/>
+<path d="M72,98 L82.0,98.0" fill="none" stroke="#2B5C9E" stroke-width="2" marker-end="url(#seta-os)"/>
+<text x="110" y="104" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="start">assíncrono (fila na cor do consumidor)</text>
+<rect x="548" y="36" width="116" height="52" rx="26.0" fill="#F6F8FA" stroke="#7B8794" stroke-width="1.5"/>
+<circle cx="572" cy="55.0" r="6" fill="#52606D"/>
+<path d="M562,75.0 a10,10 0 0 1 20,0 Z" fill="#52606D"/>
+<text x="590" y="69.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#1F2933" text-anchor="start">Cliente</text>
+<rect x="682" y="36" width="160" height="52" rx="26.0" fill="#F6F8FA" stroke="#7B8794" stroke-width="1.5"/>
+<circle cx="706" cy="55.0" r="6" fill="#52606D"/>
+<path d="M696,75.0 a10,10 0 0 1 20,0 Z" fill="#52606D"/>
+<text x="724" y="69.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#1F2933" text-anchor="start">Funcionário</text>
+<path d="M606,88 L606.0,138.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M762,88 L762.0,138.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<rect x="564" y="150" width="240" height="120" rx="8" fill="#FFFFFF" stroke="#3E4C59" stroke-width="2"/>
+<text x="684" y="180" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#1F2933" text-anchor="middle">API Gateway</text>
+<text x="684" y="202" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#52606D" text-anchor="middle">HTTP API</text>
+<text x="684" y="228" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle">rotas por prefixo ·</text>
+<text x="684" y="249" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle">authorizer JWT</text>
+<rect x="24" y="136" width="420" height="226" rx="12" fill="#F6F8FA" stroke="#A7B1BC" stroke-width="1.5"/>
+<text x="40" y="160" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#52606D" text-anchor="start">Autenticação · AWS Lambda</text>
+<rect x="40" y="176" width="166" height="64" rx="8" fill="#FFFFFF" stroke="#7B8794" stroke-width="1.5"/>
+<text x="123" y="214" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#1F2933" text-anchor="middle">Amazon SES</text>
+<rect x="254" y="176" width="174" height="64" rx="8" fill="#FFFFFF" stroke="#7B8794" stroke-width="1.5"/>
+<text x="341" y="202" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">oficina-authorizer</text>
+<text x="341" y="226" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#52606D" text-anchor="middle">valida o JWT</text>
+<path d="M40,272 A83.0,10 0 0 1 206,272 V336 A83.0,10 0 0 1 40,336 Z" fill="#FFFFFF" stroke="#7B8794" stroke-width="1.5"/>
+<path d="M40,272 A83.0,10 0 0 0 206,272" fill="none" stroke="#7B8794" stroke-width="1.5"/>
+<text x="123" y="302" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">DynamoDB</text>
+<text x="123" y="325" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#52606D" text-anchor="middle">desafios 2FA · TTL</text>
+<rect x="254" y="262" width="174" height="84" rx="8" fill="#FFFFFF" stroke="#7B8794" stroke-width="1.5"/>
+<text x="341" y="288" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">oficina-auth</text>
+<text x="341" y="311" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#52606D" text-anchor="middle">CPF + código</text>
+<text x="341" y="331" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#52606D" text-anchor="middle">por e-mail</text>
+<path d="M564,208 L440.0,208.0" fill="none" stroke="#5F6B7A" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#seta-aux)"/>
+<text x="504" y="199" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">valida token</text>
+<path d="M584,270 L584.0,295.0 Q584,304 575.0,304.0 L440.0,304.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M254,282 L236.0,282.0 Q230,282 230.0,276.0 L230.0,214.0 Q230,208 224.0,208.0 L218.0,208.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M254,322 L218.0,322.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<rect x="900" y="24" width="220" height="96" rx="8" fill="#ECEFF3" stroke="#7B8794" stroke-width="1.5"/>
+<text x="1010" y="52" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#1F2933" text-anchor="middle">New Relic</text>
+<text x="1010" y="76" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#52606D" text-anchor="middle">APM · trace distribuído</text>
+<text x="1010" y="97" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#52606D" text-anchor="middle">logs · métricas</text>
+<rect x="900" y="165" width="200" height="90" rx="8" fill="#ECEFF3" stroke="#7B8794" stroke-width="1.5"/>
+<text x="1000" y="202" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#1F2933" text-anchor="middle">Mercado Pago</text>
+<text x="1000" y="226" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#52606D" text-anchor="middle">Checkout Pro</text>
+<path d="M900,210 L816.0,210.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<text x="852" y="201" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">webhook</text>
+<rect x="24" y="392" width="1160" height="488" rx="12" fill="#F6F8FA" stroke="#A7B1BC" stroke-width="1.5"/>
+<text x="40" y="416" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#52606D" text-anchor="start">VPC · subnets privadas</text>
+<rect x="570" y="424" width="230" height="70" rx="8" fill="#FFFFFF" stroke="#3E4C59" stroke-width="2"/>
+<text x="685" y="452" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="19" font-weight="700" fill="#1F2933" text-anchor="middle">NLB interno</text>
+<text x="685" y="476" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#52606D" text-anchor="middle">listeners 80 · 8081 · 8082</text>
+<path d="M684,270 L684.0,412.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<text x="676" y="352" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="end" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">VPC Link</text>
+<path d="M340,346 L340.0,433.0 Q340,442 349.0,442.0 L558.0,442.0" fill="none" stroke="#5F6B7A" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#seta-aux)"/>
+<text x="455" y="433" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">identidade · REST interno</text>
+<rect x="42" y="540" width="300" height="320" rx="10" fill="#EAF5EE" stroke="#2E7A4C" stroke-width="2.2"/>
+<text x="58" y="572" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="23" font-weight="700" fill="#2E7A4C" text-anchor="start">Execution Service</text>
+<text x="58" y="594" font-family="Liberation Mono, Courier New, monospace" font-size="16" font-weight="400" fill="#52606D" text-anchor="start">oficina-execution-service</text>
+<rect x="58" y="608" width="268" height="104" rx="6" fill="#FFFFFF" stroke="#7B8794" stroke-width="1.4"/>
+<text x="192.0" y="654.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">pods no EKS</text>
+<text x="192.0" y="678.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#1F2933" text-anchor="middle">fila · diagnóstico · reparo</text>
+<path d="M192.0,712 L192.0,730.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M82,752 A110.0,10 0 0 1 302,752 V832 A110.0,10 0 0 1 82,832 Z" fill="#FFFFFF" stroke="#2E7A4C" stroke-width="1.6"/>
+<path d="M82,752 A110.0,10 0 0 0 302,752" fill="none" stroke="#2E7A4C" stroke-width="1.6"/>
+<text x="192.0" y="788" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">Amazon DocumentDB</text>
+<text x="192.0" y="812" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="16" font-weight="400" fill="#52606D" text-anchor="middle">(MongoDB 5.0)</text>
+<rect x="454" y="540" width="300" height="320" rx="10" fill="#EDF3FB" stroke="#2B5C9E" stroke-width="2.2"/>
+<text x="470" y="572" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="23" font-weight="700" fill="#2B5C9E" text-anchor="start">OS Service</text>
+<text x="470" y="594" font-family="Liberation Mono, Courier New, monospace" font-size="16" font-weight="400" fill="#52606D" text-anchor="start">tech-challenge-1</text>
+<rect x="470" y="608" width="268" height="104" rx="6" fill="#FFFFFF" stroke="#7B8794" stroke-width="1.4"/>
+<text x="604.0" y="643.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">pods no EKS</text>
+<text x="604.0" y="667.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#1F2933" text-anchor="middle">cliente · catálogo · estoque ·</text>
+<text x="604.0" y="689.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#1F2933" text-anchor="middle">OS · orquestrador da saga</text>
+<path d="M604.0,712 L604.0,730.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M494,752 A110.0,10 0 0 1 714,752 V832 A110.0,10 0 0 1 494,832 Z" fill="#FFFFFF" stroke="#2B5C9E" stroke-width="1.6"/>
+<path d="M494,752 A110.0,10 0 0 0 714,752" fill="none" stroke="#2B5C9E" stroke-width="1.6"/>
+<text x="604.0" y="788" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">RDS PostgreSQL</text>
+<text x="604.0" y="812" font-family="Liberation Mono, Courier New, monospace" font-size="16" font-weight="400" fill="#52606D" text-anchor="middle">oficina-os-db</text>
+<rect x="866" y="540" width="300" height="320" rx="10" fill="#FBF2E9" stroke="#A9561A" stroke-width="2.2"/>
+<text x="882" y="572" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="23" font-weight="700" fill="#A9561A" text-anchor="start">Billing Service</text>
+<text x="882" y="594" font-family="Liberation Mono, Courier New, monospace" font-size="16" font-weight="400" fill="#52606D" text-anchor="start">oficina-billing-service</text>
+<rect x="882" y="608" width="268" height="104" rx="6" fill="#FFFFFF" stroke="#7B8794" stroke-width="1.4"/>
+<text x="1016.0" y="643.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">pods no EKS</text>
+<text x="1016.0" y="667.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#1F2933" text-anchor="middle">orçamento ·</text>
+<text x="1016.0" y="689.0" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="400" fill="#1F2933" text-anchor="middle">pagamento · estorno</text>
+<path d="M1016.0,712 L1016.0,730.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M906,752 A110.0,10 0 0 1 1126,752 V832 A110.0,10 0 0 1 906,832 Z" fill="#FFFFFF" stroke="#A9561A" stroke-width="1.6"/>
+<path d="M906,752 A110.0,10 0 0 0 1126,752" fill="none" stroke="#A9561A" stroke-width="1.6"/>
+<text x="1016.0" y="788" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#1F2933" text-anchor="middle">RDS PostgreSQL</text>
+<text x="1016.0" y="812" font-family="Liberation Mono, Courier New, monospace" font-size="16" font-weight="400" fill="#52606D" text-anchor="middle">oficina-billing-db</text>
+<path d="M570,476 L201.0,476.0 Q192,476 192.0,485.0 L192.0,528.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M604,494 L604.0,528.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M800,476 L977.0,476.0 Q986,476 986.0,485.0 L986.0,528.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<path d="M454,660 L354.0,660.0" fill="none" stroke="#5F6B7A" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#seta-aux)"/>
+<text x="398" y="628" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">composição</text>
+<text x="398" y="648" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">REST</text>
+<path d="M754,660 L854.0,660.0" fill="none" stroke="#5F6B7A" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#seta-aux)"/>
+<text x="810" y="628" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">composição</text>
+<text x="810" y="648" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">REST</text>
+<path d="M1046,540 L1046.0,267.0" fill="none" stroke="#3E4C59" stroke-width="2" marker-end="url(#seta-linha)"/>
+<text x="1036" y="345" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="end" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">preferência · consulta · estorno</text>
+<path d="M1184,430 L1196.0,430.0 Q1205,430 1205.0,421.0 L1205.0,81.0 Q1205,72 1196.0,72.0 L1132.0,72.0" fill="none" stroke="#5F6B7A" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#seta-aux)"/>
+<text x="1195" y="178" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="end" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">telemetria</text>
+<text x="1195" y="199" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="end" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">dos três</text>
+<text x="1195" y="220" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="end" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round" paint-order="stroke">serviços</text>
+<rect x="24" y="908" width="1160" height="232" rx="12" fill="#F6F8FA" stroke="#A7B1BC" stroke-width="1.5"/>
+<text x="40" y="1126" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" fill="#52606D" text-anchor="start">Amazon SQS · fila padrão + DLQ por consumidor</text>
+<rect x="82" y="948" width="246" height="56" rx="28.0" fill="#EAF5EE" stroke="#2E7A4C" stroke-width="1.8"/>
+<rect x="100" y="965.0" width="7" height="22" rx="2" fill="#2E7A4C" opacity="0.45"/>
+<rect x="111" y="965.0" width="7" height="22" rx="2" fill="#2E7A4C" opacity="0.7"/>
+<rect x="122" y="965.0" width="7" height="22" rx="2" fill="#2E7A4C" opacity="0.95"/>
+<text x="138" y="982.0" font-family="Liberation Mono, Courier New, monospace" font-size="16" font-weight="700" fill="#1F2933" text-anchor="start">execution-comandos</text>
+<rect x="876" y="948" width="226" height="56" rx="28.0" fill="#FBF2E9" stroke="#A9561A" stroke-width="1.8"/>
+<rect x="894" y="965.0" width="7" height="22" rx="2" fill="#A9561A" opacity="0.45"/>
+<rect x="905" y="965.0" width="7" height="22" rx="2" fill="#A9561A" opacity="0.7"/>
+<rect x="916" y="965.0" width="7" height="22" rx="2" fill="#A9561A" opacity="0.95"/>
+<text x="932" y="982.0" font-family="Liberation Mono, Courier New, monospace" font-size="16" font-weight="700" fill="#1F2933" text-anchor="start">billing-comandos</text>
+<rect x="519" y="1036" width="170" height="56" rx="28.0" fill="#EDF3FB" stroke="#2B5C9E" stroke-width="1.8"/>
+<rect x="537" y="1053.0" width="7" height="22" rx="2" fill="#2B5C9E" opacity="0.45"/>
+<rect x="548" y="1053.0" width="7" height="22" rx="2" fill="#2B5C9E" opacity="0.7"/>
+<rect x="559" y="1053.0" width="7" height="22" rx="2" fill="#2B5C9E" opacity="0.95"/>
+<text x="575" y="1070.0" font-family="Liberation Mono, Courier New, monospace" font-size="16" font-weight="700" fill="#1F2933" text-anchor="start">os-eventos</text>
+<path d="M192,948 L192.0,872.0" fill="none" stroke="#2E7A4C" stroke-width="2" marker-end="url(#seta-execution)"/>
+<path d="M484,860 L484.0,967.0 Q484,976 475.0,976.0 L340.0,976.0" fill="none" stroke="#2E7A4C" stroke-width="2" marker-end="url(#seta-execution)"/>
+<text x="406" y="967" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">comandos</text>
+<path d="M1016,948 L1016.0,872.0" fill="none" stroke="#A9561A" stroke-width="2" marker-end="url(#seta-billing)"/>
+<path d="M724,860 L724.0,967.0 Q724,976 733.0,976.0 L864.0,976.0" fill="none" stroke="#A9561A" stroke-width="2" marker-end="url(#seta-billing)"/>
+<text x="800" y="967" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">comandos</text>
+<path d="M604,1036 L604.0,872.0" fill="none" stroke="#2B5C9E" stroke-width="2" marker-end="url(#seta-os)"/>
+<path d="M66,860 L66.0,1055.0 Q66,1064 75.0,1064.0 L507.0,1064.0" fill="none" stroke="#2B5C9E" stroke-width="2" marker-end="url(#seta-os)"/>
+<text x="440" y="1055" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">eventos</text>
+<path d="M1142,860 L1142.0,1055.0 Q1142,1064 1133.0,1064.0 L701.0,1064.0" fill="none" stroke="#2B5C9E" stroke-width="2" marker-end="url(#seta-os)"/>
+<text x="768" y="1055" font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="17" font-weight="400" fill="#1F2933" text-anchor="middle" stroke="#F6F8FA" stroke-width="6" stroke-linejoin="round" paint-order="stroke">eventos</text>
+</svg>

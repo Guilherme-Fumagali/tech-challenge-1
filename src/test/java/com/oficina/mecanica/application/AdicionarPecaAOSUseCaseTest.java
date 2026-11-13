@@ -37,7 +37,7 @@ class AdicionarPecaAOSUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new AdicionarPecaAOSUseCase(osRepository, pecaRepository);
+        useCase = new AdicionarPecaAOSUseCase(osRepository, pecaRepository, new UnidadeDeTrabalhoImediata());
         osId = UUID.randomUUID();
         pecaId = UUID.randomUUID();
     }

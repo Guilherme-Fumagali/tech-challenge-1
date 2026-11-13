@@ -1,14 +1,12 @@
 package com.oficina.mecanica.domain.entity;
 
 import com.oficina.mecanica.domain.exception.EstoqueInsuficienteException;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
-@AllArgsConstructor
 public class Peca {
 
     private UUID id;
@@ -17,6 +15,28 @@ public class Peca {
     private BigDecimal precoUnitario;
     private int quantidadeEstoque;
     private int estoqueMinimo;
+    private Long versao;
+
+    public Peca(UUID id, String nome, String descricao, BigDecimal precoUnitario,
+                int quantidadeEstoque, int estoqueMinimo) {
+        this.id = id;
+        this.nome = nome;
+        this.descricao = descricao;
+        this.precoUnitario = precoUnitario;
+        this.quantidadeEstoque = quantidadeEstoque;
+        this.estoqueMinimo = estoqueMinimo;
+    }
+
+    public static Peca reconstituir(UUID id, String nome, String descricao, BigDecimal precoUnitario,
+                                    int quantidadeEstoque, int estoqueMinimo, Long versao) {
+        var peca = new Peca(id, nome, descricao, precoUnitario, quantidadeEstoque, estoqueMinimo);
+        peca.versao = versao;
+        return peca;
+    }
+
+    public void registrarVersaoPersistida(Long versaoPersistida) {
+        this.versao = versaoPersistida;
+    }
 
     public void decrementarEstoque(int quantidade) {
         if (quantidade > quantidadeEstoque) {

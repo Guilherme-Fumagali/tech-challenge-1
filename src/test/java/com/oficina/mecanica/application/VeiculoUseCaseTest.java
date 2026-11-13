@@ -44,7 +44,7 @@ class VeiculoUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new VeiculoUseCase(veiculoRepository, clienteRepository);
+        useCase = new VeiculoUseCase(veiculoRepository, clienteRepository, new UnidadeDeTrabalhoImediata());
     }
 
     @Test

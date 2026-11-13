@@ -2,28 +2,46 @@ package com.oficina.mecanica.infrastructure.web.handler;
 
 import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.EstoqueInsuficienteException;
+import com.oficina.mecanica.domain.exception.IdentidadeNaoEncontradaException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
-import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.net.URI;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private static final String INSTANCIA_IDENTIDADES = "/internal/identidades";
+
     private final MetricasOrdemServico metricas;
 
     public GlobalExceptionHandler(MetricasOrdemServico metricas) {
         this.metricas = metricas;
+    }
+
+    @ExceptionHandler(IdentidadeNaoEncontradaException.class)
+    public ResponseEntity<ProblemDetail> handleIdentidadeNaoEncontrada(IdentidadeNaoEncontradaException ex) {
+        var pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        pd.setInstance(URI.create(INSTANCIA_IDENTIDADES));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(pd);
     }
 
     @ExceptionHandler(RecursoNaoEncontradoException.class)
@@ -42,9 +60,10 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 
-    @ExceptionHandler(TokenAprovacaoInvalidoException.class)
-    public ResponseEntity<ProblemDetail> handleTokenAprovacao(TokenAprovacaoInvalidoException ex) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<ProblemDetail> handleConcorrencia(OptimisticLockingFailureException ex) {
+        return build(HttpStatus.CONFLICT,
+            "O recurso foi alterado por outra operação. Consulte o estado atual e repita a requisição.");
     }
 
     @ExceptionHandler(DomainException.class)
@@ -60,6 +79,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ProblemDetail> handleTipoInvalido(MethodArgumentTypeMismatchException ex) {
         return build(HttpStatus.BAD_REQUEST, "Valor inválido para o parâmetro " + ex.getName() + ".");
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ProblemDetail> handleCorpoIlegivel(HttpMessageNotReadableException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Corpo da requisição ausente ou em formato inválido.");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ProblemDetail> handleIntegridade(DataIntegrityViolationException ex) {
+        log.warn("Operação recusada por restrição de integridade: {}", ex.getMostSpecificCause().getMessage());
+        return build(HttpStatus.CONFLICT,
+            "A operação viola uma restrição de integridade, por exemplo um registro ainda referenciado.");
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ProblemDetail> handleGenerico(Exception ex) {
+        if (ex instanceof ErrorResponse erroHttp) {
+            return ResponseEntity.status(erroHttp.getStatusCode()).body(erroHttp.getBody());
+        }
+        log.error("Erro não tratado na requisição", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno. Tente novamente mais tarde.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

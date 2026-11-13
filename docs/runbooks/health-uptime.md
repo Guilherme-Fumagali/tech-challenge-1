@@ -1,6 +1,6 @@
 # Runbook — Healthcheck falhando
 
-**Alerta:** `AWS-OficinaAPI-<Amb>-Health-Uptime-Critical`
+**Alerta:** `AWS-Oficina-<Amb>-Health-Uptime-Critical`
 **Dispara quando:** 2 checagens sintéticas consecutivas falham.
 
 ## O que significa
@@ -30,20 +30,20 @@ curl -si "$API_URL/actuator/health" | head -5
 
 ```bash
 kubectl get pods -n oficina -o wide
-kubectl get deployment/oficina-api -n oficina
+kubectl get deployment/os-service -n oficina
 ```
 
 3. **Aplicação responde dentro do cluster?** Isola gateway/NLB de aplicação:
 
 ```bash
 kubectl run curl-teste --rm -it --restart=Never --image=curlimages/curl -n oficina \
-  -- curl -s http://oficina-api/actuator/health
+  -- curl -s http://os-service/actuator/health
 ```
 
 4. **Target group saudável?** É o elo mais fácil de esquecer:
 
 ```bash
-TG=$(aws elbv2 describe-target-groups --names oficina-api-tg-prod \
+TG=$(aws elbv2 describe-target-groups --names oficina-os-tg-prod \
        --query 'TargetGroups[0].TargetGroupArn' --output text)
 aws elbv2 describe-target-health --target-group-arn "$TG"
 ```
@@ -52,7 +52,7 @@ aws elbv2 describe-target-health --target-group-arn "$TG"
    mesmo com pod de pé.
 
 ```bash
-aws rds describe-db-instances --db-instance-identifier oficina-api-db-prod \
+aws rds describe-db-instances --db-instance-identifier oficina-os-db-prod \
   --query 'DBInstances[0].DBInstanceStatus' --output text
 ```
 
@@ -70,11 +70,11 @@ aws rds describe-db-instances --db-instance-identifier oficina-api-db-prod \
 
 - **Rollout ruim:**
   ```bash
-  kubectl rollout undo deployment/oficina-api -n oficina
+  kubectl rollout undo deployment/os-service -n oficina
   ```
 - **Pod travado:**
   ```bash
-  kubectl rollout restart deployment/oficina-api -n oficina
+  kubectl rollout restart deployment/os-service -n oficina
   ```
 - **Target não registrado:** conferir se o NodePort 30080 está no security group do cluster.
 
