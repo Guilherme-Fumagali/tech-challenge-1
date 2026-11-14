@@ -23,7 +23,8 @@ public class PecaRepositoryAdapter implements PecaRepository {
 
     @Override
     public Peca salvar(Peca p) {
-        jpa.save(mapper.toEntity(p));
+        var salva = jpa.saveAndFlush(mapper.toEntity(p));
+        p.registrarVersaoPersistida(salva.getVersao());
         return p;
     }
 

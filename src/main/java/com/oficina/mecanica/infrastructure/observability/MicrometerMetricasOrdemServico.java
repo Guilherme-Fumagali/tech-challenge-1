@@ -18,7 +18,6 @@ public class MicrometerMetricasOrdemServico implements MetricasOrdemServico {
     static final String OS_ABERTAS = "oficina.os.abertas";
     static final String OS_TRANSICOES = "oficina.os.transicoes";
     static final String OS_DURACAO_STATUS = "oficina.os.duracao_status";
-    static final String INTEGRACAO_FALHAS = "oficina.integracao.falhas";
 
     private final MeterRegistry registry;
 
@@ -57,13 +56,6 @@ public class MicrometerMetricasOrdemServico implements MetricasOrdemServico {
         registry.counter(OS_TRANSICOES,
             "status_destino", "desconhecido",
             "resultado", "falha",
-            "motivo", motivo).increment();
-    }
-
-    @Override
-    public void registrarFalhaIntegracao(String integracao, String motivo) {
-        registry.counter(INTEGRACAO_FALHAS,
-            "integracao", integracao,
             "motivo", motivo).increment();
     }
 }

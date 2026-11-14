@@ -1,7 +1,7 @@
 # ADR-001 — Quatro repositórios, com `oficina-api` preservado
 
 - **Data:** 04/09/2026
-- **Status:** Aceita
+- **Status:** Superada por [ADR-022](../../tech-challenge-4/adrs/ADR-022-infra-por-servico-pod-identity.md) quanto aos manifestos Kubernetes e ao banco fora do repositório da aplicação
 
 ## Contexto
 

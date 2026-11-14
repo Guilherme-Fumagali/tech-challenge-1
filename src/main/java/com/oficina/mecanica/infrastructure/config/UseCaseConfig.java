@@ -1,97 +1,148 @@
 package com.oficina.mecanica.infrastructure.config;
 
-import com.oficina.mecanica.application.port.NotificacaoService;
+import com.oficina.mecanica.application.port.ConsultaExecucao;
+import com.oficina.mecanica.application.port.ConsultaOrcamento;
+import com.oficina.mecanica.application.port.MetricasSaga;
+import com.oficina.mecanica.application.port.PublicadorMensagens;
+import com.oficina.mecanica.application.port.RegistroMensagensProcessadas;
+import com.oficina.mecanica.application.port.UnidadeDeTrabalho;
 import com.oficina.mecanica.application.usecase.cliente.ClienteUseCase;
+import com.oficina.mecanica.application.usecase.identidade.ConsultarIdentidadeUseCase;
 import com.oficina.mecanica.application.usecase.ordemservico.*;
 import com.oficina.mecanica.application.usecase.peca.PecaUseCase;
 import com.oficina.mecanica.application.usecase.relatorio.RelatorioTempoMedioUseCase;
+import com.oficina.mecanica.application.usecase.saga.ConfiguracaoSaga;
+import com.oficina.mecanica.application.usecase.saga.ConsultarSagaUseCase;
+import com.oficina.mecanica.application.usecase.saga.MontadorDadosComando;
+import com.oficina.mecanica.application.usecase.saga.ProcessarEventoSagaUseCase;
+import com.oficina.mecanica.application.usecase.saga.VerificarPrazosSagaUseCase;
 import com.oficina.mecanica.application.usecase.servico.ServicoUseCase;
 import com.oficina.mecanica.application.usecase.veiculo.VeiculoUseCase;
 import com.oficina.mecanica.domain.repository.*;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.Duration;
+import java.time.Clock;
 
 @Configuration
+@EnableConfigurationProperties(PropriedadesSaga.class)
 public class UseCaseConfig {
 
     @Bean
-    public ClienteUseCase clienteUseCase(ClienteRepository r) { return new ClienteUseCase(r); }
-
-    @Bean
-    public VeiculoUseCase veiculoUseCase(VeiculoRepository vr, ClienteRepository cr) {
-        return new VeiculoUseCase(vr, cr);
+    public Clock relogio() {
+        return Clock.systemUTC();
     }
 
     @Bean
-    public ServicoUseCase servicoUseCase(ServicoRepository r) { return new ServicoUseCase(r); }
+    public ConfiguracaoSaga configuracaoSaga(PropriedadesSaga propriedades) {
+        return new ConfiguracaoSaga(propriedades.prazoResposta(), propriedades.maxReenvios(), propriedades.lote());
+    }
 
     @Bean
-    public PecaUseCase pecaUseCase(PecaRepository r) { return new PecaUseCase(r); }
+    public MontadorDadosComando montadorDadosComando(ClienteRepository c, VeiculoRepository v) {
+        return new MontadorDadosComando(c, v);
+    }
+
+    @Bean
+    public ProcessarEventoSagaUseCase processarEventoSagaUseCase(SagaOrdemServicoRepository sagas,
+                                                                 OrdemServicoRepository os,
+                                                                 CompensacaoEstornoEstoque estorno,
+                                                                 MontadorDadosComando montador,
+                                                                 PublicadorMensagens publicador,
+                                                                 RegistroMensagensProcessadas processadas,
+                                                                 MetricasSaga metricas,
+                                                                 UnidadeDeTrabalho u,
+                                                                 ConfiguracaoSaga configuracao,
+                                                                 Clock relogio) {
+        return new ProcessarEventoSagaUseCase(sagas, os, estorno, montador, publicador, processadas, metricas, u,
+            configuracao, relogio);
+    }
+
+    @Bean
+    public ClienteUseCase clienteUseCase(ClienteRepository r, UnidadeDeTrabalho u) { return new ClienteUseCase(r, u); }
+
+    @Bean
+    public VeiculoUseCase veiculoUseCase(VeiculoRepository vr, ClienteRepository cr, UnidadeDeTrabalho u) {
+        return new VeiculoUseCase(vr, cr, u);
+    }
+
+    @Bean
+    public ServicoUseCase servicoUseCase(ServicoRepository r, UnidadeDeTrabalho u) { return new ServicoUseCase(r, u); }
+
+    @Bean
+    public PecaUseCase pecaUseCase(PecaRepository r, UnidadeDeTrabalho u) { return new PecaUseCase(r, u); }
 
     @Bean
     public CriarOrdemServicoUseCase criarOrdemServicoUseCase(OrdemServicoRepository os,
                                                               ClienteRepository c,
-                                                              VeiculoRepository v) {
-        return new CriarOrdemServicoUseCase(os, c, v);
+                                                              VeiculoRepository v,
+                                                              SagaOrdemServicoRepository sagas,
+                                                              MontadorDadosComando montador,
+                                                              PublicadorMensagens publicador,
+                                                              MetricasSaga metricas,
+                                                              UnidadeDeTrabalho u,
+                                                              ConfiguracaoSaga configuracao,
+                                                              Clock relogio) {
+        return new CriarOrdemServicoUseCase(os, c, v, sagas, montador, publicador, metricas, u, configuracao, relogio);
     }
 
     @Bean
-    public IniciarDiagnosticoUseCase iniciarDiagnosticoUseCase(OrdemServicoRepository r) {
-        return new IniciarDiagnosticoUseCase(r);
+    public VerificarPrazosSagaUseCase verificarPrazosSagaUseCase(SagaOrdemServicoRepository sagas,
+                                                                 PublicadorMensagens publicador,
+                                                                 MetricasSaga metricas,
+                                                                 UnidadeDeTrabalho u,
+                                                                 ConfiguracaoSaga configuracao,
+                                                                 Clock relogio) {
+        return new VerificarPrazosSagaUseCase(sagas, publicador, metricas, u, configuracao, relogio);
+    }
+
+    @Bean
+    public ConsultarSagaUseCase consultarSagaUseCase(SagaOrdemServicoRepository sagas) {
+        return new ConsultarSagaUseCase(sagas);
+    }
+
+    @Bean
+    public ConsultarHistoricoOSUseCase consultarHistoricoOSUseCase(OrdemServicoRepository os,
+                                                                   HistoricoStatusRepository historico) {
+        return new ConsultarHistoricoOSUseCase(os, historico);
+    }
+
+    @Bean
+    public ConsultarAcompanhamentoUseCase consultarAcompanhamentoUseCase(ConsultarStatusOSUseCase consultar,
+                                                                         HistoricoStatusRepository historico,
+                                                                         ConsultaOrcamento orcamento,
+                                                                         ConsultaExecucao execucao) {
+        return new ConsultarAcompanhamentoUseCase(consultar, historico, orcamento, execucao);
+    }
+
+    @Bean
+    public ConsultarIdentidadeUseCase consultarIdentidadeUseCase(ClienteRepository c, FuncionarioRepository f) {
+        return new ConsultarIdentidadeUseCase(c, f);
     }
 
     @Bean
     public AdicionarServicoAOSUseCase adicionarServicoAOSUseCase(OrdemServicoRepository os,
-                                                                   ServicoRepository s) {
-        return new AdicionarServicoAOSUseCase(os, s);
+                                                                   ServicoRepository s,
+                                                                   UnidadeDeTrabalho u) {
+        return new AdicionarServicoAOSUseCase(os, s, u);
     }
 
     @Bean
     public AdicionarPecaAOSUseCase adicionarPecaAOSUseCase(OrdemServicoRepository os,
-                                                             PecaRepository p) {
-        return new AdicionarPecaAOSUseCase(os, p);
+                                                             PecaRepository p,
+                                                             UnidadeDeTrabalho u) {
+        return new AdicionarPecaAOSUseCase(os, p, u);
     }
 
     @Bean
-    public GerarOrcamentoUseCase gerarOrcamentoUseCase(OrdemServicoRepository r,
-                                                        NotificacaoService n,
-                                                        @Value("${app.aprovacao-externa.validade-horas}") long validadeHoras) {
-        return new GerarOrcamentoUseCase(r, n, Duration.ofHours(validadeHoras));
+    public CompensacaoEstornoEstoque compensacaoEstornoEstoque(PecaRepository p) {
+        return new CompensacaoEstornoEstoque(p);
     }
 
     @Bean
-    public AprovarOrcamentoUseCase aprovarOrcamentoUseCase(OrdemServicoRepository r) {
-        return new AprovarOrcamentoUseCase(r);
-    }
-
-    @Bean
-    public ReprovarOrcamentoUseCase reprovarOrcamentoUseCase(OrdemServicoRepository os,
-                                                               PecaRepository p) {
-        return new ReprovarOrcamentoUseCase(os, p);
-    }
-
-    @Bean
-    public AprovarOrcamentoExternoUseCase aprovarOrcamentoExternoUseCase(OrdemServicoRepository r) {
-        return new AprovarOrcamentoExternoUseCase(r);
-    }
-
-    @Bean
-    public ReprovarOrcamentoExternoUseCase reprovarOrcamentoExternoUseCase(OrdemServicoRepository os,
-                                                                            PecaRepository p) {
-        return new ReprovarOrcamentoExternoUseCase(os, p);
-    }
-
-    @Bean
-    public ConcluirServicosUseCase concluirServicosUseCase(OrdemServicoRepository r) {
-        return new ConcluirServicosUseCase(r);
-    }
-
-    @Bean
-    public EntregarVeiculoUseCase entregarVeiculoUseCase(OrdemServicoRepository r) {
-        return new EntregarVeiculoUseCase(r);
+    public EntregarVeiculoUseCase entregarVeiculoUseCase(OrdemServicoRepository r, UnidadeDeTrabalho u) {
+        return new EntregarVeiculoUseCase(r, u);
     }
 
     @Bean

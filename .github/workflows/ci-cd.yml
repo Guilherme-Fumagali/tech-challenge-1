@@ -23,7 +23,19 @@ jobs:
           cache: maven
 
       - name: Build and test
-        run: mvn -B verify
+        run: ./mvnw -B verify
+
+      - name: Resumo de cobertura
+        if: always()
+        run: |
+          if [ -f target/site/jacoco/jacoco.csv ]; then
+            {
+              echo "### Cobertura JaCoCo"
+              awk -F, 'NR > 1 { lm += $8; lc += $9; bm += $6; bc += $7 }
+                END { printf "| Contador | Cobertura |\n|---|---|\n| Linhas | %.2f%% |\n| Ramos | %.2f%% |\n", 100 * lc / (lm + lc), 100 * bc / (bm + bc) }' \
+                target/site/jacoco/jacoco.csv
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -32,11 +44,20 @@ jobs:
           path: target/site/jacoco/
           retention-days: 5
 
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cucumber-report
+          path: target/cucumber/
+          retention-days: 5
+
   sonar:
     name: SonarCloud
     needs: build-and-test
-    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,15 +73,28 @@ jobs:
       - name: Analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify sonar:sonar
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            ./mvnw -B verify sonar:sonar
+            exit 0
+          fi
+          pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open \
+            --json number,baseRefName --jq '.[0] | select(.) | "\(.number) \(.baseRefName)"')
+          if [ -z "$pr" ]; then
+            echo "SonarCloud: sem pull request aberto para $GITHUB_REF_NAME; a análise roda no pull request e na main." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          read -r numero base <<< "$pr"
+          ./mvnw -B verify sonar:sonar -Dsonar.pullrequest.key="$numero" \
+            -Dsonar.pullrequest.branch="$GITHUB_REF_NAME" -Dsonar.pullrequest.base="$base"
 
   build-and-push-image:
     name: Build & push no ECR
     needs: [build-and-test, sonar]
     if: >-
-      !cancelled() && needs.build-and-test.result == 'success'
-      && contains(fromJSON('["success", "skipped"]'), needs.sonar.result)
+      !cancelled() && needs.build-and-test.result == 'success' && needs.sonar.result == 'success'
       && github.event_name == 'push' && contains(fromJSON('["main", "develop"]'), github.ref_name)
     runs-on: ubuntu-latest
     permissions:
@@ -68,7 +102,6 @@ jobs:
       contents: read
     outputs:
       image_tag: ${{ steps.vars.outputs.image_tag }}
-      registry: ${{ steps.ecr.outputs.registry }}
       publicada: ${{ steps.vars.outputs.publicar }}
     env:
       AMBIENTE: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
@@ -88,14 +121,14 @@ jobs:
         id: vars
         run: |
           echo "image_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          if ! REPO=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/ecr-repository-url" \
+          if ! REPO=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/os/ecr-repository-url" \
                         --query 'Parameter.Value' --output text 2>&1); then
             grep -q ParameterNotFound <<<"$REPO" || { echo "$REPO"; exit 1; }
-            echo "::notice::ECR de ${AMBIENTE} não provisionado, push pulado."
+            echo "::notice::ECR do OS Service em ${AMBIENTE} não provisionado, push pulado."
             echo "publicar=false" >> "$GITHUB_OUTPUT"
           elif ! SAIDA=$(aws ecr describe-repositories --repository-names "${REPO##*/}" 2>&1); then
             grep -q RepositoryNotFoundException <<<"$SAIDA" || { echo "$SAIDA"; exit 1; }
-            echo "::notice::ECR de ${AMBIENTE} não existe, push pulado."
+            echo "::notice::Repositório ECR do OS Service em ${AMBIENTE} não existe, push pulado."
             echo "publicar=false" >> "$GITHUB_OUTPUT"
           else
             echo "repository=${REPO}" >> "$GITHUB_OUTPUT"
@@ -152,12 +185,16 @@ jobs:
     if: ${{ !cancelled() && needs.build-and-push-image.result == 'success' && needs.cluster.outputs.existe == 'true' }}
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
+    concurrency:
+      group: deploy-os-${{ github.ref }}
+      cancel-in-progress: false
     permissions:
       id-token: write
       contents: read
     env:
       AMBIENTE: ${{ github.ref_name == 'main' && 'prod' || 'staging' }}
       NAMESPACE: oficina
+      SERVICO: os-service
     steps:
       - uses: actions/checkout@v4
 
@@ -170,7 +207,7 @@ jobs:
         run: |
           CLUSTER=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/eks-cluster-name" \
             --query 'Parameter.Value' --output text)
-          REPOSITORY=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/ecr-repository-url" \
+          REPOSITORY=$(aws ssm get-parameter --name "/oficina/${AMBIENTE}/os/ecr-repository-url" \
             --query 'Parameter.Value' --output text)
           echo "CLUSTER=${CLUSTER}" >> "$GITHUB_ENV"
           echo "REPOSITORY=${REPOSITORY}" >> "$GITHUB_ENV"
@@ -181,20 +218,61 @@ jobs:
       - name: Configurar kubeconfig
         run: aws eks update-kubeconfig --name "$CLUSTER" --region us-east-1
 
-      - name: Atualizar imagem e aguardar rollout
+      - name: Criar Secret do serviço a partir do SSM
+        env:
+          FUNCIONARIO_SEED_CPF: ${{ github.ref_name != 'main' && secrets.FUNCIONARIO_SEED_CPF || '' }}
+          FUNCIONARIO_SEED_NOME: ${{ github.ref_name != 'main' && secrets.FUNCIONARIO_SEED_NOME || '' }}
+          FUNCIONARIO_SEED_EMAIL: ${{ github.ref_name != 'main' && secrets.FUNCIONARIO_SEED_EMAIL || '' }}
         run: |
-          kubectl set image deployment/oficina-api \
-            oficina-api=${REPOSITORY}:${{ needs.build-and-push-image.outputs.image_tag }} \
-            -n "$NAMESPACE"
-          kubectl rollout status deployment/oficina-api -n "$NAMESPACE" --timeout=600s
+          set -euo pipefail
+          ler() {
+            aws ssm get-parameter --name "$1" --with-decryption --query 'Parameter.Value' --output text
+          }
+          DB_ENDPOINT=$(ler "/oficina/${AMBIENTE}/os/db-endpoint")
+          DB_NAME=$(ler "/oficina/${AMBIENTE}/os/db-name")
+          DB_USER=$(ler "/oficina/${AMBIENTE}/os/db-username")
+          DB_PASS=$(ler "/oficina/${AMBIENTE}/os/db-password")
+          JWT_SECRET=$(ler "/oficina/${AMBIENTE}/jwt-secret")
+          CHAVE_INTERNA=$(ler "/oficina/${AMBIENTE}/chave-interna")
+          NEW_RELIC_LICENSE_KEY=$(ler "/oficina/${AMBIENTE}/newrelic-license-key")
+          for valor in "$DB_PASS" "$JWT_SECRET" "$CHAVE_INTERNA" "$NEW_RELIC_LICENSE_KEY"; do
+            echo "::add-mask::${valor}"
+          done
+          kubectl create secret generic "${SERVICO}-secrets" -n "$NAMESPACE" \
+            --from-literal=DB_URL="jdbc:postgresql://${DB_ENDPOINT}/${DB_NAME}?sslmode=require" \
+            --from-literal=DB_USER="$DB_USER" \
+            --from-literal=DB_PASS="$DB_PASS" \
+            --from-literal=JWT_SECRET="$JWT_SECRET" \
+            --from-literal=CHAVE_INTERNA="$CHAVE_INTERNA" \
+            --from-literal=NEW_RELIC_LICENSE_KEY="$NEW_RELIC_LICENSE_KEY" \
+            --from-literal=FUNCIONARIO_SEED_CPF="$FUNCIONARIO_SEED_CPF" \
+            --from-literal=FUNCIONARIO_SEED_NOME="$FUNCIONARIO_SEED_NOME" \
+            --from-literal=FUNCIONARIO_SEED_EMAIL="$FUNCIONARIO_SEED_EMAIL" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - uses: imranismail/setup-kustomize@v2
+
+      - name: Aplicar manifestos do ambiente
+        working-directory: k8s/overlays/${{ env.AMBIENTE }}
+        run: |
+          kustomize edit set image "servico=${REPOSITORY}:${{ needs.build-and-push-image.outputs.image_tag }}"
+          kubectl apply -k .
+
+      - name: Aguardar rollout
+        run: kubectl rollout status "deployment/${SERVICO}" -n "$NAMESPACE" --timeout=600s
+
+      - name: Smoke test
+        run: |
+          kubectl exec -n "$NAMESPACE" "deploy/${SERVICO}" -- wget -qO- http://localhost:8080/actuator/health/readiness
+          kubectl exec -n "$NAMESPACE" "deploy/${SERVICO}" -- wget -qO- http://localhost:8080/actuator/info
 
       - name: Diagnóstico em caso de falha
         if: failure()
         run: |
-          kubectl get pods -n "$NAMESPACE" -o wide
-          kubectl describe deployment/oficina-api -n "$NAMESPACE"
+          kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/name=${SERVICO}" -o wide
+          kubectl describe "deployment/${SERVICO}" -n "$NAMESPACE"
           kubectl get events -n "$NAMESPACE" --sort-by=.lastTimestamp | tail -30
-          for p in $(kubectl get pods -n "$NAMESPACE" -l app=oficina-api -o name); do
+          for p in $(kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/name=${SERVICO}" -o name); do
             echo "=== describe $p ==="; kubectl describe -n "$NAMESPACE" "$p"
             echo "=== logs $p ==="
             kubectl logs -n "$NAMESPACE" "$p" --tail=100 --all-containers --previous 2>/dev/null \

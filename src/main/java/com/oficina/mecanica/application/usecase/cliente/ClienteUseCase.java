@@ -1,5 +1,6 @@
 package com.oficina.mecanica.application.usecase.cliente;
 
+import com.oficina.mecanica.application.port.UnidadeDeTrabalho;
 import com.oficina.mecanica.domain.entity.Cliente;
 import com.oficina.mecanica.domain.exception.DomainException;
 import com.oficina.mecanica.domain.exception.RecursoNaoEncontradoException;
@@ -12,17 +13,21 @@ import java.util.UUID;
 public class ClienteUseCase {
 
     private final ClienteRepository repository;
+    private final UnidadeDeTrabalho unidadeDeTrabalho;
 
-    public ClienteUseCase(ClienteRepository repository) {
+    public ClienteUseCase(ClienteRepository repository, UnidadeDeTrabalho unidadeDeTrabalho) {
         this.repository = repository;
+        this.unidadeDeTrabalho = unidadeDeTrabalho;
     }
 
     public Cliente cadastrar(CpfCnpj cpfCnpj, String nome, String email, String telefone) {
-        if (repository.existePorCpfCnpj(cpfCnpj)) {
-            throw new DomainException("Já existe um cliente com o CPF/CNPJ informado.");
-        }
-        var cliente = new Cliente(UUID.randomUUID(), cpfCnpj, nome, email, telefone);
-        return repository.salvar(cliente);
+        return unidadeDeTrabalho.executar(() -> {
+            if (repository.existePorCpfCnpj(cpfCnpj)) {
+                throw new DomainException("Já existe um cliente com o CPF/CNPJ informado.");
+            }
+            var cliente = new Cliente(UUID.randomUUID(), cpfCnpj, nome, email, telefone);
+            return repository.salvar(cliente);
+        });
     }
 
     public Cliente buscarPorId(UUID id) {
@@ -40,13 +45,17 @@ public class ClienteUseCase {
     }
 
     public Cliente atualizar(UUID id, String nome, String email, String telefone) {
-        var cliente = buscarPorId(id);
-        cliente.atualizar(nome, email, telefone);
-        return repository.salvar(cliente);
+        return unidadeDeTrabalho.executar(() -> {
+            var cliente = buscarPorId(id);
+            cliente.atualizar(nome, email, telefone);
+            return repository.salvar(cliente);
+        });
     }
 
     public void deletar(UUID id) {
-        buscarPorId(id);
-        repository.deletar(id);
+        unidadeDeTrabalho.executar(() -> {
+            buscarPorId(id);
+            repository.deletar(id);
+        });
     }
 }

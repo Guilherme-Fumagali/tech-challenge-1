@@ -11,6 +11,7 @@ import java.util.UUID;
 public interface OrdemServicoRepository {
     OrdemServico salvar(OrdemServico os);
     Optional<OrdemServico> buscarPorId(UUID id);
+    boolean existePorId(UUID id);
     List<OrdemServico> listarTodas();
     List<OrdemServico> listarAtivasOrdenadas();
     List<OrdemServico> listarPorStatus(StatusOS status);

@@ -34,10 +34,11 @@ public interface OrdemServicoJpaRepository extends JpaRepository<OrdemServicoJpa
           AND os.status NOT IN ('FINALIZADA', 'ENTREGUE')
         ORDER BY CASE os.status
             WHEN 'EM_EXECUCAO' THEN 0
-            WHEN 'AGUARDANDO_APROVACAO' THEN 1
-            WHEN 'EM_DIAGNOSTICO' THEN 2
-            WHEN 'RECEBIDA' THEN 3
-            ELSE 4
+            WHEN 'AGUARDANDO_PAGAMENTO' THEN 1
+            WHEN 'AGUARDANDO_APROVACAO' THEN 2
+            WHEN 'EM_DIAGNOSTICO' THEN 3
+            WHEN 'RECEBIDA' THEN 4
+            ELSE 5
         END, os.dataAprovacao ASC, os.dataAbertura ASC
         """)
     List<OrdemServicoJpaEntity> findAtivasOrdenadasPorPrioridade();

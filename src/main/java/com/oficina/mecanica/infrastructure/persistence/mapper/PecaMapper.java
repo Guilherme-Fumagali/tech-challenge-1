@@ -10,5 +10,8 @@ public interface PecaMapper {
 
     PecaJpaEntity toEntity(Peca peca);
 
-    Peca toDomain(PecaJpaEntity entity);
+    default Peca toDomain(PecaJpaEntity entity) {
+        return entity == null ? null : Peca.reconstituir(entity.getId(), entity.getNome(), entity.getDescricao(),
+            entity.getPrecoUnitario(), entity.getQuantidadeEstoque(), entity.getEstoqueMinimo(), entity.getVersao());
+    }
 }

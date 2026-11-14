@@ -4,8 +4,10 @@ import com.oficina.mecanica.application.port.MetricasOrdemServico;
 import com.oficina.mecanica.domain.entity.OrdemServico;
 import com.oficina.mecanica.domain.repository.OrdemServicoRepository;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
+import com.oficina.mecanica.infrastructure.persistence.entity.HistoricoStatusOSJpaEntity;
 import com.oficina.mecanica.infrastructure.persistence.mapper.OrdemServicoMapper;
 import com.oficina.mecanica.infrastructure.persistence.repository.OrdemServicoJpaRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -16,32 +18,51 @@ import java.util.UUID;
 @Component
 public class OrdemServicoRepositoryAdapter implements OrdemServicoRepository {
 
+    static final String EVENTO_ABERTURA = "OrdemServicoAberta";
+
     private final OrdemServicoJpaRepository jpa;
     private final OrdemServicoMapper mapper;
     private final MetricasOrdemServico metricas;
+    private final EntityManager entityManager;
 
     public OrdemServicoRepositoryAdapter(OrdemServicoJpaRepository jpa,
                                          OrdemServicoMapper mapper,
-                                         MetricasOrdemServico metricas) {
+                                         MetricasOrdemServico metricas,
+                                         EntityManager entityManager) {
         this.jpa = jpa;
         this.mapper = mapper;
         this.metricas = metricas;
+        this.entityManager = entityManager;
     }
 
     @Override
     public OrdemServico salvar(OrdemServico os) {
-        jpa.save(mapper.toEntity(os));
+        var salva = jpa.saveAndFlush(mapper.toEntity(os));
+        os.registrarVersaoPersistida(salva.getVersao());
 
         if (os.consumirMarcaDeNovaOrdem()) {
             metricas.registrarAbertura(os.getId());
+            entityManager.persist(new HistoricoStatusOSJpaEntity(UUID.randomUUID(), os.getId(), null,
+                StatusOS.RECEBIDA, EVENTO_ABERTURA, os.getDataAbertura()));
         }
-        os.drenarTransicoes().forEach(metricas::registrarTransicao);
+        for (var transicao : os.drenarTransicoes()) {
+            if (transicao.alterouStatus()) {
+                metricas.registrarTransicao(transicao);
+            }
+            entityManager.persist(new HistoricoStatusOSJpaEntity(UUID.randomUUID(), os.getId(), transicao.origem(),
+                transicao.destino(), transicao.evento(), transicao.ocorridaEm()));
+        }
         return os;
     }
 
     @Override
     public Optional<OrdemServico> buscarPorId(UUID id) {
         return jpa.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    public boolean existePorId(UUID id) {
+        return jpa.existsById(id);
     }
 
     @Override

@@ -18,12 +18,20 @@ services:
     networks:
       - oficina-net
 
-  mailhog:
-    image: mailhog/mailhog:v1.0.1
-    container_name: oficina-mailhog
+  localstack:
+    image: localstack/localstack:3
+    container_name: oficina-localstack
+    environment:
+      SERVICES: sqs
     ports:
-      - "1025:1025" # SMTP
-      - "8025:8025" # UI web
+      - "4566:4566"
+    volumes:
+      - ./localstack/init/ready.d:/etc/localstack/init/ready.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4566/_localstack/init/ready | grep -q '\"completed\": *true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     networks:
       - oficina-net
 
@@ -33,19 +41,27 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      mailhog:
-        condition: service_started
+      localstack:
+        condition: service_healthy
     environment:
+      SPRING_PROFILES_ACTIVE: local
       DB_URL: jdbc:postgresql://db:5432/oficina
       DB_USER: ${DB_USER:-oficina}
       DB_PASS: ${DB_PASS:?defina DB_PASS no .env}
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+      CHAVE_INTERNA: ${CHAVE_INTERNA:-chave-interna-local}
+      SQS_ENDPOINT: http://localstack:4566
+      AWS_REGION: us-east-1
+      BILLING_URL: ${BILLING_URL:-http://host.docker.internal:8081}
+      EXECUTION_URL: ${EXECUTION_URL:-http://host.docker.internal:8082}
+      FUNCIONARIO_SEED_CPF: ${FUNCIONARIO_SEED_CPF:-}
+      FUNCIONARIO_SEED_NOME: ${FUNCIONARIO_SEED_NOME:-}
+      FUNCIONARIO_SEED_EMAIL: ${FUNCIONARIO_SEED_EMAIL:-}
+      ENV: local
       PORT: 8080
-      NOTIFICACAO_CANAL: ${NOTIFICACAO_CANAL:-smtp}
-      SMTP_HOST: mailhog
-      SMTP_PORT: 1025
-      MAIL_FROM: ${MAIL_FROM:-oficina@example.com}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4317
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:8080"
     healthcheck:

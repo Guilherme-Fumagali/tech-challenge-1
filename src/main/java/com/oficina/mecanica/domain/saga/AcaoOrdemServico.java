@@ -1,0 +1,11 @@
+package com.oficina.mecanica.domain.saga;
+
+public enum AcaoOrdemServico {
+    NENHUMA,
+    REGISTRAR_INICIO_DIAGNOSTICO,
+    REGISTRAR_ORCAMENTO_ENVIADO,
+    REGISTRAR_APROVACAO,
+    REGISTRAR_PAGAMENTO,
+    REGISTRAR_INICIO_REPARO,
+    REGISTRAR_CONCLUSAO
+}

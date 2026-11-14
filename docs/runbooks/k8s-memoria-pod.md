@@ -1,6 +1,6 @@
 # Runbook — Memória de pod acima de 85%
 
-**Alerta:** `AWS-OficinaAPI-<Amb>-K8s-MemoriaPod-Warning`
+**Alerta:** `AWS-Oficina-<Amb>-<Serviço>-MemoriaPod-Warning` (`<Serviço>` é `OsService`, `BillingService` ou `ExecutionService`)
 **Dispara quando:** `memoryWorkingSetUtilization` acima de 85% por 10 minutos.
 
 ## O que significa
@@ -15,7 +15,7 @@ cresce até o limite antes de coletar. Memória alta e estável não é vazament
 preocupante é memória alta **e crescente** entre coletas.
 
 O `-javaagent` do New Relic também consome heap e adiciona ~1 s ao startup, motivo do
-`failureThreshold: 40` no `startupProbe`.
+`startupProbe` com `failureThreshold: 30` a cada 5 s.
 
 ## Diagnóstico
 
@@ -23,7 +23,7 @@ O `-javaagent` do New Relic também consome heap e adiciona ~1 s ao startup, mot
 
 ```sql
 SELECT average(memoryWorkingSetBytes)/1e6 FROM K8sContainerSample
-WHERE containerName = 'oficina-api' FACET podName TIMESERIES AUTO SINCE 3 hours ago
+WHERE containerName IN ('os-service', 'billing-service', 'execution-service') FACET podName TIMESERIES AUTO SINCE 3 hours ago
 ```
 
 Curva serrilhada = coleta funcionando. Curva subindo em escada = vazamento.
@@ -39,7 +39,7 @@ kubectl top pods -n oficina
 
 ```sql
 SELECT rate(count(*), 1 minute) FROM Transaction
-WHERE appName LIKE 'oficina-api%' TIMESERIES SINCE 3 hours ago
+WHERE appName LIKE 'oficina-%-service-%' TIMESERIES SINCE 3 hours ago
 ```
 
 ## Causas mais prováveis
@@ -57,7 +57,7 @@ WHERE appName LIKE 'oficina-api%' TIMESERIES SINCE 3 hours ago
   ```bash
   kubectl get hpa -n oficina
   kubectl get nodes
-  kubectl describe pod -n oficina -l app=oficina-api | grep -A5 Events
+  kubectl describe pod -n oficina -l app.kubernetes.io/name=os-service | grep -A5 Events
   ```
   Réplica em `Pending` por falta de nó significa que `maxReplicas` e `max_size` do node
   group precisam subir **juntos**.

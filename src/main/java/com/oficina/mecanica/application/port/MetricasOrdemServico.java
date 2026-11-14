@@ -11,6 +11,4 @@ public interface MetricasOrdemServico {
     void registrarTransicao(TransicaoOS transicao);
 
     void registrarFalhaTransicao(String motivo);
-
-    void registrarFalhaIntegracao(String integracao, String motivo);
 }

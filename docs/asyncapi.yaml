@@ -1,0 +1,348 @@
+asyncapi: 2.6.0
+info:
+  title: OS Service — mensagens da saga da ordem de serviço
+  version: 1.0.0
+  description: Comandos publicados pelo orquestrador (OS Service) e eventos que ele consome, conforme a SPEC-08.
+defaultContentType: application/json
+servers:
+  aws:
+    url: sqs.us-east-1.amazonaws.com
+    protocol: sqs
+    description: Filas padrão com SSE-SQS e DLQ, uma por ambiente.
+  local:
+    url: localhost:4566
+    protocol: sqs
+    description: LocalStack do docker-compose.
+channels:
+  oficina-{ambiente}-os-eventos:
+    description: Eventos e respostas do Billing e do Execution para o OS Service.
+    parameters: { ambiente: { $ref: '#/components/parameters/ambiente' } }
+    publish:
+      operationId: receberEventoDaSaga
+      summary: Billing e Execution publicam; o OS Service consome.
+      message:
+        oneOf:
+          - $ref: '#/components/messages/ExecucaoEnfileirada'
+          - $ref: '#/components/messages/DiagnosticoIniciado'
+          - $ref: '#/components/messages/DiagnosticoConcluido'
+          - $ref: '#/components/messages/ReparoIniciado'
+          - $ref: '#/components/messages/ExecucaoFinalizada'
+          - $ref: '#/components/messages/ExecucaoFalhou'
+          - $ref: '#/components/messages/ExecucaoCancelada'
+          - $ref: '#/components/messages/OrcamentoGerado'
+          - $ref: '#/components/messages/OrcamentoAprovado'
+          - $ref: '#/components/messages/OrcamentoReprovado'
+          - $ref: '#/components/messages/OrcamentoExpirado'
+          - $ref: '#/components/messages/OrcamentoCancelado'
+          - $ref: '#/components/messages/PagamentoAprovado'
+          - $ref: '#/components/messages/PagamentoRecusado'
+          - $ref: '#/components/messages/PagamentoEstornado'
+          - $ref: '#/components/messages/ComandoRejeitado'
+  oficina-{ambiente}-execution-comandos:
+    description: Comandos do OS Service para o Execution Service.
+    parameters: { ambiente: { $ref: '#/components/parameters/ambiente' } }
+    subscribe:
+      operationId: enviarComandoAoExecution
+      summary: O OS Service publica pelo outbox; o Execution consome.
+      message:
+        oneOf:
+          - $ref: '#/components/messages/IniciarDiagnostico'
+          - $ref: '#/components/messages/ReabrirDiagnostico'
+          - $ref: '#/components/messages/IniciarReparo'
+          - $ref: '#/components/messages/CancelarExecucao'
+  oficina-{ambiente}-billing-comandos:
+    description: Comandos do OS Service para o Billing Service.
+    parameters: { ambiente: { $ref: '#/components/parameters/ambiente' } }
+    subscribe:
+      operationId: enviarComandoAoBilling
+      summary: O OS Service publica pelo outbox; o Billing consome.
+      message:
+        oneOf:
+          - $ref: '#/components/messages/GerarOrcamento'
+          - $ref: '#/components/messages/CancelarOrcamento'
+          - $ref: '#/components/messages/EstornarPagamento'
+components:
+  messages:
+    IniciarDiagnostico:
+      name: IniciarDiagnostico
+      summary: Coloca a OS na fila de diagnóstico; responde ExecucaoEnfileirada.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: IniciarDiagnostico }, dados: { $ref: '#/components/schemas/DadosIniciarDiagnostico' } } }] }
+    ReabrirDiagnostico:
+      name: ReabrirDiagnostico
+      summary: Devolve ao diagnóstico a OS sem serviços nem peças.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ReabrirDiagnostico }, dados: { $ref: '#/components/schemas/DadosMotivo' } } }] }
+    IniciarReparo:
+      name: IniciarReparo
+      summary: Coloca a OS na fila de reparo após o pagamento.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: IniciarReparo }, dados: { $ref: '#/components/schemas/DadosIniciarReparo' } } }] }
+    CancelarExecucao:
+      name: CancelarExecucao
+      summary: 'Compensação: cancela a execução da OS.'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: CancelarExecucao }, dados: { $ref: '#/components/schemas/DadosMotivo' } } }] }
+    GerarOrcamento:
+      name: GerarOrcamento
+      summary: Pede o orçamento a partir do snapshot dos itens da OS.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: GerarOrcamento }, dados: { $ref: '#/components/schemas/DadosGerarOrcamento' } } }] }
+    CancelarOrcamento:
+      name: CancelarOrcamento
+      summary: 'Compensação: cancela o orçamento da OS.'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: CancelarOrcamento }, dados: { $ref: '#/components/schemas/DadosMotivo' } } }] }
+    EstornarPagamento:
+      name: EstornarPagamento
+      summary: 'Compensação: estorna o pagamento aprovado.'
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: EstornarPagamento }, dados: { $ref: '#/components/schemas/DadosMotivo' } } }] }
+    ExecucaoEnfileirada:
+      name: ExecucaoEnfileirada
+      summary: A OS entrou na fila de diagnóstico ou de reparo.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ExecucaoEnfileirada }, dados: { $ref: '#/components/schemas/DadosExecucaoEnfileirada' } } }] }
+    DiagnosticoIniciado:
+      name: DiagnosticoIniciado
+      summary: O mecânico iniciou o diagnóstico.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: DiagnosticoIniciado }, dados: { $ref: '#/components/schemas/DadosMecanicoIniciou' } } }] }
+    DiagnosticoConcluido:
+      name: DiagnosticoConcluido
+      summary: O mecânico concluiu o diagnóstico.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: DiagnosticoConcluido }, dados: { $ref: '#/components/schemas/DadosDiagnosticoConcluido' } } }] }
+    ReparoIniciado:
+      name: ReparoIniciado
+      summary: O mecânico iniciou o reparo.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ReparoIniciado }, dados: { $ref: '#/components/schemas/DadosMecanicoIniciou' } } }] }
+    ExecucaoFinalizada:
+      name: ExecucaoFinalizada
+      summary: O mecânico finalizou o reparo.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ExecucaoFinalizada }, dados: { $ref: '#/components/schemas/DadosExecucaoFinalizada' } } }] }
+    ExecucaoFalhou:
+      name: ExecucaoFalhou
+      summary: O mecânico registrou falha no reparo.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ExecucaoFalhou }, dados: { $ref: '#/components/schemas/DadosExecucaoFalhou' } } }] }
+    ExecucaoCancelada:
+      name: ExecucaoCancelada
+      summary: Resposta a CancelarExecucao.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ExecucaoCancelada }, dados: { $ref: '#/components/schemas/DadosExecucaoCancelada' } } }] }
+    OrcamentoGerado:
+      name: OrcamentoGerado
+      summary: Resposta a GerarOrcamento.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoGerado }, dados: { $ref: '#/components/schemas/DadosOrcamentoGerado' } } }] }
+    OrcamentoAprovado:
+      name: OrcamentoAprovado
+      summary: O orçamento foi aprovado.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoAprovado }, dados: { $ref: '#/components/schemas/DadosOrcamentoAprovado' } } }] }
+    OrcamentoReprovado:
+      name: OrcamentoReprovado
+      summary: O orçamento foi reprovado.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoReprovado }, dados: { $ref: '#/components/schemas/DadosOrcamentoReprovado' } } }] }
+    OrcamentoExpirado:
+      name: OrcamentoExpirado
+      summary: O orçamento venceu sem decisão.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoExpirado }, dados: { $ref: '#/components/schemas/DadosOrcamentoExpirado' } } }] }
+    OrcamentoCancelado:
+      name: OrcamentoCancelado
+      summary: Resposta a CancelarOrcamento.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: OrcamentoCancelado }, dados: { $ref: '#/components/schemas/DadosOrcamentoCancelado' } } }] }
+    PagamentoAprovado:
+      name: PagamentoAprovado
+      summary: O pagamento foi confirmado.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: PagamentoAprovado }, dados: { $ref: '#/components/schemas/DadosPagamentoAprovado' } } }] }
+    PagamentoRecusado:
+      name: PagamentoRecusado
+      summary: O pagamento foi recusado ou expirou.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: PagamentoRecusado }, dados: { $ref: '#/components/schemas/DadosPagamentoRecusado' } } }] }
+    PagamentoEstornado:
+      name: PagamentoEstornado
+      summary: Resposta a EstornarPagamento.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: PagamentoEstornado }, dados: { $ref: '#/components/schemas/DadosPagamentoEstornado' } } }] }
+    ComandoRejeitado:
+      name: ComandoRejeitado
+      summary: O participante recusou um comando por regra de negócio.
+      traits: [{ $ref: '#/components/messageTraits/sqs' }]
+      payload: { allOf: [{ $ref: '#/components/schemas/Envelope' }, { properties: { tipo: { const: ComandoRejeitado }, dados: { $ref: '#/components/schemas/DadosComandoRejeitado' } } }] }
+  parameters:
+    ambiente:
+      description: Ambiente da fila.
+      schema: { type: string, enum: [local, staging, prod] }
+  messageTraits:
+    sqs:
+      headers:
+        type: object
+        required: [tipo, versao]
+        properties:
+          tipo: { type: string }
+          versao: { type: string }
+          newrelic: { type: string }
+          traceparent: { type: string }
+          tracestate: { type: string }
+  schemas:
+    Uuid: { type: string, format: uuid }
+    UuidOuNulo: { type: [string, 'null'], format: uuid }
+    Instante: { type: string, format: date-time }
+    Valor: { type: number, multipleOf: 0.01 }
+    TipoItem: { type: string, enum: [SERVICO, PECA] }
+    Canal: { type: string, enum: [CLIENTE, LINK, BALCAO] }
+    Envelope:
+      type: object
+      required: [mensagemId, tipo, versao, sagaId, osId, causadaPor, origem, ocorridoEm, dados]
+      properties:
+        mensagemId: { $ref: '#/components/schemas/Uuid' }
+        tipo: { type: string }
+        versao: { type: integer, minimum: 1 }
+        sagaId: { $ref: '#/components/schemas/Uuid' }
+        osId: { $ref: '#/components/schemas/Uuid' }
+        causadaPor: { $ref: '#/components/schemas/UuidOuNulo' }
+        origem: { type: string, enum: [os-service, billing-service, execution-service] }
+        ocorridoEm: { $ref: '#/components/schemas/Instante' }
+        dados: { type: object }
+    DadosMotivo:
+      type: object
+      required: [motivo]
+      properties: { motivo: { type: string } }
+    DadosIniciarDiagnostico:
+      type: object
+      required: [clienteId, veiculo, abertaEm]
+      properties:
+        clienteId: { $ref: '#/components/schemas/Uuid' }
+        veiculo:
+          type: object
+          required: [placa, marca, modelo, anoFabricacao]
+          properties:
+            placa: { type: string }
+            marca: { type: string }
+            modelo: { type: string }
+            anoFabricacao: { type: integer }
+        abertaEm: { $ref: '#/components/schemas/Instante' }
+    DadosIniciarReparo:
+      type: object
+      required: [itens]
+      properties:
+        itens:
+          type: array
+          items:
+            type: object
+            required: [tipo, descricao, quantidade]
+            properties:
+              tipo: { $ref: '#/components/schemas/TipoItem' }
+              descricao: { type: string }
+              quantidade: { type: integer, minimum: 1 }
+    DadosGerarOrcamento:
+      type: object
+      required: [clienteId, cliente, veiculo, itens]
+      properties:
+        clienteId: { $ref: '#/components/schemas/Uuid' }
+        cliente:
+          type: object
+          required: [nome, email]
+          properties: { nome: { type: string }, email: { type: string } }
+        veiculo:
+          type: object
+          required: [placa, modelo]
+          properties: { placa: { type: string }, modelo: { type: string } }
+        itens:
+          type: array
+          items:
+            type: object
+            required: [tipo, referenciaId, descricao, quantidade, precoUnitario]
+            properties:
+              tipo: { $ref: '#/components/schemas/TipoItem' }
+              referenciaId: { $ref: '#/components/schemas/Uuid' }
+              descricao: { type: string }
+              quantidade: { type: integer, minimum: 1 }
+              precoUnitario: { $ref: '#/components/schemas/Valor' }
+    DadosExecucaoEnfileirada:
+      type: object
+      required: [etapa, enfileiradaEm]
+      properties: { etapa: { type: string, enum: [DIAGNOSTICO, REPARO] }, enfileiradaEm: { $ref: '#/components/schemas/Instante' } }
+    DadosMecanicoIniciou:
+      type: object
+      required: [mecanicoId, iniciadoEm]
+      properties: { mecanicoId: { $ref: '#/components/schemas/Uuid' }, iniciadoEm: { $ref: '#/components/schemas/Instante' } }
+    DadosDiagnosticoConcluido:
+      type: object
+      required: [mecanicoId, concluidoEm]
+      properties: { mecanicoId: { $ref: '#/components/schemas/Uuid' }, concluidoEm: { $ref: '#/components/schemas/Instante' }, observacoes: { type: string } }
+    DadosExecucaoFinalizada:
+      type: object
+      required: [mecanicoId, finalizadaEm]
+      properties: { mecanicoId: { $ref: '#/components/schemas/Uuid' }, finalizadaEm: { $ref: '#/components/schemas/Instante' } }
+    DadosExecucaoFalhou:
+      type: object
+      required: [mecanicoId, motivo, ocorridaEm]
+      properties: { mecanicoId: { $ref: '#/components/schemas/Uuid' }, motivo: { type: string }, ocorridaEm: { $ref: '#/components/schemas/Instante' } }
+    DadosExecucaoCancelada:
+      type: object
+      required: [canceladaEm]
+      properties: { motivo: { type: string }, canceladaEm: { $ref: '#/components/schemas/Instante' } }
+    DadosOrcamentoGerado:
+      type: object
+      required: [orcamentoId, total, validoAte]
+      properties: { orcamentoId: { $ref: '#/components/schemas/Uuid' }, total: { $ref: '#/components/schemas/Valor' }, validoAte: { $ref: '#/components/schemas/Instante' } }
+    DadosOrcamentoAprovado:
+      type: object
+      required: [orcamentoId, aprovadoEm, canal]
+      properties:
+        orcamentoId: { $ref: '#/components/schemas/Uuid' }
+        aprovadoEm: { $ref: '#/components/schemas/Instante' }
+        canal: { $ref: '#/components/schemas/Canal' }
+        linkPagamento: { type: string }
+    DadosOrcamentoReprovado:
+      type: object
+      required: [orcamentoId, reprovadoEm, canal]
+      properties: { orcamentoId: { $ref: '#/components/schemas/Uuid' }, reprovadoEm: { $ref: '#/components/schemas/Instante' }, canal: { $ref: '#/components/schemas/Canal' } }
+    DadosOrcamentoExpirado:
+      type: object
+      required: [orcamentoId, expiradoEm]
+      properties: { orcamentoId: { $ref: '#/components/schemas/Uuid' }, expiradoEm: { $ref: '#/components/schemas/Instante' } }
+    DadosOrcamentoCancelado:
+      type: object
+      required: [motivo]
+      properties: { orcamentoId: { $ref: '#/components/schemas/UuidOuNulo' }, motivo: { type: string } }
+    DadosPagamentoAprovado:
+      type: object
+      required: [orcamentoId, pagamentoId, valor, aprovadoEm]
+      properties:
+        orcamentoId: { $ref: '#/components/schemas/Uuid' }
+        pagamentoId: { $ref: '#/components/schemas/Uuid' }
+        valor: { $ref: '#/components/schemas/Valor' }
+        aprovadoEm: { $ref: '#/components/schemas/Instante' }
+        meio: { type: string }
+    DadosPagamentoRecusado:
+      type: object
+      required: [orcamentoId, motivo]
+      properties: { orcamentoId: { $ref: '#/components/schemas/Uuid' }, pagamentoId: { $ref: '#/components/schemas/UuidOuNulo' }, motivo: { type: string } }
+    DadosPagamentoEstornado:
+      type: object
+      required: [valor, estornadoEm]
+      properties:
+        orcamentoId: { $ref: '#/components/schemas/UuidOuNulo' }
+        pagamentoId: { $ref: '#/components/schemas/UuidOuNulo' }
+        valor: { $ref: '#/components/schemas/Valor' }
+        estornadoEm: { $ref: '#/components/schemas/Instante' }
+    DadosComandoRejeitado:
+      type: object
+      required: [comando, motivo, codigo]
+      properties:
+        comando: { type: string }
+        motivo: { type: string }
+        codigo:
+          type: string
+          enum: [DADOS_INVALIDOS, ORCAMENTO_NAO_ENCONTRADO, EXECUCAO_INEXISTENTE, ESTADO_INVALIDO, COMANDO_DESCONHECIDO]

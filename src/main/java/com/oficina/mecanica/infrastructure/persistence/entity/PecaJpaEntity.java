@@ -32,4 +32,8 @@ public class PecaJpaEntity {
 
     @Column(name = "estoque_minimo", nullable = false)
     private int estoqueMinimo;
+
+    @Version
+    @Column(nullable = false)
+    private Long versao;
 }

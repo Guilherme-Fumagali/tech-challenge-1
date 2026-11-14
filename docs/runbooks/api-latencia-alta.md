@@ -1,6 +1,6 @@
 # Runbook — Latência p95 acima de 1 segundo
 
-**Alerta:** `AWS-OficinaAPI-<Amb>-API-LatenciaP95-Warning`
+**Alerta:** `AWS-Oficina-<Amb>-<Serviço>-LatenciaP95-Warning` (`<Serviço>` é `OsService`, `BillingService` ou `ExecutionService`)
 **Dispara quando:** p95 acima de 1000 ms por 10 minutos.
 
 ## O que significa
@@ -14,11 +14,14 @@ Degradação perceptível. Ainda não é indisponibilidade — por isso é Warni
 
 ## Diagnóstico
 
+O `GET /api/ordens/{id}/acompanhamento` do OS Service consulta o Billing e o Execution com limite de 2 s por
+fonte; latência alta nesse endpoint costuma vir de um participante lento, visível em `fontesIndisponiveis`.
+
 1. **Isolar o endpoint.** Latência média mente; olhar por transação:
 
 ```sql
 SELECT percentile(duration, 95) * 1000 FROM Transaction
-WHERE appName LIKE 'oficina-api%' FACET name SINCE 30 minutes ago LIMIT 10
+WHERE appName LIKE 'oficina-%-service-%' FACET name SINCE 30 minutes ago LIMIT 10
 ```
 
 2. **Separar gateway de aplicação.** O access log traz `integrationLatency` e
@@ -33,7 +36,7 @@ aws logs tail /aws/apigateway/oficina-api-prod --since 30m --format short \
 
 ```sql
 SELECT average(databaseDuration) * 1000 FROM Transaction
-WHERE appName LIKE 'oficina-api%' FACET name SINCE 30 minutes ago
+WHERE appName LIKE 'oficina-%-service-%' FACET name SINCE 30 minutes ago
 ```
 
 4. **Recursos.** Ver se coincide com CPU ou memória alta — ver
@@ -45,7 +48,7 @@ WHERE appName LIKE 'oficina-api%' FACET name SINCE 30 minutes ago
 |---|---|---|
 | `integrationLatency` baixa, `responseLatency` alta | Cold start do Lambda authorizer | Esperado após ociosidade; verificar taxa de cache hit |
 | `databaseDuration` alta | Query sem índice ou tabela crescida | Conferir `EXPLAIN` da query; os índices de V1/V6 cobrem os casos conhecidos |
-| CPU do pod no teto | Carga acima da capacidade | Ver se o HPA escalou; teto é 4 réplicas |
+| CPU do pod no teto | Carga acima da capacidade | Ver se o HPA escalou; teto é 3 réplicas por serviço |
 | Latência uniforme em todos os endpoints | Saturação de rede pela NAT instance | `t4g.nano` é burstable — ver DT-04 |
 
 ## Mitigação

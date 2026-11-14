@@ -1,10 +1,10 @@
 package com.oficina.mecanica.domain;
 
+import com.oficina.mecanica.domain.entity.DadosOrdemServico;
 import com.oficina.mecanica.domain.entity.ItemPeca;
 import com.oficina.mecanica.domain.entity.ItemServico;
 import com.oficina.mecanica.domain.entity.OrdemServico;
 import com.oficina.mecanica.domain.exception.DomainException;
-import com.oficina.mecanica.domain.exception.TokenAprovacaoInvalidoException;
 import com.oficina.mecanica.domain.exception.TransicaoInvalidaException;
 import com.oficina.mecanica.domain.valueobject.StatusOS;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,12 +13,19 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
 class OrdemServicoTest {
+
+    private static final Instant APROVADA_EM = Instant.parse("2026-10-30T14:05:11Z");
+    private static final Instant PAGA_EM = Instant.parse("2026-10-30T15:00:00Z");
+    private static final Instant CONCLUIDA_EM = Instant.parse("2026-10-31T10:30:00Z");
 
     private UUID clienteId;
     private UUID veiculoId;
@@ -38,6 +45,21 @@ class OrdemServicoTest {
             assertThat(os.getStatus()).isEqualTo(StatusOS.RECEBIDA);
             assertThat(os.getItensServico()).isEmpty();
             assertThat(os.getItensPeca()).isEmpty();
+            assertThat(os.getVersao()).isNull();
+            assertThat(os.consumirMarcaDeNovaOrdem()).isTrue();
+            assertThat(os.consumirMarcaDeNovaOrdem()).isFalse();
+        }
+
+        @Test
+        void reconstituirPreservaVersaoEDatas() {
+            var abertura = LocalDateTime.of(2026, 10, 1, 8, 0);
+            var os = OrdemServico.reconstituir(DadosOrdemServico.builder()
+                .id(UUID.randomUUID()).clienteId(clienteId).veiculoId(veiculoId)
+                .status(StatusOS.EM_DIAGNOSTICO).dataAbertura(abertura).versao(3L).build());
+
+            assertThat(os.getVersao()).isEqualTo(3L);
+            assertThat(os.getDataUltimaTransicao()).isEqualTo(abertura);
+            assertThat(os.consumirMarcaDeNovaOrdem()).isFalse();
         }
     }
 
@@ -49,18 +71,20 @@ class OrdemServicoTest {
         void deveAvancarStatusNaOrdemCorreta() {
             var os = criarOsComItem();
 
-            os.gerarOrcamento();
+            os.registrarOrcamentoEnviado();
             assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
 
-            os.aprovar();
-            assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
-            assertThat(os.getDataInicio()).isNotNull();
+            os.registrarAprovacao(APROVADA_EM);
+            assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_PAGAMENTO);
+            assertThat(os.getDataAprovacao()).isEqualTo(LocalDateTime.ofInstant(APROVADA_EM, ZoneOffset.UTC));
 
-            os.concluir();
+            os.registrarPagamento(PAGA_EM);
+            assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
+            assertThat(os.getDataInicio()).isEqualTo(LocalDateTime.ofInstant(PAGA_EM, ZoneOffset.UTC));
+
+            os.registrarConclusao(CONCLUIDA_EM);
             assertThat(os.getStatus()).isEqualTo(StatusOS.FINALIZADA);
-            assertThat(os.getDataConclusao()).isNotNull();
-            assertThat(os.isExcluidaLogicamente()).isFalse();
-            assertThat(os.getDataExclusaoLogica()).isNull();
+            assertThat(os.getDataConclusao()).isEqualTo(LocalDateTime.ofInstant(CONCLUIDA_EM, ZoneOffset.UTC));
 
             os.entregar();
             assertThat(os.getStatus()).isEqualTo(StatusOS.ENTREGUE);
@@ -68,38 +92,85 @@ class OrdemServicoTest {
         }
 
         @Test
-        void deveCancelarAoReprovarOrcamento() {
+        void transicoesPendentesRegistramOrigemDestinoEEvento() {
             var os = criarOsComItem();
-            os.gerarOrcamento();
-            os.reprovar();
+            os.registrarOrcamentoEnviado();
+
+            var transicoes = os.drenarTransicoes();
+
+            assertThat(transicoes).extracting("origem", "destino", "evento").containsExactly(
+                tuple(StatusOS.RECEBIDA, StatusOS.EM_DIAGNOSTICO, "DiagnosticoIniciado"),
+                tuple(StatusOS.EM_DIAGNOSTICO, StatusOS.AGUARDANDO_APROVACAO, "OrcamentoGerado"));
+            assertThat(transicoes).allMatch(t -> t.alterouStatus() && t.ocorridaEm() != null);
+            assertThat(os.drenarTransicoes()).isEmpty();
+        }
+
+        @Test
+        void dataDoFatoAusenteUsaOInstanteAtual() {
+            var os = criarOsComItem();
+            os.registrarOrcamentoEnviado();
+
+            os.registrarAprovacao(null);
+
+            assertThat(os.getDataAprovacao()).isNotNull();
+        }
+
+        @Test
+        void cancelamentoRegistraOMotivoComoEvento() {
+            var os = criarOsComItem();
+            os.registrarOrcamentoEnviado();
+            os.drenarTransicoes();
+
+            os.cancelar("REPROVACAO");
+
             assertThat(os.getStatus()).isEqualTo(StatusOS.CANCELADA);
+            assertThat(os.drenarTransicoes()).singleElement()
+                .satisfies(t -> assertThat(t.evento()).isEqualTo("REPROVACAO"));
+        }
+
+        @Test
+        void cancelamentoExigeMotivo() {
+            var os = criarOsComItem();
+
+            assertThatThrownBy(() -> os.cancelar(" "))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("motivo");
+            assertThat(os.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
         }
 
         @Test
         void deveRejeitarTransicaoInvalida() {
             var os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId);
-            // Recebida não pode ir direto para EM_EXECUCAO
-            assertThatThrownBy(os::aprovar)
+            assertThatThrownBy(() -> os.registrarPagamento(PAGA_EM))
                 .isInstanceOf(TransicaoInvalidaException.class);
         }
 
         @Test
         void naoDevePermitirRetroagirStatus() {
             var os = criarOsComItem();
-            os.gerarOrcamento();
-            os.aprovar();
-            // EM_EXECUCAO não pode voltar para EM_DIAGNOSTICO
-            assertThatThrownBy(os::iniciarDiagnostico)
+            os.registrarOrcamentoEnviado();
+            os.registrarAprovacao(APROVADA_EM);
+            assertThatThrownBy(os::registrarInicioDiagnostico)
                 .isInstanceOf(TransicaoInvalidaException.class);
         }
 
         @Test
         void estadoFinalNaoPermiteNenhumaTransicao() {
             var os = criarOsComItem();
-            os.gerarOrcamento();
-            os.reprovar();
-            // CANCELADA é estado final
+            os.cancelar("REJEICAO");
             assertThatThrownBy(os::entregar)
+                .isInstanceOf(TransicaoInvalidaException.class);
+        }
+
+        @Test
+        void ordemFinalizadaNaoPodeSerCancelada() {
+            var os = criarOsComItem();
+            os.registrarOrcamentoEnviado();
+            os.registrarAprovacao(APROVADA_EM);
+            os.registrarPagamento(PAGA_EM);
+            os.registrarConclusao(CONCLUIDA_EM);
+
+            assertThatThrownBy(() -> os.cancelar("FALHA_EXECUCAO"))
                 .isInstanceOf(TransicaoInvalidaException.class);
         }
     }
@@ -111,112 +182,65 @@ class OrdemServicoTest {
         @Test
         void deveCalcularOrcamentoCorretamente() {
             var os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId);
-            os.iniciarDiagnostico();
+            os.registrarInicioDiagnostico();
 
             os.adicionarServico(new ItemServico(UUID.randomUUID(), UUID.randomUUID(),
                 "Alinhamento", new BigDecimal("150.00"), 2));
             os.adicionarPeca(new ItemPeca(UUID.randomUUID(), UUID.randomUUID(),
                 "Filtro de óleo", new BigDecimal("45.50"), 3));
 
-            // 2 * 150 + 3 * 45.50 = 300 + 136.50 = 436.50
             assertThat(os.calcularOrcamento()).isEqualByComparingTo("436.50");
+            assertThat(os.possuiItens()).isTrue();
         }
 
         @Test
-        void deveRejeitarGerarOrcamentoSemItens() {
+        void deveRejeitarOrcamentoEnviadoSemItens() {
             var os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId);
-            os.iniciarDiagnostico();
+            os.registrarInicioDiagnostico();
 
-            assertThatThrownBy(os::gerarOrcamento)
+            assertThat(os.possuiItens()).isFalse();
+            assertThatThrownBy(os::registrarOrcamentoEnviado)
                 .isInstanceOf(DomainException.class)
                 .hasMessageContaining("ao menos um item");
         }
 
         @Test
-        void deveRejeitarAdicionarItemForaDosDiagnostico() {
+        void deveRejeitarOrcamentoEnviadoForaDoDiagnostico() {
+            var os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId);
+
+            assertThatThrownBy(os::registrarOrcamentoEnviado)
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("RECEBIDA");
+        }
+
+        @Test
+        void deveRejeitarAdicionarItemForaDoDiagnostico() {
             var os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId);
 
             var item = new ItemServico(UUID.randomUUID(), UUID.randomUUID(),
                 "Troca de óleo", new BigDecimal("80.00"), 1);
             assertThatThrownBy(() -> os.adicionarServico(item))
                 .isInstanceOf(DomainException.class);
+            var peca = new ItemPeca(UUID.randomUUID(), UUID.randomUUID(), "Vela", new BigDecimal("20.00"), 4);
+            assertThatThrownBy(() -> os.adicionarPeca(peca))
+                .isInstanceOf(DomainException.class);
+        }
+
+        @Test
+        void listasDeItensSaoSomenteLeitura() {
+            var os = criarOsComItem();
+
+            var itens = os.getItensServico();
+            var pecas = os.getItensPeca();
+            assertThatThrownBy(() -> itens.add(null)).isInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> pecas.add(null)).isInstanceOf(UnsupportedOperationException.class);
+            assertThat(List.copyOf(itens)).hasSize(1);
         }
     }
 
-    @Nested
-    @DisplayName("Aprovação externa via token")
-    class AprovacaoExterna {
-
-        @Test
-        void gerarOrcamento_deveGerarTokenComExpiracao() {
-            var os = criarOsComItem();
-            os.gerarOrcamento();
-
-            assertThat(os.getTokenAprovacaoExterna()).isNotBlank();
-            assertThat(os.getTokenExpiracao()).isAfter(java.time.LocalDateTime.now());
-        }
-
-        @Test
-        void aprovarViaTokenExterno_deveAprovarEInvalidarToken() {
-            var os = criarOsComItem();
-            os.gerarOrcamento();
-            var token = os.getTokenAprovacaoExterna();
-
-            os.aprovarViaTokenExterno(token);
-
-            assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
-            assertThat(os.getTokenAprovacaoExterna()).isNull();
-            assertThat(os.getTokenExpiracao()).isNull();
-        }
-
-        @Test
-        void reprovarViaTokenExterno_deveCancelarEInvalidarToken() {
-            var os = criarOsComItem();
-            os.gerarOrcamento();
-            var token = os.getTokenAprovacaoExterna();
-
-            os.reprovarViaTokenExterno(token);
-
-            assertThat(os.getStatus()).isEqualTo(StatusOS.CANCELADA);
-            assertThat(os.getTokenAprovacaoExterna()).isNull();
-        }
-
-        @Test
-        void aprovarViaTokenExterno_deveRejeitarTokenInvalido() {
-            var os = criarOsComItem();
-            os.gerarOrcamento();
-
-            assertThatThrownBy(() -> os.aprovarViaTokenExterno("token-errado"))
-                .isInstanceOf(TokenAprovacaoInvalidoException.class);
-            assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
-        }
-
-        @Test
-        void aprovarViaTokenExterno_deveRejeitarTokenExpirado() {
-            var os = criarOsComItem();
-            os.gerarOrcamento(Duration.ofSeconds(-1)); // já expirado
-            var token = os.getTokenAprovacaoExterna();
-
-            assertThatThrownBy(() -> os.aprovarViaTokenExterno(token))
-                .isInstanceOf(TokenAprovacaoInvalidoException.class);
-        }
-
-        @Test
-        void aprovarViaTokenExterno_deveRejeitarTokenJaUsado() {
-            var os = criarOsComItem();
-            os.gerarOrcamento();
-            var token = os.getTokenAprovacaoExterna();
-            os.aprovarViaTokenExterno(token); // consome o token
-
-            assertThatThrownBy(() -> os.reprovarViaTokenExterno(token))
-                .isInstanceOf(TokenAprovacaoInvalidoException.class);
-        }
-    }
-
-    // Helper: OS já em diagnóstico com um item de serviço
     private OrdemServico criarOsComItem() {
         var os = new OrdemServico(UUID.randomUUID(), clienteId, veiculoId);
-        os.iniciarDiagnostico();
+        os.registrarInicioDiagnostico();
         os.adicionarServico(new ItemServico(UUID.randomUUID(), UUID.randomUUID(),
             "Revisão geral", new BigDecimal("200.00"), 1));
         return os;
