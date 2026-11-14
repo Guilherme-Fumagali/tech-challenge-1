@@ -13,6 +13,7 @@ Artefatos de arquitetura do Tech Challenge Fase 4: refatoração em microsservi�
 | Requisições do fluxo completo nos três serviços | [`../demo.http`](../demo.http) |
 | Estratégia de testes | [`../testes.md`](../testes.md) |
 | Runbooks dos alertas | [`../runbooks/`](../runbooks/README.md) |
+| Evidências da validação em homologação | [`evidencias/`](evidencias/README.md) |
 
 ## Repositórios
 
