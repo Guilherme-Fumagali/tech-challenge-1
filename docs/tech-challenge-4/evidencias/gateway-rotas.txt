@@ -1,0 +1,16 @@
+$ aws apigatewayv2 get-routes --api-id nkrt846y0a
+ANY   /api/execucoes                         CUSTOM
+ANY   /api/execucoes/{proxy+}                CUSTOM
+ANY   /api/orcamentos                        CUSTOM
+ANY   /api/orcamentos/{proxy+}               CUSTOM
+ANY   /api/pagamentos/{proxy+}               CUSTOM
+ANY   /api/{proxy+}                          CUSTOM
+GET   /actuator/health                       NONE
+GET   /api/orcamentos/{id}/decisao           NONE
+GET   /api/ordens/{id}/status                NONE
+POST  /api/orcamentos/{id}/decisao           NONE
+POST  /api/pagamentos/webhooks/mercado-pago  NONE
+POST  /auth                                  NONE
+POST  /auth/confirmacao                      NONE
+POST  /auth/funcionarios                     NONE
+POST  /auth/funcionarios/confirmacao         NONE

@@ -268,6 +268,16 @@ Execução de `./mvnw -B verify` em 30/10/2026 (JaCoCo 0.8.12):
 
 O build falha abaixo de 85% de linhas e 70% de ramos no projeto ou de 80% de instruções nos pacotes de domínio. No CI, o relatório completo é publicado como artefato `jacoco-report` e o resumo de linhas e ramos aparece no sumário da execução; o SonarCloud recebe o `jacoco.xml` (badge de cobertura no topo deste documento).
 
+Execução do pipeline em 14/11/2026, com o resumo de cobertura publicado pelo job `Build & Test` e o deploy em homologação:
+
+![Pipeline com o resumo de cobertura](docs/tech-challenge-4/evidencias/07-actions-cicd-os-deploy.jpg)
+
+Análise da branch `main` no [SonarCloud](https://sonarcloud.io/project/overview?id=Guilherme-Fumagali_tech-challenge-1), com o quality gate aprovado:
+
+![SonarCloud dos três serviços](docs/tech-challenge-4/evidencias/02-sonarcloud-projetos-main.jpg)
+
+As evidências da validação em homologação (fluxo completo, compensação, cluster, filas, bancos, Mercado Pago e New Relic) estão em [`docs/tech-challenge-4/evidencias`](docs/tech-challenge-4/evidencias).
+
 ## Autenticação e papéis
 
 A aplicação não emite tokens. A função `oficina-auth-lambda` autentica pelo CPF em duas etapas: a primeira rota envia um código de seis dígitos ao e-mail cadastrado e devolve um desafio; a segunda troca o desafio e o código pelo JWT.
