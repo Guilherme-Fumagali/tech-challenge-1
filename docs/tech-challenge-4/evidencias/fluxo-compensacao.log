@@ -1,0 +1,561 @@
+===== Fluxo feliz em homologação — 2026-11-14T20:55:23Z — https://nkrt846y0a.execute-api.us-east-1.amazonaws.com =====
+### 1. Chamada protegida sem token (barrada no API Gateway)
+20:55:24Z  GET /api/ordens
+HTTP 401
+{
+  "message": "Unauthorized"
+}
+
+### 6. Abrir ordem de serviço (inicia a saga)
+20:55:28Z  POST /api/ordens   [Authorization: Bearer <JWT do funcionário>]
+{"clienteId":"07e68d3e-27a0-4221-81d8-dbc113935dcb","veiculoId":"5dd46e10-0a08-4b06-85b3-4e0dd7936343"}
+HTTP 201
+{
+  "id": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "sagaId": "e3e86d7d-e01d-4ac7-a407-4f80989ee02c",
+  "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+  "veiculoId": "5dd46e10-0a08-4b06-85b3-4e0dd7936343",
+  "status": "RECEBIDA",
+  "dataAbertura": "2026-11-14T20:55:28.685009803"
+}
+
+   (aguardou 0 s por: execução enfileirada no Execution Service)
+### 7. Fila de diagnóstico (Execution Service)
+20:55:29Z  GET /api/execucoes?status=AGUARDANDO_DIAGNOSTICO   [Authorization: Bearer <JWT do funcionário>]
+HTTP 200
+[
+  {
+    "osId": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+    "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+    "veiculo": {
+      "placa": "ABC1D23",
+      "marca": "Volkswagen",
+      "modelo": "Polo",
+      "anoFabricacao": 2021
+    },
+    "status": "AGUARDANDO_DIAGNOSTICO",
+    "etapaAtual": "DIAGNOSTICO",
+    "prioridade": 0,
+    "enfileiradaEm": "2026-11-14T20:55:29.111Z"
+  }
+]
+
+### 8. Iniciar diagnóstico (Execution Service)
+20:55:30Z  POST /api/execucoes/7a14631b-a5ea-41e3-89e6-21f4b79a8ffb/diagnostico/inicio   [Authorization: Bearer <JWT do funcionário>]
+HTTP 200
+{
+  "osId": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "sagaId": "e3e86d7d-e01d-4ac7-a407-4f80989ee02c",
+  "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+  "veiculo": {
+    "placa": "ABC1D23",
+    "marca": "Volkswagen",
+    "modelo": "Polo",
+    "anoFabricacao": 2021
+  },
+  "status": "EM_DIAGNOSTICO",
+  "etapaAtual": "DIAGNOSTICO",
+  "prioridade": 0,
+  "enfileiradaEm": "2026-11-14T20:55:29.111Z",
+  "itensReparo": [],
+  "etapas": [
+    {
+      "tipo": "DIAGNOSTICO",
+      "mecanicoId": "3fd71eec-8a3a-4392-97f2-7cc89a3b23f8",
+      "inicio": "2026-11-14T20:55:30.215Z",
+      "fim": null
+    }
+  ],
+  "apontamentos": [],
+  "historicoStatus": [
+    {
+      "de": null,
+      "para": "AGUARDANDO_DIAGNOSTICO",
+      "em": "2026-11-14T20:55:29.111Z",
+      "motivo": null
+    },
+    {
+      "de": "AGUARDANDO_DIAGNOSTICO",
+      "para": "EM_DIAGNOSTICO",
+      "em": "2026-11-14T20:55:30.215Z",
+      "motivo": null
+    }
+  ],
+  "observacoesDiagnostico": null,
+  "motivoFalha": null,
+  "motivoCancelamento": null,
+  "versao": 1
+}
+
+   (aguardou 0 s por: OS em EM_DIAGNOSTICO)
+### 9. Incluir serviço na OS
+20:55:31Z  POST /api/ordens/7a14631b-a5ea-41e3-89e6-21f4b79a8ffb/servicos   [Authorization: Bearer <JWT do funcionário>]
+{"itemId":"6b8202a0-4dbd-4efe-b96b-e9cc4453049d","quantidade":1}
+HTTP 200
+{
+  "id": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+  "veiculoId": "5dd46e10-0a08-4b06-85b3-4e0dd7936343",
+  "status": "EM_DIAGNOSTICO",
+  "orcamentoTotal": 120.00,
+  "itensServico": [
+    {
+      "id": "f6441807-ee57-48ab-b0f0-5eb636a32de1",
+      "servicoId": "6b8202a0-4dbd-4efe-b96b-e9cc4453049d",
+      "nomeServico": "Troca de pastilhas",
+      "precoSnapshot": 120.00,
+      "quantidade": 1,
+      "subtotal": 120.00
+    }
+  ],
+  "itensPeca": [],
+  "dataAbertura": "2026-11-14T20:55:28.68501",
+  "dataInicio": null,
+  "dataConclusao": null
+}
+
+### 10. Incluir peça na OS (reserva o estoque)
+20:55:31Z  POST /api/ordens/7a14631b-a5ea-41e3-89e6-21f4b79a8ffb/pecas   [Authorization: Bearer <JWT do funcionário>]
+{"itemId":"4dcab4d0-8057-41be-9f88-05193c01e152","quantidade":2}
+HTTP 200
+{
+  "id": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+  "veiculoId": "5dd46e10-0a08-4b06-85b3-4e0dd7936343",
+  "status": "EM_DIAGNOSTICO",
+  "orcamentoTotal": 360.00,
+  "itensServico": [
+    {
+      "id": "f6441807-ee57-48ab-b0f0-5eb636a32de1",
+      "servicoId": "6b8202a0-4dbd-4efe-b96b-e9cc4453049d",
+      "nomeServico": "Troca de pastilhas",
+      "precoSnapshot": 120.00,
+      "quantidade": 1,
+      "subtotal": 120.00
+    }
+  ],
+  "itensPeca": [
+    {
+      "id": "b5741efa-1bfb-4152-8d80-695a0d113fbb",
+      "pecaId": "4dcab4d0-8057-41be-9f88-05193c01e152",
+      "nomePeca": "Pastilha de freio",
+      "precoSnapshot": 120.00,
+      "quantidade": 2,
+      "subtotal": 240.00
+    }
+  ],
+  "dataAbertura": "2026-11-14T20:55:28.68501",
+  "dataInicio": null,
+  "dataConclusao": null
+}
+
+### 11. Concluir diagnóstico (Execution Service)
+20:55:32Z  POST /api/execucoes/7a14631b-a5ea-41e3-89e6-21f4b79a8ffb/diagnostico/conclusao   [Authorization: Bearer <JWT do funcionário>]
+{"observacoes":"Pastilhas no limite de desgaste"}
+HTTP 200
+{
+  "osId": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "sagaId": "e3e86d7d-e01d-4ac7-a407-4f80989ee02c",
+  "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+  "veiculo": {
+    "placa": "ABC1D23",
+    "marca": "Volkswagen",
+    "modelo": "Polo",
+    "anoFabricacao": 2021
+  },
+  "status": "DIAGNOSTICO_CONCLUIDO",
+  "etapaAtual": "DIAGNOSTICO",
+  "prioridade": 0,
+  "enfileiradaEm": "2026-11-14T20:55:29.111Z",
+  "itensReparo": [],
+  "etapas": [
+    {
+      "tipo": "DIAGNOSTICO",
+      "mecanicoId": "3fd71eec-8a3a-4392-97f2-7cc89a3b23f8",
+      "inicio": "2026-11-14T20:55:30.215Z",
+      "fim": "2026-11-14T20:55:32.224Z"
+    }
+  ],
+  "apontamentos": [],
+  "historicoStatus": [
+    {
+      "de": null,
+      "para": "AGUARDANDO_DIAGNOSTICO",
+      "em": "2026-11-14T20:55:29.111Z",
+      "motivo": null
+    },
+    {
+      "de": "AGUARDANDO_DIAGNOSTICO",
+      "para": "EM_DIAGNOSTICO",
+      "em": "2026-11-14T20:55:30.215Z",
+      "motivo": null
+    },
+    {
+      "de": "EM_DIAGNOSTICO",
+      "para": "DIAGNOSTICO_CONCLUIDO",
+      "em": "2026-11-14T20:55:32.224Z",
+      "motivo": null
+    }
+  ],
+  "observacoesDiagnostico": "Pastilhas no limite de desgaste",
+  "motivoFalha": null,
+  "motivoCancelamento": null,
+  "versao": 2
+}
+
+   (aguardou 3 s por: OS em AGUARDANDO_APROVACAO)
+### 12. Orçamento gerado pelo Billing Service
+20:55:36Z  GET /api/orcamentos?osId=7a14631b-a5ea-41e3-89e6-21f4b79a8ffb   [Authorization: Bearer <JWT do funcionário>]
+HTTP 200
+{
+  "id": "457cdbc0-b30d-49e5-a996-e6e0dc5590df",
+  "osId": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+  "clienteNome": "Cliente de demonstração",
+  "veiculoPlaca": "ABC1D23",
+  "veiculoModelo": "Polo",
+  "itens": [
+    {
+      "tipo": "PECA",
+      "referenciaId": "4dcab4d0-8057-41be-9f88-05193c01e152",
+      "descricao": "Pastilha de freio",
+      "quantidade": 2,
+      "precoUnitario": 120.00,
+      "subtotal": 240.00
+    },
+    {
+      "tipo": "SERVICO",
+      "referenciaId": "6b8202a0-4dbd-4efe-b96b-e9cc4453049d",
+      "descricao": "Troca de pastilhas",
+      "quantidade": 1,
+      "precoUnitario": 120.00,
+      "subtotal": 120.00
+    }
+  ],
+  "total": 360.00,
+  "status": "AGUARDANDO_APROVACAO",
+  "criadoEm": "2026-11-14T20:55:33.187733Z",
+  "validoAte": "2026-11-21T20:55:33.187733Z",
+  "canalDecisao": null,
+  "aprovadoEm": null,
+  "reprovadoEm": null,
+  "expiradoEm": null,
+  "canceladoEm": null,
+  "pagamento": null
+}
+
+### 13. Estado da saga depois do orçamento
+20:55:37Z  GET /api/ordens/7a14631b-a5ea-41e3-89e6-21f4b79a8ffb/saga   [Authorization: Bearer <JWT do funcionário>]
+HTTP 200
+{
+  "id": "e3e86d7d-e01d-4ac7-a407-4f80989ee02c",
+  "osId": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "estado": "AGUARDANDO_APROVACAO",
+  "motivoCompensacao": null,
+  "compensacoesPendentes": [],
+  "ultimoComando": "GerarOrcamento",
+  "prazoResposta": null,
+  "tentativasReenvio": 0,
+  "criadaEm": "2026-11-14T20:55:28.693313Z",
+  "atualizadaEm": "2026-11-14T20:55:33.676361Z",
+  "passos": [
+    {
+      "sequencia": 1,
+      "direcao": "ENVIADO",
+      "tipo": "IniciarDiagnostico",
+      "mensagemId": "dd6e290f-3e73-4d12-945a-a0c77f8d87b2",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:28.693313Z"
+    },
+    {
+      "sequencia": 2,
+      "direcao": "RECEBIDO",
+      "tipo": "ExecucaoEnfileirada",
+      "mensagemId": "cccbd9e6-67ba-43ec-b94b-4da713190330",
+      "resultado": "APLICADO",
+      "detalhe": "DIAGNOSTICO",
+      "ocorridoEm": "2026-11-14T20:55:29.568695Z"
+    },
+    {
+      "sequencia": 3,
+      "direcao": "RECEBIDO",
+      "tipo": "DiagnosticoIniciado",
+      "mensagemId": "53e3f8b0-8153-45a9-a3c3-69a888a90151",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:30.601159Z"
+    },
+    {
+      "sequencia": 4,
+      "direcao": "RECEBIDO",
+      "tipo": "DiagnosticoConcluido",
+      "mensagemId": "1ef271c4-9e42-4e1c-a60b-a597858334bc",
+      "resultado": "APLICADO",
+      "detalhe": "Pastilhas no limite de desgaste",
+      "ocorridoEm": "2026-11-14T20:55:32.630816Z"
+    },
+    {
+      "sequencia": 5,
+      "direcao": "ENVIADO",
+      "tipo": "GerarOrcamento",
+      "mensagemId": "2d366dc1-6e3b-450e-af95-21775047a4d3",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:32.630816Z"
+    },
+    {
+      "sequencia": 6,
+      "direcao": "RECEBIDO",
+      "tipo": "OrcamentoGerado",
+      "mensagemId": "d93d844a-fe04-4872-b779-d2269e40048d",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:33.676361Z"
+    }
+  ]
+}
+
+### R1. Estoque da peça antes da reprovação (2 unidades reservadas para esta OS)
+20:55:39Z  GET /api/pecas/4dcab4d0-8057-41be-9f88-05193c01e152   [Authorization: Bearer <JWT do funcionário>]
+HTTP 200
+{
+  "id": "4dcab4d0-8057-41be-9f88-05193c01e152",
+  "nome": "Pastilha de freio",
+  "descricao": "Jogo dianteiro",
+  "precoUnitario": 120.00,
+  "quantidadeEstoque": 16,
+  "estoqueMinimo": 2,
+  "abaixoDoMinimo": false
+}
+
+### R2. Cliente reprova o orçamento pelo link do e-mail
+20:55:40Z  POST /api/orcamentos/457cdbc0-b30d-49e5-a996-e6e0dc5590df/decisao
+{"token":"***","decisao":"REPROVAR"}
+HTTP 200
+{
+  "id": "457cdbc0-b30d-49e5-a996-e6e0dc5590df",
+  "osId": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+  "clienteNome": "Cliente de demonstração",
+  "veiculoPlaca": "ABC1D23",
+  "veiculoModelo": "Polo",
+  "itens": [
+    {
+      "tipo": "PECA",
+      "referenciaId": "4dcab4d0-8057-41be-9f88-05193c01e152",
+      "descricao": "Pastilha de freio",
+      "quantidade": 2,
+      "precoUnitario": 120.00,
+      "subtotal": 240.00
+    },
+    {
+      "tipo": "SERVICO",
+      "referenciaId": "6b8202a0-4dbd-4efe-b96b-e9cc4453049d",
+      "descricao": "Troca de pastilhas",
+      "quantidade": 1,
+      "precoUnitario": 120.00,
+      "subtotal": 120.00
+    }
+  ],
+  "total": 360.00,
+  "status": "REPROVADO",
+  "criadoEm": "2026-11-14T20:55:33.187733Z",
+  "validoAte": "2026-11-21T20:55:33.187733Z",
+  "canalDecisao": "LINK",
+  "aprovadoEm": null,
+  "reprovadoEm": "2026-11-14T20:55:40.482907731Z",
+  "expiradoEm": null,
+  "canceladoEm": null,
+  "pagamento": null
+}
+
+### R3. Status público: OS cancelada pela compensação
+20:55:45Z  GET /api/ordens/7a14631b-a5ea-41e3-89e6-21f4b79a8ffb/status
+HTTP 200
+{
+  "id": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "status": "CANCELADA",
+  "atualizadoEm": "2026-11-14T20:55:42.243557"
+}
+
+### R4. Saga compensada: comandos de compensação e respostas
+20:55:45Z  GET /api/ordens/7a14631b-a5ea-41e3-89e6-21f4b79a8ffb/saga   [Authorization: Bearer <JWT do funcionário>]
+HTTP 200
+{
+  "id": "e3e86d7d-e01d-4ac7-a407-4f80989ee02c",
+  "osId": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "estado": "COMPENSADA",
+  "motivoCompensacao": "REPROVACAO",
+  "compensacoesPendentes": [],
+  "ultimoComando": "CancelarExecucao",
+  "prazoResposta": null,
+  "tentativasReenvio": 0,
+  "criadaEm": "2026-11-14T20:55:28.693313Z",
+  "atualizadaEm": "2026-11-14T20:55:42.243420Z",
+  "passos": [
+    {
+      "sequencia": 1,
+      "direcao": "ENVIADO",
+      "tipo": "IniciarDiagnostico",
+      "mensagemId": "dd6e290f-3e73-4d12-945a-a0c77f8d87b2",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:28.693313Z"
+    },
+    {
+      "sequencia": 2,
+      "direcao": "RECEBIDO",
+      "tipo": "ExecucaoEnfileirada",
+      "mensagemId": "cccbd9e6-67ba-43ec-b94b-4da713190330",
+      "resultado": "APLICADO",
+      "detalhe": "DIAGNOSTICO",
+      "ocorridoEm": "2026-11-14T20:55:29.568695Z"
+    },
+    {
+      "sequencia": 3,
+      "direcao": "RECEBIDO",
+      "tipo": "DiagnosticoIniciado",
+      "mensagemId": "53e3f8b0-8153-45a9-a3c3-69a888a90151",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:30.601159Z"
+    },
+    {
+      "sequencia": 4,
+      "direcao": "RECEBIDO",
+      "tipo": "DiagnosticoConcluido",
+      "mensagemId": "1ef271c4-9e42-4e1c-a60b-a597858334bc",
+      "resultado": "APLICADO",
+      "detalhe": "Pastilhas no limite de desgaste",
+      "ocorridoEm": "2026-11-14T20:55:32.630816Z"
+    },
+    {
+      "sequencia": 5,
+      "direcao": "ENVIADO",
+      "tipo": "GerarOrcamento",
+      "mensagemId": "2d366dc1-6e3b-450e-af95-21775047a4d3",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:32.630816Z"
+    },
+    {
+      "sequencia": 6,
+      "direcao": "RECEBIDO",
+      "tipo": "OrcamentoGerado",
+      "mensagemId": "d93d844a-fe04-4872-b779-d2269e40048d",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:33.676361Z"
+    },
+    {
+      "sequencia": 7,
+      "direcao": "RECEBIDO",
+      "tipo": "OrcamentoReprovado",
+      "mensagemId": "e2f901d5-7e4f-4746-ac3f-d526359e4658",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:41.198272Z"
+    },
+    {
+      "sequencia": 8,
+      "direcao": "ENVIADO",
+      "tipo": "CancelarExecucao",
+      "mensagemId": "ca5b80cd-b98c-482c-a768-c7c3842274ba",
+      "resultado": "APLICADO",
+      "detalhe": null,
+      "ocorridoEm": "2026-11-14T20:55:41.198272Z"
+    },
+    {
+      "sequencia": 9,
+      "direcao": "RECEBIDO",
+      "tipo": "ExecucaoCancelada",
+      "mensagemId": "f4639941-d34a-4fec-b709-38bae3929e64",
+      "resultado": "APLICADO",
+      "detalhe": "REPROVACAO",
+      "ocorridoEm": "2026-11-14T20:55:42.243420Z"
+    },
+    {
+      "sequencia": 10,
+      "direcao": "LOCAL",
+      "tipo": "ESTORNAR_ESTOQUE",
+      "mensagemId": null,
+      "resultado": "APLICADO",
+      "detalhe": "REPROVACAO",
+      "ocorridoEm": "2026-11-14T20:55:42.243420Z"
+    }
+  ]
+}
+
+### R5. Estoque devolvido
+20:55:46Z  GET /api/pecas/4dcab4d0-8057-41be-9f88-05193c01e152   [Authorization: Bearer <JWT do funcionário>]
+HTTP 200
+{
+  "id": "4dcab4d0-8057-41be-9f88-05193c01e152",
+  "nome": "Pastilha de freio",
+  "descricao": "Jogo dianteiro",
+  "precoUnitario": 120.00,
+  "quantidadeEstoque": 18,
+  "estoqueMinimo": 2,
+  "abaixoDoMinimo": false
+}
+
+### R6. Execução cancelada no Execution Service
+20:55:46Z  GET /api/execucoes/7a14631b-a5ea-41e3-89e6-21f4b79a8ffb   [Authorization: Bearer <JWT do funcionário>]
+HTTP 200
+{
+  "osId": "7a14631b-a5ea-41e3-89e6-21f4b79a8ffb",
+  "sagaId": "e3e86d7d-e01d-4ac7-a407-4f80989ee02c",
+  "clienteId": "07e68d3e-27a0-4221-81d8-dbc113935dcb",
+  "veiculo": {
+    "placa": "ABC1D23",
+    "marca": "Volkswagen",
+    "modelo": "Polo",
+    "anoFabricacao": 2021
+  },
+  "status": "CANCELADA",
+  "etapaAtual": "DIAGNOSTICO",
+  "prioridade": 0,
+  "enfileiradaEm": "2026-11-14T20:55:29.111Z",
+  "itensReparo": [],
+  "etapas": [
+    {
+      "tipo": "DIAGNOSTICO",
+      "mecanicoId": "3fd71eec-8a3a-4392-97f2-7cc89a3b23f8",
+      "inicio": "2026-11-14T20:55:30.215Z",
+      "fim": "2026-11-14T20:55:32.224Z"
+    }
+  ],
+  "apontamentos": [],
+  "historicoStatus": [
+    {
+      "de": null,
+      "para": "AGUARDANDO_DIAGNOSTICO",
+      "em": "2026-11-14T20:55:29.111Z",
+      "motivo": null
+    },
+    {
+      "de": "AGUARDANDO_DIAGNOSTICO",
+      "para": "EM_DIAGNOSTICO",
+      "em": "2026-11-14T20:55:30.215Z",
+      "motivo": null
+    },
+    {
+      "de": "EM_DIAGNOSTICO",
+      "para": "DIAGNOSTICO_CONCLUIDO",
+      "em": "2026-11-14T20:55:32.224Z",
+      "motivo": null
+    },
+    {
+      "de": "DIAGNOSTICO_CONCLUIDO",
+      "para": "CANCELADA",
+      "em": "2026-11-14T20:55:41.964Z",
+      "motivo": "REPROVACAO"
+    }
+  ],
+  "observacoesDiagnostico": "Pastilhas no limite de desgaste",
+  "motivoFalha": null,
+  "motivoCancelamento": "REPROVACAO",
+  "versao": 3
+}
+

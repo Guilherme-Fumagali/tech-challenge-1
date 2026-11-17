@@ -1,0 +1,45 @@
+$ kubectl get nodes
+NAME                          STATUS   ROLES    AGE   VERSION
+ip-10-0-11-187.ec2.internal   Ready    <none>   71m   v1.36.5-eks-8418f54
+ip-10-0-12-89.ec2.internal    Ready    <none>   71m   v1.36.5-eks-8418f54
+
+$ kubectl -n oficina get deploy
+NAME                READY   UP-TO-DATE   AVAILABLE   AGE
+billing-service     2/2     2            2           55m
+execution-service   2/2     2            2           55m
+oficina-mailhog     1/1     1            1           70m
+os-service          2/2     2            2           53m
+
+$ kubectl -n oficina get pods -o wide
+NAME                                READY   STATUS    RESTARTS   AGE     IP            NODE                          N
+billing-service-65b87c6895-8vj85    1/1     Running   0          5m      10.0.12.246   ip-10-0-12-89.ec2.internal    <
+billing-service-65b87c6895-kx4nb    1/1     Running   0          7m1s    10.0.11.105   ip-10-0-11-187.ec2.internal   <
+execution-service-55fd9bdb7-7gh8f   1/1     Running   0          14m     10.0.11.164   ip-10-0-11-187.ec2.internal   <
+execution-service-55fd9bdb7-9mxt4   1/1     Running   0          13m     10.0.11.217   ip-10-0-11-187.ec2.internal   <
+oficina-mailhog-d9ddc68dd-hp6zf     1/1     Running   0          70m     10.0.12.165   ip-10-0-12-89.ec2.internal    <
+os-service-78589c96fb-2bjks         1/1     Running   0          14m     10.0.12.188   ip-10-0-12-89.ec2.internal    <
+os-service-78589c96fb-ltjww         1/1     Running   0          7m50s   10.0.11.29    ip-10-0-11-187.ec2.internal   <
+
+$ kubectl -n oficina get hpa
+NAME                REFERENCE                      TARGETS        MINPODS   MAXPODS   REPLICAS   AGE
+billing-service     Deployment/billing-service     cpu: 14%/70%   2         3         2          55m
+execution-service   Deployment/execution-service   cpu: 8%/70%    2         3         2          55m
+os-service          Deployment/os-service          cpu: 12%/70%   2         3         2          53m
+
+$ kubectl -n oficina get pdb
+NAME                MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+billing-service     1               N/A               1                     55m
+execution-service   1               N/A               1                     55m
+os-service          1               N/A               1                     53m
+
+$ kubectl -n oficina get svc
+NAME                TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)             AGE
+billing-service     NodePort    172.20.198.229   <none>        80:30081/TCP        55m
+execution-service   NodePort    172.20.130.202   <none>        80:30082/TCP        55m
+oficina-mailhog     ClusterIP   172.20.224.136   <none>        1025/TCP,8025/TCP   70m
+os-service          NodePort    172.20.117.205   <none>        80:30080/TCP        53m
+
+$ kubectl top nodes
+NAME                          CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+ip-10-0-11-187.ec2.internal   173m         8%       2731Mi          82%         
+ip-10-0-12-89.ec2.internal    142m         7%       1958Mi          59%         

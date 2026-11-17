@@ -30,7 +30,7 @@ Serviço de ordens de serviço da oficina mecânica, desenvolvido no Tech Challe
 | Runbooks dos alertas | [`docs/runbooks`](docs/runbooks) |
 | Documentação da Fase 4: ADRs 016 a 023, diagramas, Domain Storytelling, débitos técnicos, relatório e slides | [`docs/tech-challenge-4`](docs/tech-challenge-4/README.md) |
 | Documentação das fases anteriores | [`docs/tech-challenge-3`](docs/tech-challenge-3), [`docs/tech-challenge-2`](docs/tech-challenge-2), [`docs/tech-challenge-1`](docs/tech-challenge-1) |
-| Vídeo de demonstração | a publicar |
+| Vídeo de demonstração | [youtu.be/dZqpV8ESU4s](https://youtu.be/dZqpV8ESU4s) |
 
 ## Arquitetura
 
@@ -267,6 +267,16 @@ Execução de `./mvnw -B verify` em 30/10/2026 (JaCoCo 0.8.12):
 | **Total** | **2.072** | **95,3%** | **498** | **85,1%** |
 
 O build falha abaixo de 85% de linhas e 70% de ramos no projeto ou de 80% de instruções nos pacotes de domínio. No CI, o relatório completo é publicado como artefato `jacoco-report` e o resumo de linhas e ramos aparece no sumário da execução; o SonarCloud recebe o `jacoco.xml` (badge de cobertura no topo deste documento).
+
+Execução do pipeline em 14/11/2026, com o resumo de cobertura publicado pelo job `Build & Test` e o deploy em homologação:
+
+![Pipeline com o resumo de cobertura](docs/tech-challenge-4/evidencias/07-actions-cicd-os-deploy.jpg)
+
+Análise da branch `main` no [SonarCloud](https://sonarcloud.io/project/overview?id=Guilherme-Fumagali_tech-challenge-1), com o quality gate aprovado:
+
+![SonarCloud dos três serviços](docs/tech-challenge-4/evidencias/02-sonarcloud-projetos-main.jpg)
+
+As evidências da validação em homologação (fluxo completo, compensação, cluster, filas, bancos, Mercado Pago e New Relic) estão em [`docs/tech-challenge-4/evidencias`](docs/tech-challenge-4/evidencias).
 
 ## Autenticação e papéis
 
