@@ -6,6 +6,7 @@ Artefatos de arquitetura do Tech Challenge Fase 4: refatoração em microsservi�
 |---|---|
 | Relatório de entrega | [`documento_entrega.pdf`](documento_entrega.pdf) ([`.docx`](documento_entrega.docx)) |
 | Apresentação | [`apresentacao.pdf`](apresentacao.pdf) ([`.pptx`](apresentacao.pptx)) |
+| Vídeo de demonstração | [youtu.be/dZqpV8ESU4s](https://youtu.be/dZqpV8ESU4s) |
 | ADRs 016 a 023, com índice e relação com as ADRs da Fase 3 | [`adrs/`](adrs/README.md) |
 | Domain Storytelling do fluxo distribuído | [`diagramas/domain-storytelling.md`](diagramas/domain-storytelling.md) |
 | Débitos técnicos da fase e situação dos anteriores | [`debitos-tecnicos.md`](debitos-tecnicos.md) |

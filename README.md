@@ -30,7 +30,7 @@ Serviço de ordens de serviço da oficina mecânica, desenvolvido no Tech Challe
 | Runbooks dos alertas | [`docs/runbooks`](docs/runbooks) |
 | Documentação da Fase 4: ADRs 016 a 023, diagramas, Domain Storytelling, débitos técnicos, relatório e slides | [`docs/tech-challenge-4`](docs/tech-challenge-4/README.md) |
 | Documentação das fases anteriores | [`docs/tech-challenge-3`](docs/tech-challenge-3), [`docs/tech-challenge-2`](docs/tech-challenge-2), [`docs/tech-challenge-1`](docs/tech-challenge-1) |
-| Vídeo de demonstração | a publicar |
+| Vídeo de demonstração | [youtu.be/dZqpV8ESU4s](https://youtu.be/dZqpV8ESU4s) |
 
 ## Arquitetura
 
